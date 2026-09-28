@@ -1,0 +1,432 @@
+# 蓝色拟态玻璃风格皮肤 —— 设置弹窗实体不透明蓝玻璃 / 终端与全窗口统一高质感拟态蓝
+name: bubbles
+description: Full window blue glass theme with opaque blue glass settings overlay and non-overlapping bubbles
+
+colors:
+  banner_border: "#3b82f6"
+  banner_title: "#93c5fd"
+  banner_accent: "#60a5fa"
+  banner_dim: "#93c5fd"
+  banner_text: "#f0f6ff"
+  ui_accent: "#60a5fa"
+  ui_label: "#bfdbfe"
+  ui_ok: "#4ade80"
+  ui_error: "#f87171"
+  ui_warn: "#fbbf24"
+  prompt: "#ffffff"
+  input_rule: "#2563eb"
+  response_border: "#3b82f6"
+  session_label: "#93c5fd"
+  session_border: "#1d4ed8"
+  status_bar_bg: "#0a2540"
+  voice_status_bg: "#0a2540"
+  selection_bg: "#2563eb"
+  completion_menu_bg: "#0d2f54"
+  completion_menu_current_bg: "#1a457a"
+  completion_menu_meta_bg: "#0d2f54"
+  completion_menu_meta_current_bg: "#1a457a"
+
+customCSS: |
+  /* 1. CSS 变量层：清空原生暗黑遮罩 */
+  :root, :root.dark, :root[data-hermes-glass], :root[data-hermes-glass-on], html, body {
+    --sidebar: transparent !important;
+    --ui-bg-sidebar: transparent !important;
+    --ui-sidebar-surface-background: transparent !important;
+    --ui-bg-chrome: transparent !important;
+    --color-sidebar: transparent !important;
+    --ui-terminal-surface-background: #0d2a4d !important;
+    --ui-widget-surface-background: rgba(255, 255, 255, 0.14) !important;
+  }
+
+  /* 2. 全窗口 + 侧栏 + 聊天区 + 终端：统一蓝色拟态玻璃背景与多重光斑 */
+  html, body, #root, [data-contrib-shell],
+  [data-slot='aui_thread-viewport'],
+  [data-slot='sidebar-container'],
+  [data-slot='sidebar-inner'],
+  [data-sidebar='sidebar'],
+  [data-slot='sidebar'],
+  [data-slot='sidebar-wrapper'],
+  aside[aria-label*='right' i],
+  aside[aria-label*='侧栏' i],
+  aside.border-l,
+  [data-slot*='right-sidebar'],
+  [data-persistent-terminal],
+  [data-terminal],
+  [data-terminal-slot],
+  [class*='bg-(--ui-terminal-surface-background)'],
+  [class*='group/rail'],
+  div[aria-label='终端'],
+  div[aria-label='Terminals'],
+  .xterm,
+  .xterm-viewport,
+  .xterm-screen {
+    background:
+      radial-gradient(650px 350px at 10% 5%, rgba(99, 102, 241, 0.22), transparent 70%),
+      radial-gradient(850px 420px at 50% -8%, rgba(56, 189, 248, 0.26), transparent 65%),
+      radial-gradient(950px 500px at 88% -5%, rgba(96, 165, 250, 0.36), transparent 60%),
+      radial-gradient(700px 450px at 62% 48%, rgba(37, 99, 235, 0.22), transparent 65%),
+      radial-gradient(750px 400px at 94% 96%, rgba(59, 130, 246, 0.28), transparent 60%),
+      radial-gradient(800px 480px at -5% 105%, rgba(29, 78, 216, 0.40), transparent 60%),
+      linear-gradient(165deg, #092038 0%, #0e2e54 48%, #16467d 100%) !important;
+    background-attachment: fixed !important;
+    background-color: #0d2a4d !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #e2e8f0;
+  }
+
+  /* 3. 透明过渡容器与文字平铺区域 */
+  [data-slot='aui_thread-content'],
+  main, section,
+  [data-slot='sidebar-inset'],
+  [data-slot='sidebar-header'],
+  [data-slot='sidebar-content'],
+  [data-slot='sidebar-footer'],
+  [data-slot='sidebar-rail'],
+  :is(header, [role='banner'], [data-slot*='titlebar'], [data-slot*='tablist']),
+  [data-slot='sidebar'] :is([data-sidebar='menu-button'], [data-sidebar='menu-item'], .group, [class*='card'], [data-slot*='card'], .row-hover, [data-row-actions], div, button),
+  aside :is(.group\/row, [data-tree-group], div, span, button, h2, h3),
+  :is([data-slot='code-card'], [data-slot='terminal-output'], .status-row, [data-slot*='disclosure']),
+  [data-overlay-surface] :is([data-slot='sidebar-inset'], main, section, nav, aside),
+  :is([data-slot='composer-root'], [data-slot='composer-dock'], [data-slot='aui_thread-composer'], .composer-dock) {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  /* 侧栏与面板交互状态 */
+  :is([data-slot='code-card'], [data-slot='terminal-output'], .status-row, [data-slot*='disclosure'], aside .group\/row) {
+    color: #cbd5e1 !important;
+  }
+  [data-slot='sidebar'] [data-sidebar='menu-button']:hover,
+  [data-slot='sidebar'] .row-hover:hover,
+  aside .group\/row:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
+  }
+  [data-slot='sidebar'] [data-sidebar='menu-button'][data-active='true'],
+  [data-slot='sidebar'] .row-hover[aria-selected='true'],
+  aside .group\/row[aria-selected='true'] {
+    background: rgba(59, 130, 246, 0.28) !important;
+    color: #ffffff !important;
+  }
+
+  /* 代码块与命令行：右侧预留 52px 安全走廊，彻底杜绝复制代码按钮与文本重叠 */
+  :is([data-slot='code-card'], [data-slot='code-card-body']) pre,
+  [data-slot='code-card'] pre,
+  .aui-shiki,
+  .shiki {
+    padding-right: 52px !important;
+  }
+
+  /* 4. 设置页面：实体不透明蓝色拟态玻璃风 */
+  [data-overlay-surface] [data-glass-raised],
+  [data-overlay-surface] {
+    background:
+      radial-gradient(1100px 550px at 85% -10%, rgba(96, 165, 250, 0.35), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(37, 99, 235, 0.40), transparent 62%),
+      linear-gradient(165deg, #0a2540 0%, #10345f 52%, #1a4a8a 100%) !important;
+    border: 1px solid rgba(147, 197, 253, 0.25) !important;
+    box-shadow: 0 16px 48px rgba(2, 18, 44, 0.65) !important;
+  }
+
+  /* 设置页面表单控件：选项、输入、开关清晰化 */
+  [data-overlay-surface] :is([data-slot='select-trigger'], [data-slot='input'], input:not([type='checkbox']):not([type='radio'])) {
+    background: rgba(14, 38, 70, 0.75) !important;
+    border: 1px solid rgba(147, 197, 253, 0.35) !important;
+    border-radius: 6px !important;
+    color: #ffffff !important;
+    padding-inline: 8px !important;
+  }
+  [data-overlay-surface] :is([data-slot='select-trigger'], [data-slot='input']):hover {
+    border-color: rgba(147, 197, 253, 0.65) !important;
+  }
+  [data-slot='switch'] {
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    background: rgba(16, 40, 72, 0.85) !important;
+  }
+  [data-slot='switch'][data-state='checked'] {
+    background: #3b82f6 !important;
+    border-color: #60a5fa !important;
+  }
+  [data-slot='switch-thumb'] {
+    background: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  /* Tooltip 浮动文字标签：醒目高对比度提示 */
+  .tooltip-bubble, [data-slot='tooltip-content'] {
+    background: #0d223f !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(147, 197, 253, 0.45) !important;
+    border-radius: 6px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55) !important;
+    font-size: 11px !important;
+    padding: 4px 8px !important;
+    opacity: 1 !important;
+    z-index: 99999 !important;
+  }
+
+  /* 5. 底部输入框：单层结构 + 聚焦呼吸光晕 */
+  [data-slot='composer-surface'] {
+    background:
+      radial-gradient(400px 140px at 50% 0%, rgba(147, 197, 253, 0.14), transparent 70%),
+      rgba(255, 255, 255, 0.05) !important;
+    backdrop-filter: blur(16px) saturate(1.3) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(1.3) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: 12px !important;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.20), 0 4px 20px rgba(2, 18, 44, 0.25) !important;
+    outline: none !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  [data-slot='composer-surface']:focus-within {
+    background:
+      radial-gradient(450px 160px at 50% 0%, rgba(96, 165, 250, 0.28), transparent 70%),
+      rgba(10, 32, 64, 0.65) !important;
+    border-color: rgba(96, 165, 250, 0.70) !important;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.38), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+  }
+  :is(textarea, input:not([type='checkbox']):not([type='radio'])) {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    color: #ffffff !important;
+    caret-color: #60a5fa !important;
+  }
+  ::placeholder {
+    color: rgba(219, 234, 254, 0.60) !important;
+  }
+
+  /* 输入框主操作按钮（语音对话/转文字、发送、停止）：确保白色底圆内图标清晰可见 */
+  button:is([class*='bg-foreground'], [class*='text-background']) {
+    --background: #0d2a4d !important;
+    --color-background: #0d2a4d !important;
+    color: #0d2a4d !important;
+  }
+  button:is([class*='bg-foreground'], [class*='text-background']) :is(svg, i, .codicon) {
+    color: #0d2a4d !important;
+    stroke: currentColor !important;
+  }
+  button:is([class*='bg-foreground'], [class*='text-background']) .fill-current {
+    fill: #0d2a4d !important;
+  }
+
+  /* 6. 对话气泡与头像 */
+  /* 左侧（AI / 助手）：半透明白玻璃气泡 */
+  [data-slot='aui_assistant-message-root'] {
+    position: relative;
+    overflow: visible !important;
+    padding-left: 52px;
+    margin-bottom: 12px;
+    border: none !important;
+    background: transparent !important;
+  }
+  [data-slot='aui_assistant-message-root']::before {
+    content: '';
+    position: absolute;
+    left: 4px; top: 0;
+    width: 38px; height: 38px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEwAAABMCAYAAADHl1ErAAAP8klEQVR42u2cCdRNVRTHQ0WGDBWFEhIZCiGRDCmaJ6RUK1NoUhlCNMgQGkzRIIqIpAkVGs3LkLE5UobMMleG3fud9c7Xece999137/1eajlrneXz3rvvnfO/5+z93/+9zz3uuGAtT6xXiPWmsd4n1pfF+qFYl6O0H4qPsU98zBXic8jUliXWq8V6v1hfEOs7j2KAkvWd8Tn0i88pS9RgVY31sbG+9z8MklvfG59b1SiAyhfrA2J9l/1DZ5xxhlSvXl2aNWsmDz74oHTp0uWo7oyRsTLm008/3Qm4XfG55gsKVplY/9L80hNPPFEaNmwor7/+unz//ffy559/yn+tMWbGzhyYC3OygPsyPveUwVppflGNGjVk6tSpcujQIfm/NObCnJibBdrKVEArHesr9MU5c+aUxx9/XHbv3i3/18bcmCNzNUBbEcfCs+U3t2GePHnkzTffTPsEDh48qLYO/fDhw2n7XebKnK3tmd8LsAHmyspMsAACQDZs2CCff/65DBo0SO6//35p1KiRNGjQQOrVqyeXXXaZXHvttXL33XfL888/rz73+++/Zzpo1kob4EUdMrgVSzQz2r59+2Tt2rWyYsUKmTVrlowfP1769+8vHTt2lBtuuEHOOeccVwpw0kknybnnnqsAfP/992XHjh2ZMkbmbnG2IyhH1lgfZxr4qG3WL7/8Ih999JGMHDlSdSa8ZMkS2b59e8Lntm3bJh9//LE0adLEyYMl9AsuuEAGDBggmzdvjtymWY5gbByjhNWlSGn27Nnlww8/jOzHv/jiC7n99tulRIkSUqBAAfX9eiD8zeuAM2XKlCPs1QcffKBWVDLyWbZsWRk3blykoIGBMVawqWIC1l//+BVXXKGMbti2YMECRRTZRn4Y9/HHHy8333yzfP311wnf8+2330rNmjWTXp81a1Zp06aNbN26NTLHAxbGb/Q3A+mFvJglSxYZPXp0qB/67bffpH379pI3b95AoUqRIkVk4sSJCd+5fv16qVWrlq/rcRY///xzJKCBBZjEv3uBDtjL69CHkOHHH38M/APYJbZH2PgOLzVw4MCE7161apWULl3a1/VVqlSRH374ITRgYGGEUbviWCm5Q7148cUXBwp39u7dK717906wT2E7d/bVV19N+J1p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") center/cover no-repeat;
+  }
+  [data-slot='aui_assistant-message-root']::after {
+    content: '';
+    position: absolute;
+    left: 47px; top: 13px;
+    width: 0; height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-right: 5px solid rgba(255, 255, 255, 0.16);
+  }
+  [data-slot='aui_assistant-message-content'] {
+    background:
+      radial-gradient(320px 120px at 15% 0%, rgba(255, 255, 255, 0.22), transparent 70%),
+      rgba(255, 255, 255, 0.13) !important;
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    color: #f8fafc !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    border-radius: 10px !important;
+    padding: 10px 14px !important;
+    width: fit-content;
+    min-height: 38px;
+    max-width: min(82%, calc(100% - 90px));
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    line-height: 1.65;
+    box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.30), 0 4px 20px rgba(0, 16, 40, 0.25) !important;
+  }
+  [data-slot='aui_assistant-message-content'] * { color: inherit; }
+  [data-slot='aui_assistant-message-content'] a { color: #93c5fd; }
+  [data-slot='aui_assistant-message-content'] :is(code, pre) {
+    background: rgba(5, 20, 45, 0.50) !important;
+    color: #dbeafe !important;
+    border: none !important;
+  }
+
+  /* 右侧（用户）：半透明玻璃蓝气泡，靠右 */
+  [data-slot='aui_user-message-root'] {
+    position: relative;
+    align-items: flex-end;
+    padding-right: 68px;
+    margin-bottom: 12px;
+    border: none !important;
+    background: transparent !important;
+  }
+  [data-slot='aui_user-message-root']::before {
+    content: '';
+    position: absolute;
+    right: 20px; top: 0;
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: url("data:image/jpeg;base64,") center/cover no-repeat;
+    z-index: 41;
+  }
+  [data-slot='aui_user-message-root']::after {
+    content: '';
+    position: absolute;
+    right: 63px; top: 10px;
+    width: 0; height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 5px solid rgba(59, 130, 246, 0.50);
+    z-index: 41;
+  }
+  .composer-human-message {
+    position: relative;
+    margin-top: 0 !important;
+    margin-left: auto !important;
+    background:
+      radial-gradient(280px 100px at 85% 0%, rgba(191, 219, 254, 0.35), transparent 70%),
+      rgba(59, 130, 246, 0.45) !important;
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    color: #ffffff !important;
+    border: 1px solid rgba(190, 220, 255, 0.40) !important;
+    border-radius: 10px !important;
+    padding: 6px 14px !important;
+    width: fit-content !important;
+    min-height: 30px !important;
+    max-width: min(82%, calc(100% - 90px)) !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    white-space: pre-wrap !important;
+    line-height: 1.45 !important;
+    box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.38), 0 4px 20px rgba(10, 38, 80, 0.30) !important;
+  }
+  .composer-human-message * { color: inherit !important; }
+  .composer-human-message a { color: #bfdbfe !important; }
+
+  /* 终止/恢复检查点选项：独立移至用户气泡外部左侧，文字与按钮互不挤占 */
+  [data-context-menu-skip] {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    gap: 8px !important;
+    position: relative !important;
+  }
+  [data-context-menu-skip] > div:is([class*='absolute'], .absolute) {
+    position: static !important;
+    inset: auto !important;
+    order: -1 !important;
+    opacity: 0.85 !important;
+    pointer-events: auto !important;
+    transition: opacity 0.2s ease !important;
+  }
+  [data-context-menu-skip]:hover > div:is([class*='absolute'], .absolute) {
+    opacity: 1 !important;
+  }
+  [data-context-menu-skip] > div button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 22px !important;
+    height: 22px !important;
+    padding: 0 !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    border-radius: 6px !important;
+    color: #93c5fd !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    transition: all 0.2s ease !important;
+  }
+  [data-context-menu-skip] > div button:hover {
+    background: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+    border-color: rgba(147, 197, 253, 0.60) !important;
+    transform: scale(1.08);
+  }
+  [data-context-menu-skip] > div button svg {
+    width: 10px !important;
+    height: 10px !important;
+    fill: currentColor !important;
+  }
+  [data-context-menu-skip] > div button :is(i, .codicon) {
+    font-size: 12px !important;
+    color: currentColor !important;
+  }
+
+  .checkpoint-container {
+    margin-top: 4px !important;
+    justify-content: flex-end !important;
+  }
+
+  /* 7. 终端界面特定增强 */
+  /* xterm 画布：0.88 透明度透出背后的固定拟态蓝光渐变，彻底消除黑块 */
+  .xterm canvas,
+  .xterm-screen canvas {
+    opacity: 0.88 !important;
+  }
+  /* 终端右侧标签栏 (Rail) 与快捷操作按钮：高质感冰蓝微边框 */
+  :is([class*='group/rail'], div[aria-label='终端'], div[aria-label='Terminals']) {
+    border-left: 1px solid rgba(147, 197, 253, 0.20) !important;
+  }
+  :is([class*='group/rail'], div[aria-label='终端']) button {
+    color: #93c5fd !important;
+    border-radius: 6px !important;
+  }
+  :is([class*='group/rail'], div[aria-label='终端']) button:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+  }
+  :is([class*='group/rail'], div[aria-label='终端']) :is([aria-pressed='true'], .text-foreground) {
+    background: rgba(59, 130, 246, 0.35) !important;
+    color: #ffffff !important;
+  }
+
+  /* 8. 文件交付界面：统一为 Hermes 对话气泡风格 */
+  :is([data-slot='aui_changed-files'], [data-slot='aui_listing-card'], [data-slot*='artifact']) {
+    background:
+      radial-gradient(350px 120px at 15% 0%, rgba(255, 255, 255, 0.22), transparent 70%),
+      rgba(255, 255, 255, 0.13) !important;
+    backdrop-filter: blur(16px) saturate(1.4) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(1.4) !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    border-radius: 10px !important;
+    box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.30), 0 4px 20px rgba(0, 16, 40, 0.25) !important;
+    padding: 10px 14px !important;
+  }
+  [data-slot='aui_changed-files'] :is(span, button:hover) { color: #ffffff !important; }
+  [data-slot='aui_changed-files'] button { color: #93c5fd !important; }
+  [data-slot='aui_changed-files'] .row-hover { border-radius: 6px !important; }
+  [data-slot='aui_changed-files'] .row-hover:hover { background: rgba(255, 255, 255, 0.12) !important; }
+
+  /* 9. 全局玻璃拟态胶囊滚动条 */
+  ::-webkit-scrollbar { width: 6px !important; height: 6px !important; }
+  ::-webkit-scrollbar-track { background: transparent !important; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(147, 197, 253, 0.22) !important;
+    border-radius: 9999px !important;
+    transition: background-color 0.2s ease;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(147, 197, 253, 0.45) !important; }

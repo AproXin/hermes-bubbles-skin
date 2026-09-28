@@ -1,0 +1,33 @@
+{
+  "name": "hermes-bubbles-theme",
+  "displayName": "Hermes Bubbles Blue Glass",
+  "description": "High-contrast deep blue glassmorphism theme inspired by the Hermes agent bubbles skin.",
+  "version": "0.0.1",
+  "publisher": "yuanxxx",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Themes"
+  ],
+  "keywords": [
+    "hermes",
+    "bubbles",
+    "blue glass",
+    "glassmorphism",
+    "dark theme"
+  ],
+  "contributes": {
+    "themes": [
+      {
+        "label": "Hermes Bubbles Blue Glass",
+        "uiTheme": "vs-dark",
+        "path": "./themes/bubbles-color-theme.json"
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yuanxxx/hermes-bubbles-theme"
+  }
+}
