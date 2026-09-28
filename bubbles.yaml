@@ -319,8 +319,7 @@ customCSS: |
   }
   .composer-human-message {
     position: relative;
-    margin-top: 0 !important;
-    margin-left: auto !important;
+    margin: 0 !important;
     background:
       radial-gradient(280px 100px at 85% 0%, rgba(191, 219, 254, 0.35), transparent 70%),
       rgba(59, 130, 246, 0.45) !important;
@@ -362,61 +361,73 @@ customCSS: |
   .composer-human-message * { color: inherit !important; }
   .composer-human-message a { color: #bfdbfe !important; }
 
-  /* 终止/恢复检查点选项：紧靠气泡左侧对齐，垂直居中 */
+  /* 终止/恢复检查点选项：严密紧贴气泡左侧，垂直绝对居中 */
   [data-context-menu-skip] {
     display: flex !important;
-    flex-direction: row-reverse !important;
+    flex-direction: row !important;
+    justify-content: flex-end !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 8px !important;
     position: relative !important;
     width: 100% !important;
   }
-  /* 气泡保持 fit-content，不拉伸 */
-  [data-context-menu-skip] > button.composer-human-message,
-  [data-context-menu-skip] > [data-slot='aui_edit'] {
+  /* 气泡消除 auto 边距，设为 order: 2 位于右侧 */
+  [data-context-menu-skip] > :is(button, .composer-human-message, [data-slot='aui_edit']) {
+    margin: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
     flex: 0 0 auto !important;
+    order: 2 !important;
   }
-  /* 操作按钮容器：从 absolute 变为 static，紧贴气泡左侧 */
-  [data-context-menu-skip] > div:is([class*='absolute'], .absolute) {
+  /* 操作按钮容器：设为 order: 1 紧贴气泡左侧，常态清晰可见（非全隐） */
+  [data-context-menu-skip] > :is(div, [class*='absolute']):not(.composer-human-message):not(button) {
     position: static !important;
     inset: auto !important;
     flex: 0 0 auto !important;
-    opacity: 0 !important;
+    order: 1 !important;
+    margin: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    opacity: 0.85 !important;
     pointer-events: auto !important;
-    transition: opacity 0.2s ease !important;
+    transition: all 0.2s ease !important;
   }
-  [data-context-menu-skip]:hover > div:is([class*='absolute'], .absolute),
-  .group\/user-message:hover [data-context-menu-skip] > div:is([class*='absolute'], .absolute) {
+  [data-context-menu-skip]:hover > :is(div, [class*='absolute']):not(.composer-human-message):not(button),
+  .group\/user-message:hover [data-context-menu-skip] > :is(div, [class*='absolute']):not(.composer-human-message):not(button) {
     opacity: 1 !important;
   }
-  [data-context-menu-skip] > div button {
+  [data-context-menu-skip] > :is(div, [class*='absolute']) button {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     width: 24px !important;
     height: 24px !important;
     padding: 0 !important;
-    background: rgba(255, 255, 255, 0.10) !important;
-    border: 1px solid rgba(255, 255, 255, 0.22) !important;
-    border-radius: 8px !important;
+    background: rgba(13, 42, 77, 0.70) !important;
+    border: 1px solid rgba(147, 197, 253, 0.35) !important;
+    border-radius: 6px !important;
     color: #93c5fd !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
     backdrop-filter: blur(8px) !important;
     -webkit-backdrop-filter: blur(8px) !important;
     transition: all 0.2s ease !important;
   }
-  [data-context-menu-skip] > div button:hover {
-    background: rgba(255, 255, 255, 0.22) !important;
+  [data-context-menu-skip] > :is(div, [class*='absolute']) button:hover {
+    background: rgba(30, 64, 175, 0.80) !important;
     color: #ffffff !important;
-    border-color: rgba(147, 197, 253, 0.55) !important;
-    transform: scale(1.06);
+    border-color: rgba(147, 197, 253, 0.75) !important;
+    transform: scale(1.08);
   }
-  [data-context-menu-skip] > div button svg {
-    width: 11px !important;
-    height: 11px !important;
+  [data-context-menu-skip] > :is(div, [class*='absolute']) button svg {
+    width: 10px !important;
+    height: 10px !important;
     fill: currentColor !important;
   }
-  [data-context-menu-skip] > div button :is(i, .codicon) {
-    font-size: 13px !important;
+  [data-context-menu-skip] > :is(div, [class*='absolute']) button :is(i, .codicon) {
+    font-size: 12px !important;
     color: currentColor !important;
   }
 
