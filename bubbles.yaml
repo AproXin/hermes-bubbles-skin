@@ -168,18 +168,41 @@ customCSS: |
     z-index: 99999 !important;
   }
 
-  /* 5. 底部输入框：单层结构 + 聚焦呼吸光晕 */
+  /* 5. 底部输入框：Codex 风格圆润高输入区 */
+  [data-slot='composer-root'],
+  [data-slot='composer-root'] > div,
+  [data-slot='composer-surface'],
+  [data-slot='composer-surface'] > [aria-hidden] {
+    border-radius: 21px !important;
+  }
   [data-slot='composer-surface'] {
+    min-height: 98px !important;
     background:
       radial-gradient(400px 140px at 50% 0%, rgba(147, 197, 253, 0.14), transparent 70%),
       rgba(255, 255, 255, 0.05) !important;
     backdrop-filter: blur(16px) saturate(1.3) !important;
     -webkit-backdrop-filter: blur(16px) saturate(1.3) !important;
-    border: 1px solid rgba(255, 255, 255, 0.18) !important;
-    border-radius: 12px !important;
-    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.20), 0 4px 20px rgba(2, 18, 44, 0.25) !important;
+    border: 0.5px solid rgba(255, 255, 255, 0.18) !important;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.20), 0 4px 24px rgba(2, 18, 44, 0.30) !important;
     outline: none !important;
+    overflow: hidden !important;
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  [data-slot='composer-surface'] > [aria-hidden] {
+    background: transparent !important;
+    backdrop-filter: none !important;
+  }
+  [data-slot='composer-root'] > .pointer-events-none.absolute.inset-0 {
+    background: transparent !important;
+  }
+  [data-slot='composer-fade'] {
+    padding: 11px 7px 7px !important;
+    gap: 0 !important;
+  }
+  [data-slot='composer-surface'] [data-slot='composer-rich-input'] {
+    min-height: 50px !important;
+    max-height: 240px !important;
+    padding-top: 2px !important;
   }
   [data-slot='composer-surface']:focus-within {
     background:
@@ -187,6 +210,14 @@ customCSS: |
       rgba(10, 32, 64, 0.65) !important;
     border-color: rgba(96, 165, 250, 0.70) !important;
     box-shadow: 0 0 20px rgba(59, 130, 246, 0.38), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+  }
+  /* Composer 按钮：圆形统一 28px */
+  [data-slot='composer-surface'] button:is([aria-label*='Send' i], [aria-label*='发送' i], [aria-label*='Voice' i], [aria-label*='语音' i], [aria-label*='dictation' i]) {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    border-radius: 9999px !important;
+    padding: 0 !important;
   }
   :is(textarea, input:not([type='checkbox']):not([type='radio'])) {
     background: transparent !important;
@@ -344,54 +375,61 @@ customCSS: |
   .composer-human-message * { color: inherit !important; }
   .composer-human-message a { color: #bfdbfe !important; }
 
-  /* 终止/恢复检查点选项：独立移至用户气泡外部左侧，文字与按钮互不挤占 */
+  /* 终止/恢复检查点选项：紧靠气泡左侧对齐，垂直居中 */
   [data-context-menu-skip] {
     display: flex !important;
-    flex-direction: row !important;
-    justify-content: flex-end !important;
+    flex-direction: row-reverse !important;
     align-items: center !important;
-    gap: 8px !important;
+    gap: 6px !important;
     position: relative !important;
+    width: 100% !important;
   }
+  /* 气泡保持 fit-content，不拉伸 */
+  [data-context-menu-skip] > button.composer-human-message,
+  [data-context-menu-skip] > [data-slot='aui_edit'] {
+    flex: 0 0 auto !important;
+  }
+  /* 操作按钮容器：从 absolute 变为 static，紧贴气泡左侧 */
   [data-context-menu-skip] > div:is([class*='absolute'], .absolute) {
     position: static !important;
     inset: auto !important;
-    order: -1 !important;
-    opacity: 0.85 !important;
+    flex: 0 0 auto !important;
+    opacity: 0 !important;
     pointer-events: auto !important;
     transition: opacity 0.2s ease !important;
   }
-  [data-context-menu-skip]:hover > div:is([class*='absolute'], .absolute) {
+  [data-context-menu-skip]:hover > div:is([class*='absolute'], .absolute),
+  .group\/user-message:hover [data-context-menu-skip] > div:is([class*='absolute'], .absolute) {
     opacity: 1 !important;
   }
   [data-context-menu-skip] > div button {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    width: 22px !important;
-    height: 22px !important;
+    width: 24px !important;
+    height: 24px !important;
     padding: 0 !important;
-    background: rgba(255, 255, 255, 0.12) !important;
-    border: 1px solid rgba(255, 255, 255, 0.25) !important;
-    border-radius: 6px !important;
+    background: rgba(255, 255, 255, 0.10) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    border-radius: 8px !important;
     color: #93c5fd !important;
     backdrop-filter: blur(8px) !important;
     -webkit-backdrop-filter: blur(8px) !important;
     transition: all 0.2s ease !important;
   }
   [data-context-menu-skip] > div button:hover {
-    background: rgba(255, 255, 255, 0.25) !important;
+    background: rgba(255, 255, 255, 0.22) !important;
     color: #ffffff !important;
-    border-color: rgba(147, 197, 253, 0.60) !important;
-    transform: scale(1.08);
+    border-color: rgba(147, 197, 253, 0.55) !important;
+    transform: scale(1.06);
   }
   [data-context-menu-skip] > div button svg {
-    width: 10px !important;
-    height: 10px !important;
+    width: 11px !important;
+    height: 11px !important;
     fill: currentColor !important;
   }
   [data-context-menu-skip] > div button :is(i, .codicon) {
-    font-size: 12px !important;
+    font-size: 13px !important;
     color: currentColor !important;
   }
 
