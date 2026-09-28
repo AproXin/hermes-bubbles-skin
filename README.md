@@ -5,6 +5,35 @@
 
 A modern, high-contrast **Full-Window Blue Glassmorphism Skin** tailored for [Hermes Agent](https://github.com/NousResearch/hermes-agent) (Desktop & CLI) and VS Code.
 
+<p align="center">
+  <img src="assets/home-preview.png" alt="Hermes Bubbles Skin Preview" width="100%" />
+</p>
+
+---
+
+## 📸 Screenshots (界面预览)
+
+### 1. 全局氛围与主页 (Home View & Ambient Lighting)
+深邃黑曜石蓝玻璃底板搭配 6 重环境光斑微光漫反射，呈现沉浸式通透与层次感。
+
+<p align="center">
+  <img src="assets/home-preview.png" alt="Home View" width="95%" />
+</p>
+
+### 2. 拟态气泡与紧凑会话 (Chat View & Frosted Glass Bubbles)
+白雾霜玻 AI 气泡 + 蓝宝石渐变用户气泡；复原/中断按键外置左侧居中，告别气泡内部拥挤；集成式拟态蓝终端与右侧 Ledger 面板。
+
+<p align="center">
+  <img src="assets/chat-preview.png" alt="Chat View" width="95%" />
+</p>
+
+### 3. 外观与窗口设置 (Window & Appearance Settings)
+全面深度兼容 Hermes 原生窗口透明度、色调、模糊及阴影控制面板，层次分明，毛玻璃质感温润通透。
+
+<p align="center">
+  <img src="assets/settings-preview.png" alt="Settings View" width="95%" />
+</p>
+
 ---
 
 ## ✨ Features (视觉特性)
