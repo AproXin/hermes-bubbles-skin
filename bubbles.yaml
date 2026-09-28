@@ -319,7 +319,27 @@ customCSS: |
     overflow-wrap: anywhere !important;
     white-space: pre-wrap !important;
     line-height: 1.45 !important;
+    overflow: visible !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
     box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.38), 0 4px 20px rgba(10, 38, 80, 0.30) !important;
+  }
+  .composer-human-message::-webkit-scrollbar,
+  .composer-human-message *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  .composer-human-message:is(:focus, :focus-visible, :active, :focus-within) {
+    outline: none !important;
+    box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.38), 0 4px 20px rgba(10, 38, 80, 0.30) !important;
+  }
+  :is([data-slot='aui_edit-composer-root'], .composer-human-message-container, .human-execution-message-top) {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
   }
   .composer-human-message * { color: inherit !important; }
   .composer-human-message a { color: #bfdbfe !important; }
