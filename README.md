@@ -123,7 +123,9 @@ node scripts/render-preview.js         # 用真实三层样式表离线渲染预
 
 两类套件互补：**9 个**会在无头浏览器里装配「构建 CSS + live customCSS + PLUGIN_CSS」三层样式表，断言**实测计算样式与像素**（而不是比对 CSS 文本）；**17 个**用 mock DOM 跑插件 JS 的行为（打标、折叠、生命周期）。缺少 Hermes 检出或浏览器时，浏览器类套件会自行 SKIP 而不是假绿。
 
-生成物说明：根目录 `plugin.js` 是 README 安装命令要拉取的分发产物（由 `sync` 从 `src/plugin.js` 生成，勿手改）；`desktop/` 只是历史副本，运行时不会加载。
+生成物说明：根目录 `plugin.js` 是 README 安装命令要拉取的分发产物（由 `sync` 从 `src/plugin.js` 生成，勿手改）。
+
+历史文档：[`docs/reports/`](./docs) 下是各阶段的实现与审计记录，属于当时快照；索引见 [`docs/README.md`](./docs/README.md)。
 
 ---
 

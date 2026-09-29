@@ -861,18 +861,6 @@ html[data-bubbles-skin='true'] [data-slot='composer-status-stack'][data-bubbles-
   overflow: hidden !important;
 }
 
-/* Layout only — the single paint owner for this box is section 5b below. Declaring
-   the frame in two places makes the winner depend on rule order, which is the trap
-   this skin keeps hitting. */
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] {
-  display: flex !important;
-  flex-direction: column !important;
-  min-height: 0 !important;
-  overflow: hidden !important;
-  box-sizing: border-box !important;
-  max-width: 100% !important;
-}
-
 /* The outer stack is only a flex scroller (status-stack/index.tsx:321). It must
    not draw a frame — doing so put a box around the box, 20px wider than the card
    because the card carries mx-2. */
@@ -899,8 +887,10 @@ html[data-bubbles-skin='true'] :is([data-slot='composer-root'], [data-slot='comp
   -webkit-backdrop-filter: none !important;
 }
 
-/* The one Tasks card: the section itself. Rounded on all four corners, sapphire
-   stroke, translucent #0d2a4d fill, and the page's own light spots pinned with
+/* The one Tasks card: the section itself, and the ONLY block that declares this
+   box — geometry and paint together. Two blocks for one element meant the winner
+   depended on rule order. Rounded on all four corners, sapphire stroke,
+   translucent #0d2a4d fill, and the page's own light spots pinned with
    background-attachment: fixed so it reads as glass on the same field as the
    composer rather than a dark slab floating over it. */
 html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] {

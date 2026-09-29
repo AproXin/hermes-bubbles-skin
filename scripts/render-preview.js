@@ -16,8 +16,12 @@
  * renderer (apps/desktop/src), not invented: a fixture that drifts from the real
  * DOM proves nothing.
  *
- * Caveat printed with every run: codicon glyphs may not resolve offline, so icons
- * are approximate while geometry, colour and typography are real.
+ * Caveats printed with every run: codicon glyphs may not resolve offline, so icons
+ * are approximate while geometry, colour and typography are real. And the PNG bytes
+ * are NOT stable — two runs of the same CSS can differ by a few hundred bytes
+ * (measured: 192890 / 192890 / 192833 for one unchanged stylesheet), so never use
+ * a byte or hash diff of a preview as a regression signal. The measured-style and
+ * pixel tests under test/ are the arbiter; this is for the eye.
  */
 
 const fs = require('fs')

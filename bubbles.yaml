@@ -43,7 +43,6 @@ customCSS: |
   [data-slot='sidebar-container'], [data-slot='sidebar-inner'], [data-sidebar='sidebar'],
   [data-slot='sidebar'], [data-slot='sidebar-wrapper'], aside[aria-label*='right' i],
   aside[aria-label*='侧栏' i], aside.border-l, [data-slot*='right-sidebar'],
-  [data-persistent-terminal], [data-terminal], [data-terminal-slot],
   [class*='bg-(--ui-terminal-surface-background)'], [class*='group/rail'],
   div[aria-label='终端'], div[aria-label='Terminals'], .xterm, .xterm-viewport, .xterm-screen {
     background:

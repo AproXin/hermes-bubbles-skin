@@ -3,7 +3,7 @@
  * scripts/sync.js
  *
  * Compiles and synchronizes the canonical source `src/plugin.js`
- * into `plugin.js`, `desktop/plugin.js`, and the local Hermes desktop plugins folder.
+ * into `plugin.js` and the local Hermes desktop plugins folder.
  *
  * Also deploys the skin's own stylesheet: this repo's `bubbles.yaml` is the
  * canonical copy of `~/.hermes/skins/bubbles.yaml`, the file Hermes injects as
@@ -23,8 +23,6 @@ const { blockScalar, customCssCap } = require('./lib/sheets')
 const ROOT_DIR = path.resolve(__dirname, '..')
 const SRC_FILE = path.join(ROOT_DIR, 'src', 'plugin.js')
 const TARGET_ROOT_FILE = path.join(ROOT_DIR, 'plugin.js')
-const TARGET_DESKTOP_DIR = path.join(ROOT_DIR, 'desktop')
-const TARGET_DESKTOP_FILE = path.join(TARGET_DESKTOP_DIR, 'plugin.js')
 
 const SKIN_NAME = 'bubbles'
 const SKIN_SOURCE_FILE = path.join(ROOT_DIR, `${SKIN_NAME}.yaml`)
@@ -57,14 +55,7 @@ const outputContent = generatedBanner + sourceContent
 fs.writeFileSync(TARGET_ROOT_FILE, outputContent, 'utf8')
 console.log(`[sync] Wrote ${TARGET_ROOT_FILE}`)
 
-// 2. Write desktop/plugin.js
-if (!fs.existsSync(TARGET_DESKTOP_DIR)) {
-  fs.mkdirSync(TARGET_DESKTOP_DIR, { recursive: true })
-}
-fs.writeFileSync(TARGET_DESKTOP_FILE, outputContent, 'utf8')
-console.log(`[sync] Wrote ${TARGET_DESKTOP_FILE}`)
-
-// 3. Sync to local runtime if ~/.hermes/desktop-plugins exists
+// 2. Sync to local runtime if ~/.hermes/desktop-plugins exists
 if (fs.existsSync(path.dirname(LOCAL_HERMES_PLUGIN_DIR))) {
   if (!fs.existsSync(LOCAL_HERMES_PLUGIN_DIR)) {
     fs.mkdirSync(LOCAL_HERMES_PLUGIN_DIR, { recursive: true })
@@ -77,7 +68,7 @@ if (fs.existsSync(path.dirname(LOCAL_HERMES_PLUGIN_DIR))) {
   console.log(`[sync] Deployed to local Hermes runtime: ${LOCAL_HERMES_PLUGIN_DIR}`)
 }
 
-// 4. Deploy the skin's customCSS.
+// 3. Deploy the skin's customCSS.
 //
 // Two gates, each one standing in for a failure that used to be invisible:
 //   - the gateway slices customCSS at a fixed length, so an oversized file
