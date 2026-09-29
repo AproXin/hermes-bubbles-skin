@@ -1,0 +1,3489 @@
+/**
+ * Hermes Bubbles Skin — Desktop Plugin (Phase 3 Complete Agent Loop Edition)
+ *
+ * Source: src/plugin.js
+ * DO NOT EDIT plugin.js or desktop/plugin.js DIRECTLY. Edit this source file,
+ * then run `node scripts/sync.js` to compile artifacts.
+ *
+ * Architecture:
+ * ├── 1. Constants, Styles & State (Scoped under html[data-bubbles-skin='true'])
+ * ├── 2. DOM Helpers & Storage
+ * ├── 3. Conversation Module (User Collapse, Assistant Deepening & Spacing)
+ * ├── 4. Thinking & Tool Call Scaffolding (Subordinate Visual Hierarchy)
+ * ├── 5. Task Module (Dynamic Header Counter, Pulse Animation, Isolated Scroll)
+ * ├── 6. Approval & Clarify UX Module (Frosted Glass Floating Cards, Action Hierarchy)
+ * ├── 7. Observer Module (Idempotent RAF Batching & Debug Stats)
+ * └── 8. Lifecycle & Registration (Zero-leak re-enable guarantee)
+ */
+
+// ============================================================================
+// 1. CONSTANTS, STYLES & STATE
+// ============================================================================
+
+const ID = 'hermes-bubbles-skin'
+const STYLE_ID = `${ID}-runtime-styles`
+const BUILD_ID = '5.1.0'
+const STORAGE_PREFIX = `${ID}:user-expand:`
+const CLAMP_LINE_THRESHOLD_PX = 110 // ~4-5 lines of text
+
+/* Session rows live in the chat sidebar and nowhere else. '.row-hover' is a shared
+ * utility used by ~11 other surfaces (right-sidebar file trees, cron, messaging,
+ * settings credential rows, capabilities catalog, session switcher, overlay panels,
+ * changed-files card, and the composer's own status-row), so an unscoped probe
+ * stamped all of them: sidebar row chrome got painted onto unrelated lists, and
+ * hovering a file row opened the session preview.
+ * components/ui/sidebar.tsx:150 is the only renderer of data-slot="sidebar", and
+ * only app/chat/sidebar/* imports that primitive — so the ancestor is a real
+ * boundary, not a guess. The gate is an explicit closest() rather than a descendant
+ * selector: the picker and the hover handlers run in a MutationObserver hot path,
+ * and the audit suites drive them through a mock DOM whose matches() cannot parse
+ * combinators at all. */
+const SIDEBAR_SELECTOR = '[data-slot="sidebar"]'
+const SESSION_ROW_PROBE = '.row-hover, [data-row-actions]'
+
+/** The .row-hover shell for an element, but only when it sits in the sidebar. */
+const sessionRowShell = el => {
+  const shell = el?.classList?.contains('row-hover') ? el : el?.closest?.('.row-hover')
+  return shell && shell.closest?.(SIDEBAR_SELECTOR) ? shell : null
+}
+
+/** Also accepts an already-stamped row, so a hover still answers in the window
+ *  between the pointer event and the pass that stamps it. */
+const closestSessionRow = el => sessionRowShell(el) || el?.closest?.('[data-bubbles-session-row="true"]') || null
+
+let pluginStorage = null
+
+// Zero-overhead debugging metrics accessible via `window.__hermesBubblesSkinStats`
+const stats = {
+  observerCallbacks: 0,
+  enhancedMessages: 0,
+  taskRefreshes: 0,
+  toolRefreshes: 0,
+  toolGroupRefreshes: 0,
+  approvalRefreshes: 0,
+  clarifyRefreshes: 0,
+  sessionRefreshes: 0,
+  previewShows: 0,
+  lastBatchDurationMs: 0
+}
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__hermesBubblesSkinStats = stats
+}
+
+const PLUGIN_CSS = `
+/* ==========================================================================
+   Bubbles Desktop Plugin Phase 4 Runtime Styles
+   - Clean Transcript & Tool Collapse (Collapse, Never Delete)
+   - Consecutive Completed Tool Grouping & Interactive Toggle
+   - Robust Responsive Defenses: clamp(), overflow-wrap, max-width
+   - Full Keyboard Focus & Reduced-Motion Accessibility
+   Scoped under html[data-bubbles-skin='true']
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Conversation Spacing & Assistant Bubble Deepening
+   -------------------------------------------------------------------------- */
+html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'],
+html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] {
+  margin-top: 6px !important;
+  margin-bottom: 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  justify-content: flex-end !important;
+  align-self: flex-end !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* User Message & Edit Composer Flex Container Alignment */
+html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'] > [data-slot='aui_user-bubble-actions'],
+html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'] .human-message-with-todos-wrapper,
+html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'] .composer-human-message-container,
+html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .composer-human-message-container,
+html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .human-execution-message-top,
+html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] [data-slot='aui_user-message-root'] {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  justify-content: flex-end !important;
+  align-self: flex-end !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'] .composer-human-message,
+html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .composer-human-message,
+html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .ui-prompt-input__container {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  align-self: flex-end !important;
+  width: fit-content !important;
+  max-width: min(82%, calc(100% - 90px)) !important;
+  box-sizing: border-box !important;
+}
+
+/* Checkpoint & Context Action Buttons Container: Snugly attached to the left of user bubble */
+html[data-bubbles-skin='true'] [data-context-menu-skip] {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 8px !important;
+  position: relative !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+html[data-bubbles-skin='true'] [data-context-menu-skip] .composer-human-message {
+  margin: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  flex: 0 1 auto !important;
+  width: fit-content !important;
+  max-width: min(82%, calc(100% - 90px)) !important;
+  height: auto !important;
+  min-height: 30px !important;
+  padding: 6px 14px !important;
+  order: 2 !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Action / Checkpoint Button Container: Snugly positioned directly to the left of the bubble */
+html[data-bubbles-skin='true'] [data-context-menu-skip] > :is(div, button, [class*='absolute']):not(.composer-human-message):not([data-slot='aui_edit']):not(.bubbles-user-expand-btn) {
+  position: static !important;
+  inset: auto !important;
+  flex: 0 0 auto !important;
+  order: 1 !important;
+  margin: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 0.85 !important;
+  pointer-events: auto !important;
+  z-index: 40 !important;
+  transition: all 0.2s ease !important;
+}
+
+html[data-bubbles-skin='true'] [data-context-menu-skip]:hover > :is(div, button, [class*='absolute']):not(.composer-human-message):not([data-slot='aui_edit']):not(.bubbles-user-expand-btn),
+html[data-bubbles-skin='true'] .group\/user-message:hover [data-context-menu-skip] > :is(div, button, [class*='absolute']):not(.composer-human-message):not([data-slot='aui_edit']):not(.bubbles-user-expand-btn) {
+  opacity: 1 !important;
+}
+
+html[data-bubbles-skin='true'] [data-context-menu-skip] button:not(.composer-human-message):not(.bubbles-user-expand-btn) {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 24px !important;
+  height: 24px !important;
+  padding: 0 !important;
+  background: rgba(13, 42, 77, 0.70) !important;
+  border: 1px solid rgba(147, 197, 253, 0.35) !important;
+  border-radius: 6px !important;
+  color: #93c5fd !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  transition: all 0.2s ease !important;
+}
+
+html[data-bubbles-skin='true'] [data-context-menu-skip] button:not(.composer-human-message):not(.bubbles-user-expand-btn):hover {
+  background: rgba(30, 64, 175, 0.80) !important;
+  color: #ffffff !important;
+  border-color: rgba(147, 197, 253, 0.75) !important;
+  transform: scale(1.08);
+}
+
+html[data-bubbles-skin='true'] [data-context-menu-skip] button:not(.composer-human-message):not(.bubbles-user-expand-btn) svg {
+  width: 12px !important;
+  height: 12px !important;
+  fill: currentColor !important;
+}
+
+html[data-bubbles-skin='true'] .checkpoint-container {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  align-self: flex-end !important;
+  margin-top: 4px !important;
+}
+
+/* Inner input stays left-aligned for natural writing direction */
+html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] [data-slot='composer-rich-input'],
+html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .ui-prompt-input-editor__input {
+  text-align: left !important;
+  direction: ltr !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] {
+  padding-right: 0 !important;
+}
+html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root']::before,
+html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root']::after {
+  display: none !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-root'] {
+  margin-top: 4px !important;
+  margin-bottom: 14px !important;
+}
+
+/* Assistant Message Frosted Glass Refinement */
+html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] {
+  padding: 12px 18px !important;
+  border-radius: 12px !important;
+  border: none !important;
+  box-shadow: none !important;
+  line-height: 1.65 !important;
+  max-width: min(85%, calc(100% - 80px)) !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  box-sizing: border-box !important;
+}
+
+/* Markdown Typography within Assistant Bubble */
+html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] :is(h1, h2, h3, h4) {
+  color: #e0f2fe !important;
+  font-weight: 600 !important;
+  margin-top: 0.9em !important;
+  margin-bottom: 0.35em !important;
+  line-height: 1.35 !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] p {
+  margin-bottom: 0.65em !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] p:last-child {
+  margin-bottom: 0 !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] :is(ul, ol) {
+  padding-left: 20px !important;
+  margin-bottom: 0.65em !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] li::marker {
+  color: #93c5fd !important;
+}
+
+/* Frosted Glass Tables */
+html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  border: 1px solid rgba(147, 197, 253, 0.25) !important;
+  border-radius: 8px !important;
+  display: block !important;
+  overflow-x: auto !important;
+  max-width: 100% !important;
+  margin: 10px 0 !important;
+  width: 100% !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] th {
+  background: rgba(14, 46, 84, 0.70) !important;
+  color: #bfdbfe !important;
+  padding: 6px 12px !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid rgba(147, 197, 253, 0.25) !important;
+  text-align: left !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] td {
+  padding: 6px 12px !important;
+  border-bottom: 1px solid rgba(147, 197, 253, 0.12) !important;
+  color: #f1f5f9 !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] tr:last-child td {
+  border-bottom: none !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] tr:hover td {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* Inline Code & Code Blocks */
+html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] code:not(pre code) {
+  background: rgba(14, 46, 84, 0.55) !important;
+  color: #93c5fd !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  font-size: 0.88em !important;
+  border: 1px solid rgba(147, 197, 253, 0.20) !important;
+  word-break: break-all !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] pre {
+  background: rgba(6, 20, 42, 0.70) !important;
+  border: 1px solid rgba(147, 197, 253, 0.22) !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  padding-right: 52px !important;
+  margin: 8px 0 !important;
+  overflow-x: auto !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Native Code Card Flattening (single visual container inside prose).
+   Hermes wraps a fenced block in a rounded card, and react-shiki nests a
+   SECOND pre inside the outer one — the blanket rule above matched both, so one
+   snippet drew two dark bordered frames and doubled the inset. The card also
+   mounts an overflow cue when the code is taller than the scroller: a
+   full-width strip coloured by --expandable-fade-from and faded to transparent.
+   That strip is a background-image, not a box-shadow, so no amount of
+   box-shadow:none could remove the band it leaves under the card. Its right-hand
+   end holds the only ∨ toggle, so the strip stays in the layout and only its
+   paint goes.
+
+   The frame therefore lives on the CARD, never on a pre: CodeCardBody ships
+   [&_pre]:bg-transparent!, and an !important declaration inside @layer
+   utilities outranks an unlayered !important however specific the latter is —
+   verified against the built sheet. Padding stays on the outer Pre, which keeps
+   the 52px copy-button corridor without the inner pre doubling it.
+   Scoped to the card: the bubble surfaces keep their own paint. */
+html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] [data-slot='code-card'] {
+  --expandable-fade-from: transparent !important;
+  background: rgba(6, 20, 42, 0.62) !important;
+  border: 1px solid rgba(147, 197, 253, 0.22) !important;
+  box-shadow: none !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] [data-slot='code-card'] [class*='bg-linear-to-t'] {
+  background: transparent !important;
+  background-image: none !important;
+  pointer-events: none !important;
+}
+
+/* !important is load-bearing: it is the only way to beat the
+   code-card-stream-glow @keyframes, and it outranks the card's own accent ring
+   shadow while the answer is still streaming. */
+html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] [data-slot='code-card'] .aui-shiki {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] [data-slot='code-card'] .aui-shiki :is(pre, code, .shiki) {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. User Long Message Collapse
+   -------------------------------------------------------------------------- */
+html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'] .composer-human-message,
+html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .composer-human-message {
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  box-sizing: border-box !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'] .sticky-human-clamp,
+html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .sticky-human-clamp,
+html[data-bubbles-skin='true'] .sticky-human-clamp {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  color: inherit !important;
+  max-height: none !important;
+  overflow: visible !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  mask: none !important;
+  -webkit-mask: none !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'] [data-slot='aui_user-message-text'],
+html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'] [data-slot='aui_user-inline-text'],
+html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'] .sticky-human-clamp > div {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  color: inherit !important;
+  max-height: none !important;
+  overflow: visible !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+  white-space: pre-wrap !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'][data-bubbles-long-user='true'] .composer-human-message {
+  padding-bottom: 32px !important;
+  position: relative !important;
+}
+
+/* Edit mode forces normal compact bottom padding */
+html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'][data-bubbles-editing='true'] .composer-human-message,
+html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .composer-human-message {
+  padding-bottom: 6px !important;
+}
+
+/* Collapsed state with clean overflow clipping (ZERO shadow, ZERO gradient overlay) */
+html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'][data-bubbles-long-user='true']:not([data-bubbles-user-expanded='true']):not([data-bubbles-editing='true']) .sticky-human-clamp {
+  position: relative;
+  max-height: ${CLAMP_LINE_THRESHOLD_PX}px !important;
+  overflow: hidden !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  mask: none !important;
+  -webkit-mask: none !important;
+}
+
+/* Expanded state & Edit mode: completely remove bottom gradient fade, shadow truncation, and masks */
+html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'][data-bubbles-user-expanded='true'] .sticky-human-clamp,
+html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'][data-bubbles-editing='true'] .sticky-human-clamp,
+html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .sticky-human-clamp {
+  max-height: none !important;
+  overflow: visible !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  mask: none !important;
+  -webkit-mask: none !important;
+}
+
+/* Complete elimination of ::after shadow, gradient, and mask in ALL states */
+html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'][data-bubbles-user-expanded='true'] .sticky-human-clamp::after,
+html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'][data-bubbles-long-user='true'] .sticky-human-clamp::after,
+html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'][data-bubbles-editing='true'] .sticky-human-clamp::after,
+html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .sticky-human-clamp::after,
+html[data-bubbles-skin='true'] .sticky-human-clamp::after {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+
+/* Expand / Collapse Pill Button */
+.bubbles-user-expand-btn {
+  position: absolute !important;
+  right: 10px !important;
+  bottom: 6px !important;
+  z-index: 45 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-family: inherit;
+  line-height: 16px;
+  color: #bfdbfe;
+  background: rgba(13, 42, 77, 0.75);
+  border: 1px solid rgba(147, 197, 253, 0.35);
+  border-radius: 9999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.bubbles-user-expand-btn:hover {
+  background: rgba(37, 99, 235, 0.85);
+  color: #ffffff;
+  border-color: rgba(147, 197, 253, 0.75);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.45);
+  transform: translateY(-0.5px);
+}
+
+.bubbles-user-expand-btn:active {
+  transform: translateY(0);
+}
+
+.bubbles-expand-chevron {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+  margin-top: -2px;
+}
+
+[data-bubbles-user-expanded='true'] .bubbles-expand-chevron {
+  transform: rotate(-135deg);
+  margin-top: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   3. Thinking & Status Surface (Subordinate Visual Hierarchy)
+   -------------------------------------------------------------------------- */
+/* Bare text on the bubble. A thinking row is a one-line disclosure, not a card —
+   the frame made it compete with the paragraph above it. The chevron and the
+   shimmer stay, so the affordance survives without the box. */
+html[data-bubbles-skin='true'] [data-slot='aui_thinking-disclosure'] {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 1px 0 !important;
+  padding: 1px 0 !important;
+  font-size: 12px !important;
+  color: rgba(191, 219, 254, 0.72) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  transition: color 0.2s ease !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='aui_thinking-disclosure']:hover {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='aui_thinking-body'] {
+  padding-top: 2px !important;
+  margin-top: 2px !important;
+  border-top: none !important;
+  color: rgba(226, 232, 240, 0.72) !important;
+  font-size: 11.5px !important;
+  line-height: 1.6 !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. Tool Calls Compact Glass Card & Clean Transcript Grouping (Phase 4)
+   -------------------------------------------------------------------------- */
+/* Tool Group Header Container */
+.bubbles-tool-group {
+  margin: 6px 0 !important;
+  display: block !important;
+}
+
+/* Tool Group Summary Toggle — a text row, not a capsule. With the rows beneath it
+   flat, a pill would be the only box left and would read as another card. */
+.bubbles-tool-group-toggle {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 1px 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: rgba(148, 163, 184, 0.92) !important;
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  font-family: inherit !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  outline: none !important;
+  transition: color 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.bubbles-tool-group-toggle:hover {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: #e2e8f0 !important;
+}
+
+.bubbles-tool-group-toggle:active {
+  transform: translateY(0);
+}
+
+/* Toggle Chevron */
+.bubbles-group-chevron {
+  display: inline-block !important;
+  width: 5px !important;
+  height: 5px !important;
+  border-right: 1.5px solid currentColor !important;
+  border-bottom: 1.5px solid currentColor !important;
+  transform: rotate(-45deg) !important; /* Points right ▸ */
+  transition: transform 0.2s ease !important;
+  margin-top: -1px !important;
+}
+
+[data-group-state='expanded'] .bubbles-group-chevron,
+.bubbles-tool-group-toggle[aria-expanded='true'] .bubbles-group-chevron {
+  transform: rotate(45deg) !important; /* Points down ▾ */
+  margin-top: -3px !important;
+}
+
+/* Checkmark Icon in Summary */
+.bubbles-group-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  color: #4ade80 !important;
+  font-size: 11px !important;
+  opacity: 0.90 !important;
+}
+
+.bubbles-tool-group[data-tool-count]:not([data-tool-count='1']) .bubbles-group-icon {
+  display: none !important;
+}
+
+/* Tool rows are content, not cards. This single rule is what drew a glass box
+   around every 已运行 / 已读取 row AND around the ToolRun group that holds them
+   (the nine-row frame in the user's screenshot), because both layers carry
+   data-slot='tool-block'. State now reads from the glyph slot and the text
+   colour, so nothing here may paint. */
+html[data-bubbles-skin='true'] [data-slot='tool-block'] {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  margin: 1px 0 !important;
+  padding: 1px 0 !important;
+  font-size: 12px !important;
+  transition: color 0.2s ease !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+/* An open ToolEntry paints its own frame (fallback.tsx:114
+   rounded-[0.3125rem] border border-(--ui-stroke-tertiary)) and underlines its
+   header — both are the box coming back through the app's side of the door. */
+html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-open] > div:first-child {
+  border-bottom: 0 !important;
+  background: transparent !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='tool-block']:hover {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+/* Collapsed Grouped Tools (Strict Complete Hiding: Never Deleted, Completely Hidden) */
+html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-group-collapsed='true'] {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-group-collapsed='true'] {
+  display: none !important;
+}
+
+/* Expanded Grouped Tools: Flatten outer container into clean indented content block (Single Visual Layer) */
+html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-in-group='true'][data-bubbles-group-collapsed='false'],
+html[data-bubbles-skin='true'] [data-bubbles-tool-flat='true'][data-bubbles-in-group='true'][data-bubbles-group-collapsed='false'] {
+  display: block !important;
+  background: transparent !important;
+  border: none !important;
+  border-left: 2px solid rgba(96, 165, 250, 0.45) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  margin-left: 12px !important;
+  margin-top: 4px !important;
+  margin-bottom: 6px !important;
+  padding: 2px 0 2px 10px !important;
+}
+
+/* Flatten child disclosure / header inside grouped tools to eliminate duplicate nested cards */
+html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-in-group='true'] :is(
+  header,
+  [data-slot='tool-header'],
+  .group\/disclosure-row,
+  button.group\/disclosure-row
+) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Single completed tool group: Bubbles group toggle pill is already the primary visible title and toggle trigger.
+   Hide the duplicate native disclosure header inside the single tool block to prevent repetitive titles. */
+html[data-bubbles-skin='true'] .bubbles-tool-group[data-tool-count='1'] + [data-slot='tool-block'] > :is(
+  header,
+  [data-slot='tool-header'],
+  .group\/disclosure-row,
+  button.group\/disclosure-row
+),
+html[data-bubbles-skin='true'] [data-bubbles-duplicate-header='true'] {
+  display: none !important;
+}
+
+/* Tool State Variations — colour plus a mark in the glyph slot. No boxes. */
+html[data-bubbles-skin='true'] [data-bubbles-tool-state='running'] {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  animation: none !important;
+  display: block !important;
+  opacity: 1 !important;
+  color: #93c5fd !important;
+}
+
+/* The row already animates itself — GlyphSpinner with spinner='breathe'
+   (fallback.tsx:198-225). It only inherits the sapphire the card used to carry. */
+html[data-bubbles-skin='true'] [data-bubbles-tool-state='running'] .glyph-spinner {
+  color: #60a5fa !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-tool-state='running'] :is(
+  header,
+  [data-slot='tool-header'],
+  .group\/disclosure-row,
+  button.group\/disclosure-row
+) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Completed: quiet text, and a check in the glyph slot. The app suppresses its own
+   success glyph (leadingStatus maps success/notice to undefined, fallback.tsx:263),
+   so a finished row otherwise looks identical to a pending one. */
+html[data-bubbles-skin='true'] [data-bubbles-tool-state='completed']:not([data-bubbles-group-collapsed='true']) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  opacity: 0.86 !important;
+}
+
+/* Failed: red text + ✗ over the app's AlertCircle, instead of a red container. */
+html[data-bubbles-skin='true'] [data-bubbles-tool-state='failed'] {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  display: block !important;
+  opacity: 1 !important;
+  color: #fca5a5 !important;
+}
+
+/* The glyph slot carries the state. TOOL_HEADER_GLYPH_WRAP_CLASS is
+   'grid size-3.5 shrink-0 place-items-center self-center' (scaffold-row.tsx:27);
+   the type glyph goes display:none rather than being removed — flatten, never
+   delete — so the terminal/file/eye icon comes back with one rule if the checks
+   turn out to be too much of a wall. */
+html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-row] span[class*='size-3.5'] {
+  position: relative;
+}
+
+html[data-bubbles-skin='true'] :is([data-bubbles-tool-state='completed'], [data-bubbles-tool-state='failed']) span[class*='size-3.5'] > :first-child {
+  display: none !important;
+}
+
+html[data-bubbles-skin='true'] :is([data-bubbles-tool-state='completed'], [data-bubbles-tool-state='failed']) span[class*='size-3.5']::after {
+  content: '✓';
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-tool-state='completed'] span[class*='size-3.5']::after {
+  color: rgba(74, 222, 128, 0.85);
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-tool-state='failed'] span[class*='size-3.5']::after {
+  content: '✗';
+  color: #f87171;
+}
+
+/* Eliminate child red borders and child red backgrounds inside failed tool */
+html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-tool-state='failed'] :is(
+  header,
+  [data-slot='tool-header'],
+  .group\/disclosure-row,
+  button.group\/disclosure-row,
+  div[class*='border-destructive'],
+  div[class*='bg-destructive'],
+  div[class*='border-red'],
+  div[class*='bg-red'],
+  div[class*='border-rose'],
+  div[class*='bg-rose'],
+  section[class*='border-destructive'],
+  section[class*='bg-destructive']
+) {
+  background: transparent !important;
+  border-color: transparent !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Inner ToolEntry flattening (single visual container architecture).
+   The outer ToolRun (data-tool-group) is the ONLY visual card; the inner
+   ToolEntry (data-tool-row) is a structural wrapper. Strip its duplicate
+   shell in every state (completed / running / failed). High specificity AND
+   placed after all state rules so it always wins. "Flatten, never delete." */
+html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-group] [data-slot='tool-block'][data-tool-row] {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. Task Section UI & Independent Scrolling Container
+   -------------------------------------------------------------------------- */
+html[data-bubbles-skin='true'] [data-slot='composer-status-stack'][data-bubbles-has-task-section='true'] {
+  overflow: hidden !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='composer-status-stack'][data-bubbles-has-task-section='true'] [data-slot='status-stack-scroll'] {
+  overflow: hidden !important;
+}
+
+/* Layout only — the single paint owner for this box is section 5b below. Declaring
+   the frame in two places makes the winner depend on rule order, which is the trap
+   this skin keeps hitting. */
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+/* The outer stack is only a flex scroller (status-stack/index.tsx:321). It must
+   not draw a frame — doing so put a box around the box, 20px wider than the card
+   because the card carries mx-2. */
+html[data-bubbles-skin='true'] [data-slot='composer-status-stack'] {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* The dock card must NOT be framed. Its width does not come from --composer-width
+   (measured live: card ~738 vs composer surface 612), so a border here draws a
+   square-cornered rectangle around everything — the "outer frame" that cannot be
+   aligned without reimplementing the composer's own width maths. */
+html[data-bubbles-skin='true'] [data-slot='composer-status-stack'] > div[class*='rounded-t-2xl'],
+html[data-bubbles-skin='true'] :is([data-slot='composer-root'], [data-slot='composer-dock']) div.absolute.inset-x-0.bottom-full > div:first-child {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* The one Tasks card: the section itself. Rounded on all four corners, sapphire
+   stroke, translucent #0d2a4d fill, and the page's own light spots pinned with
+   background-attachment: fixed so it reads as glass on the same field as the
+   composer rather than a dark slab floating over it. */
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  margin: 4px 6px 6px !important;
+  border: 1px solid rgba(147, 197, 253, 0.22) !important;
+  border-radius: 14px !important;
+  background:
+    radial-gradient(950px 500px at 88% -5%, rgba(96, 165, 250, 0.30), transparent 60%),
+    radial-gradient(400px 160px at 50% 0%, rgba(96, 165, 250, 0.18), transparent 70%),
+    rgba(13, 42, 77, 0.42) !important;
+  background-attachment: fixed, scroll, scroll !important;
+  box-shadow: inset 0 1px 1px rgba(191, 219, 254, 0.26) !important;
+  backdrop-filter: blur(16px) saturate(1.3) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.3) !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  color: #f1f5f9 !important;
+}
+
+/* Task Section Header — no slab of its own; its rule doubles as the bar's track. */
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(147, 197, 253, 0.12) !important;
+  padding: 5px 8px !important;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-trigger {
+  color: #bfdbfe !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-trigger:hover {
+  color: #ffffff !important;
+}
+
+/* Task Counter Pill Badge — retired. Hermes' own header prints 任务 n/m, and the
+   pill duplicated it while also lying whenever the section collapsed (no rows in
+   the DOM meant "0 / 0"). cleanupAll still removes one an older build left behind. */
+
+/* Phase C fields — an index column and a completion bar.
+ *
+ * The index is a CSS counter rendered by the row's own ::before. That keeps the
+ * "never add or remove DOM content" rule intact: a pseudo-element is not a node,
+ * and status-row-content keeps exactly the children the renderer gave it. The
+ * native row grid is action/icon/content/actions, so every cell shifts one column. */
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-body {
+  counter-reset: bubbles-task;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-row {
+  counter-increment: bubbles-task;
+  grid-template-columns: var(--status-index-width, 1.5rem) var(--status-action-width) var(--status-icon-width) minmax(0, 1fr) auto !important;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-row::before {
+  content: counter(bubbles-task, decimal-leading-zero);
+  grid-area: 1 / 1;
+  align-self: start;
+  padding-right: 0.3rem;
+  color: rgba(148, 163, 184, 0.70);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1rem;
+  text-align: right;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-row-dismiss { grid-column: 2; }
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-row-icon { grid-column: 3; }
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-row-content { grid-column: 4; }
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-row-actions { grid-column: 5; }
+
+/* The bar's only input is --bubbles-task-progress, written by
+ * updateTaskHeaderCounter from the completed/total it already counts. scaleX, not
+ * width, so a tick repaints instead of reflowing the header row. */
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-trigger {
+  position: relative;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-trigger::after {
+  content: '';
+  position: absolute;
+  /* bottom: 0 — the bar replaces the header's separator instead of lying on top
+     of it (at -3px the two lines read as one thick smudge). */
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #60a5fa, #93c5fd);
+  transform: scaleX(var(--bubbles-task-progress, 0));
+  transform-origin: left center;
+}
+
+/* The running row's accent. bubbles.yaml line 70 flattens .status-row with
+ * box-shadow / border none !important on purpose (Tool UI flattening), so any
+ * row-level accent either loses outright or wins only by escalating the
+ * !important war. A pseudo-element is not matched by that rule, so the bar lives
+ * on ::after — absolutely positioned, which also means it cannot eat inner width
+ * the way the sidebar's old border-left did. */
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-row {
+  position: relative;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='running']::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  width: 3px;
+  border-radius: 9999px;
+  background: #60a5fa;
+  animation: bubblesTaskAccent 3s ease-in-out infinite;
+}
+
+@keyframes bubblesTaskAccent {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Task Section Body - Isolated Scroll Area */
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-body {
+  min-height: 40px !important;
+  max-height: clamp(90px, 28vh, 320px) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  padding: 4px 6px !important;
+  scrollbar-width: thin !important;
+  /* Invisible at rest, revealed on hover (reference plugin.js:1911-1917): an
+     always-on blue rail competes with the ambient light field. */
+  scrollbar-color: transparent transparent !important;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-body:hover {
+  scrollbar-color: rgba(147, 197, 253, 0.25) transparent !important;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-body::-webkit-scrollbar {
+  width: 5px !important;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-body::-webkit-scrollbar-thumb {
+  background: transparent !important;
+  border-radius: 9999px !important;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-body:hover::-webkit-scrollbar-thumb {
+  background: rgba(147, 197, 253, 0.30) !important;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(147, 197, 253, 0.55) !important;
+}
+
+/* Task Item Row Styling — the reference's density (its plugin.js:1951-1958):
+   24px rows, 1px vertical padding, 8px radius, no per-row margin, no border. The
+   previous 4px/8px + 1px transparent border cost 30px per row, and that border was
+   only ever visible as the pulse's animated ring — the ::after accent replaced it. */
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] [data-slot='status-row'] {
+  min-height: 24px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  gap: 6px !important;
+  margin: 0 !important;
+  padding: 1px 8px !important;
+  transition: background 0.20s ease-out !important;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] [data-slot='status-row']:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Task State Glyphs & Visual Hierarchy */
+/* Pending: ○ */
+html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='pending'] .status-row-icon {
+  color: #93c5fd !important;
+  opacity: 0.70;
+}
+
+/* Running: ◉ with gentle 3s pulse glow.
+   The 3px accent is an inset shadow baked into BOTH keyframe stops: an animation
+   outranks a normal author declaration, so a static box-shadow would be erased
+   the moment the pulse starts, and a border-left would eat inner width (the exact
+   bug Phase A removed from the sidebar rows). The static rule below is what the
+   bar falls back to under prefers-reduced-motion, where the animation is off. */
+@keyframes bubblesPulseGlow {
+  0%, 100% {
+    box-shadow: inset 3px 0 0 0 #60a5fa, inset 0 0 8px rgba(59, 130, 246, 0.20), 0 0 6px rgba(96, 165, 250, 0.15);
+    border-color: rgba(96, 165, 250, 0.35);
+  }
+  50% {
+    box-shadow: inset 3px 0 0 0 #60a5fa, inset 0 0 14px rgba(59, 130, 246, 0.35), 0 0 12px rgba(96, 165, 250, 0.30);
+    border-color: rgba(96, 165, 250, 0.65);
+  }
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='running'] {
+  background: rgba(30, 64, 175, 0.22) !important;
+  animation: bubblesPulseGlow 3s ease-in-out infinite !important;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='running'] .status-row-icon {
+  color: #60a5fa !important;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='running'] .status-row-content span {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+/* Completed: ✓ */
+html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='completed'] {
+  opacity: 0.88 !important;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='completed'] .status-row-icon {
+  color: #4ade80 !important;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='completed'] .status-row-content span {
+  color: #94a3b8 !important;
+}
+
+/* Cancelled: ⊘ */
+html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='cancelled'] .status-row-icon {
+  color: #64748b !important;
+  opacity: 0.60;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='cancelled'] .status-row-content span {
+  color: #64748b !important;
+  text-decoration: line-through;
+}
+
+/* Failed: ✕ (ui_error) */
+html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='failed'] {
+  background: rgba(239, 68, 68, 0.12) !important;
+  border-color: rgba(248, 113, 113, 0.35) !important;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='failed'] .status-row-icon {
+  color: #f87171 !important;
+}
+
+/* Warning / Waiting: ⚠ */
+html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='waiting'] {
+  background: rgba(245, 158, 11, 0.12) !important;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='waiting'] .status-row-icon {
+  color: #fbbf24 !important;
+}
+
+/* --------------------------------------------------------------------------
+   6. Approval & Clarify UX Enhancement (Phase 3 Core)
+   -------------------------------------------------------------------------- */
+
+/* Global Stacking & Clipping Defenses */
+html[data-bubbles-skin='true'] [data-slot='tool-approval-stack'] {
+  z-index: 50 !important;
+  overflow: visible !important;
+  margin-top: 8px !important;
+  margin-bottom: 8px !important;
+  pointer-events: auto !important;
+}
+
+/* Approval Card Surface */
+html[data-bubbles-skin='true'] [data-slot='tool-approval-card'] {
+  display: block !important;
+  visibility: visible !important;
+  overflow: hidden !important;
+  opacity: 1 !important;
+  border-radius: 14px !important;
+  background:
+    radial-gradient(400px 140px at 50% 0%, rgba(96, 165, 250, 0.22), transparent 70%),
+    rgba(10, 32, 64, 0.92) !important;
+  border: 1px solid rgba(147, 197, 253, 0.38) !important;
+  box-shadow:
+    0 12px 36px rgba(2, 18, 44, 0.55),
+    inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
+  backdrop-filter: blur(20px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.4) !important;
+  pointer-events: auto !important;
+  margin-bottom: 4px !important;
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+/* Approval Header with Terminal Glyph */
+html[data-bubbles-skin='true'] [data-slot='tool-approval-card'] > div:first-child {
+  background: rgba(14, 46, 84, 0.70) !important;
+  border-bottom: 1px solid rgba(147, 197, 253, 0.20) !important;
+  padding: 8px 12px !important;
+  color: #bfdbfe !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='tool-approval-card'] > div:first-child .codicon-terminal {
+  color: #60a5fa !important;
+}
+
+/* Approval Command Display Area */
+html[data-bubbles-skin='true'] [data-slot='tool-approval-card'] pre {
+  background: rgba(5, 18, 38, 0.85) !important;
+  border: 1px solid rgba(147, 197, 253, 0.20) !important;
+  border-radius: 8px !important;
+  margin: 8px 10px !important;
+  padding: 8px 12px !important;
+  color: #f1f5f9 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+  font-size: 12px !important;
+  line-height: 1.55 !important;
+  white-space: pre-wrap !important;
+  word-break: break-all !important;
+  max-height: clamp(100px, 24vh, 200px) !important;
+  overflow: auto !important;
+  scrollbar-width: thin !important;
+  box-sizing: border-box !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='tool-approval-card'] pre::-webkit-scrollbar {
+  width: 5px !important;
+  height: 5px !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='tool-approval-card'] pre::-webkit-scrollbar-thumb {
+  background: rgba(147, 197, 253, 0.30) !important;
+  border-radius: 9999px !important;
+}
+
+/* Approval Actions Bar & Native Buttons Enhancement */
+html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  padding: 6px 12px 10px !important;
+  background: transparent !important;
+}
+
+/* Allow / Run Button (Primary Action) */
+html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button[data-approval-run] {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(147, 197, 253, 0.50) !important;
+  border-radius: 8px !important;
+  padding: 5px 14px !important;
+  font-weight: 500 !important;
+  font-size: 12px !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.40) !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button[data-approval-run]:hover {
+  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.60) !important;
+  transform: translateY(-0.5px);
+}
+
+/* Deny / Reject Button (Destructive/Secondary Action) */
+html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button[data-approval-deny] {
+  background: rgba(14, 46, 84, 0.65) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(147, 197, 253, 0.25) !important;
+  border-radius: 8px !important;
+  padding: 5px 12px !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button[data-approval-deny]:hover {
+  background: rgba(239, 68, 68, 0.22) !important;
+  border-color: rgba(248, 113, 113, 0.50) !important;
+  color: #f87171 !important;
+}
+
+/* More Options Button */
+html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button:not([data-approval-run]):not([data-approval-deny]) {
+  background: rgba(14, 46, 84, 0.65) !important;
+  border: 1px solid rgba(147, 197, 253, 0.25) !important;
+  border-radius: 8px !important;
+  color: #bfdbfe !important;
+  font-size: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button:not([data-approval-run]):not([data-approval-deny]):hover {
+  background: rgba(30, 64, 175, 0.50) !important;
+  color: #ffffff !important;
+}
+
+/* Clarify Surface */
+html[data-bubbles-skin='true'] [data-slot='clarify-inline'] {
+  display: block !important;
+  visibility: visible !important;
+  overflow: visible !important;
+  opacity: 1 !important;
+  border-radius: 14px !important;
+  background:
+    radial-gradient(400px 140px at 50% 0%, rgba(96, 165, 250, 0.20), transparent 70%),
+    rgba(10, 32, 64, 0.92) !important;
+  border: 1px solid rgba(147, 197, 253, 0.35) !important;
+  box-shadow:
+    0 12px 36px rgba(2, 18, 44, 0.50),
+    inset 0 1px 1px rgba(255, 255, 255, 0.22) !important;
+  backdrop-filter: blur(20px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.4) !important;
+  z-index: 40 !important;
+  padding: 14px 16px !important;
+  margin: 10px 0 !important;
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+}
+
+/* Clarify Question Headline */
+html[data-bubbles-skin='true'] [data-slot='clarify-inline'] span.font-medium {
+  color: #ffffff !important;
+  font-weight: 500 !important;
+  font-size: 13.5px !important;
+  line-height: 1.5 !important;
+}
+
+/* Clarify Choice Buttons */
+html[data-bubbles-skin='true'] [data-slot='clarify-inline'] button[data-choice] {
+  border-radius: 8px !important;
+  border: 1px solid rgba(147, 197, 253, 0.18) !important;
+  background: rgba(13, 38, 72, 0.55) !important;
+  color: #cbd5e1 !important;
+  padding: 6px 10px !important;
+  margin-bottom: 4px !important;
+  transition: all 0.18s ease !important;
+  white-space: normal !important;
+  text-align: left !important;
+  word-break: break-word !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='clarify-inline'] button[data-choice]:hover {
+  background: rgba(30, 64, 175, 0.40) !important;
+  border-color: rgba(96, 165, 250, 0.45) !important;
+  color: #ffffff !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='clarify-inline'] button[data-choice][data-highlighted],
+html[data-bubbles-skin='true'] [data-slot='clarify-inline'] button[data-choice][aria-pressed='true'] {
+  background: rgba(37, 99, 235, 0.45) !important;
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.30) !important;
+  color: #ffffff !important;
+}
+
+/* Keypad Badges */
+html[data-bubbles-skin='true'] [data-slot='clarify-inline'] kbd {
+  background: rgba(10, 32, 64, 0.85) !important;
+  border: 1px solid rgba(147, 197, 253, 0.35) !important;
+  color: #93c5fd !important;
+  border-radius: 4px !important;
+  font-weight: 600 !important;
+}
+
+/* Clarify Textarea (Other Option) */
+html[data-bubbles-skin='true'] [data-slot='clarify-inline'] textarea {
+  background: rgba(6, 20, 42, 0.70) !important;
+  border: 1px solid rgba(147, 197, 253, 0.30) !important;
+  border-radius: 8px !important;
+  color: #ffffff !important;
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='clarify-inline'] textarea:focus {
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.35) !important;
+  outline: none !important;
+}
+
+/* Clarify Action Buttons (Skip & Continue) */
+html[data-bubbles-skin='true'] form[data-clarify-choices] button[type='submit'] {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(147, 197, 253, 0.50) !important;
+  border-radius: 8px !important;
+  padding: 5px 14px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.40) !important;
+  transition: all 0.2s ease !important;
+}
+
+html[data-bubbles-skin='true'] form[data-clarify-choices] button[type='submit']:hover {
+  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.60) !important;
+  transform: translateY(-0.5px);
+}
+
+html[data-bubbles-skin='true'] form[data-clarify-choices] button[variant='text'] {
+  color: #94a3b8 !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+}
+
+html[data-bubbles-skin='true'] form[data-clarify-choices] button[variant='text']:hover {
+  color: #f1f5f9 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* --------------------------------------------------------------------------
+   8. History & Session Navigation Layer (Phase 5A)
+   -------------------------------------------------------------------------- */
+
+/* Sidebar container: transparent. The 🌌 ambient light constellation lives in the
+   fixed main background layer; a navy + blur panel here hid it and cut a hard
+   rectangular seam through the Sessions column. Keep only the sapphire seam. */
+html[data-bubbles-skin='true'] [data-slot='sidebar'],
+html[data-bubbles-skin='true'] aside[data-slot='sidebar'],
+html[data-bubbles-skin='true'] .group\/sidebar,
+html[data-bubbles-skin='true'] [data-slot='sidebar-container'] {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-right: 1px solid rgba(147, 197, 253, 0.15) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='sidebar-inner'] {
+  background: transparent !important;
+}
+
+/* Date Dividers & Group Headers */
+html[data-bubbles-skin='true'] .group\/workspace,
+html[data-bubbles-skin='true'] [data-bubbles-session-divider='true'] {
+  padding-top: 10px !important;
+  padding-bottom: 4px !important;
+}
+
+html[data-bubbles-skin='true'] .group\/workspace span.text-\[0\.64rem\],
+html[data-bubbles-skin='true'] [data-bubbles-session-divider='true'] span:first-child {
+  color: #93c5fd !important;
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  opacity: 0.90 !important;
+}
+
+html[data-bubbles-skin='true'] .group\/workspace span.h-px,
+html[data-bubbles-skin='true'] [data-bubbles-session-divider='true'] span[aria-hidden='true'] {
+  background: linear-gradient(90deg, rgba(96, 165, 250, 0.30), rgba(147, 197, 253, 0.05)) !important;
+  height: 1px !important;
+}
+
+/* Sidebar Session Row Shell */
+html[data-bubbles-skin='true'] [data-bubbles-session-row='true'],
+html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover,
+html[data-bubbles-skin='true'] [data-slot='sidebar'] [data-sidebar='menu-button'] {
+  border-radius: 8px !important;
+  margin: 1px 4px !important;
+  border: 1px solid transparent !important;
+  color: #94a3b8 !important;
+  transition: background 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-sizing: border-box !important;
+}
+
+/* Hover State */
+html[data-bubbles-skin='true'] [data-bubbles-session-row='true']:hover,
+html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover:hover,
+html[data-bubbles-skin='true'] [data-slot='sidebar'] [data-sidebar='menu-button']:hover {
+  background: rgba(16, 42, 78, 0.50) !important;
+  border-color: rgba(147, 197, 253, 0.25) !important;
+  color: #e2e8f0 !important;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-session-row='true']:hover .hover-marquee,
+html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover:hover .hover-marquee {
+  color: #ffffff !important;
+}
+
+/* Active / Selected Session */
+html[data-bubbles-skin='true'] [data-bubbles-session-active='true'],
+html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover.bg-\(--ui-row-active-background\),
+html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover[data-selected='true'],
+html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover[aria-selected='true'],
+html[data-bubbles-skin='true'] [data-slot='sidebar'] [data-sidebar='menu-button'][data-active='true'] {
+  background: rgba(14, 38, 72, 0.70) !important;
+  border-color: rgba(147, 197, 253, 0.40) !important;
+  /* The accent bar is an inset shadow, not a border-left. A border that only the
+     active row carries eats 3px of inner width under border-box, so the selected
+     title sits sideways of every sibling; a shadow paints the same bar with no
+     reflow and still follows the 8px radius. */
+  box-shadow: inset 3px 0 0 0 #60a5fa, inset 0 0 16px rgba(59, 130, 246, 0.18),
+              0 2px 8px rgba(2, 18, 44, 0.30) !important;
+  color: #ffffff !important;
+  font-weight: 500 !important;
+}
+
+html[data-bubbles-skin='true'] [data-bubbles-session-row='true'][data-bubbles-session-active='true'] .hover-marquee,
+html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover.bg-\(--ui-row-active-background\) .hover-marquee {
+  color: #ffffff !important;
+  font-weight: 500 !important;
+}
+
+/* Working / Live Turn Session Pulse */
+html[data-bubbles-skin='true'] [data-bubbles-session-row='true'][data-working='true'] {
+  animation: bubblesPulseGlow 3s ease-in-out infinite !important;
+}
+
+/* Focus Visible */
+html[data-bubbles-skin='true'] [data-bubbles-session-row='true']:focus-visible,
+html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover:focus-visible,
+html[data-bubbles-skin='true'] [data-slot='sidebar'] [data-sidebar='menu-button']:focus-visible {
+  outline: 2px solid rgba(96, 165, 250, 0.75) !important;
+  outline-offset: -1px !important;
+}
+
+/* The section-collapse caret. Its hit area is a flex-1 button (measured 91x20)
+   that is mostly empty space, so row chrome on it reads as a floating frame.
+   Ring the 12x12 marker instead — box-shadow, not border/padding, so the caret
+   cannot shift when it fades in on hover. */
+html[data-bubbles-skin='true'] [data-slot='sidebar'] button:hover :is(i, svg)[class*='codicon-chevron'] {
+  border-radius: 4px !important;
+  box-shadow: 0 0 0 1px rgba(147, 197, 253, 0.25), 0 0 0 3px rgba(16, 42, 78, 0.50) !important;
+}
+
+/* Session Actions Cluster */
+html[data-bubbles-skin='true'] [data-row-actions] {
+  padding-right: 6px !important;
+}
+
+html[data-bubbles-skin='true'] [data-row-actions] time {
+  color: #94a3b8 !important;
+  font-size: 11px !important;
+}
+
+/* --------------------------------------------------------------------------
+   8.5. Session Preview Floating Card (Phase 5B)
+   -------------------------------------------------------------------------- */
+.bubbles-session-preview {
+  position: fixed !important;
+  z-index: 9999 !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transform: translateX(-4px) !important;
+  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.18s !important;
+  font-family: inherit !important;
+}
+
+.bubbles-session-preview[data-visible='true'] {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateX(0) !important;
+}
+
+.bubbles-preview-card {
+  min-width: 240px !important;
+  max-width: min(340px, calc(100vw - 32px)) !important;
+  border-radius: 12px !important;
+  background:
+    radial-gradient(350px 120px at 50% 0%, rgba(96, 165, 250, 0.22), transparent 70%),
+    rgba(10, 30, 60, 0.94) !important;
+  backdrop-filter: blur(20px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.4) !important;
+  border: 1px solid rgba(147, 197, 253, 0.35) !important;
+  box-shadow: 0 12px 36px rgba(2, 18, 44, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.22) !important;
+  padding: 12px 14px !important;
+  box-sizing: border-box !important;
+}
+
+.bubbles-preview-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  border-bottom: 1px solid rgba(147, 197, 253, 0.18) !important;
+  padding-bottom: 8px !important;
+  margin-bottom: 8px !important;
+}
+
+.bubbles-preview-icon {
+  color: #60a5fa !important;
+  font-size: 12px !important;
+}
+
+.bubbles-preview-title {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  flex: 1 !important;
+}
+
+.bubbles-preview-body {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+.bubbles-preview-section {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+.bubbles-preview-role {
+  color: #93c5fd !important;
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+}
+
+.bubbles-preview-text {
+  color: #cbd5e1 !important;
+  font-size: 11.5px !important;
+  line-height: 1.45 !important;
+  margin: 0 !important;
+  word-break: break-word !important;
+  overflow: hidden !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 3 !important;
+  -webkit-box-orient: vertical !important;
+}
+
+.bubbles-preview-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  border-top: 1px solid rgba(147, 197, 253, 0.12) !important;
+  padding-top: 6px !important;
+  margin-top: 8px !important;
+  font-size: 11px !important;
+}
+
+.bubbles-preview-meta {
+  color: #60a5fa !important;
+  font-weight: 500 !important;
+}
+
+.bubbles-preview-time {
+  color: #94a3b8 !important;
+}
+
+/* --------------------------------------------------------------------------
+   9. Composer Two-Row Layout (Phase B)
+   -------------------------------------------------------------------------- */
+
+/* Hermes already owns this two-row template (index.tsx:1530) but only engages it
+   once useComposerMetrics measures the dock as narrow. Forcing it keeps the input
+   on row 1 and hands row 2 to the controls, without touching the DOM. */
+html[data-bubbles-skin='true'] [data-slot='composer-surface'] div:has(> [class*='grid-area:input']) {
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  grid-template-areas: "input input" "menu controls" !important;
+  align-items: stretch !important;
+  row-gap: 6px !important;
+}
+
+/* The native input wrapper keeps flex-1 plus a content min-width from the
+   single-row line; in a full-width grid area that can push past the surface. */
+html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area:input'] > div {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Row 2 reads: ＋ / model / reasoning from the left edge, voice + send pinned
+   right by an auto margin on the first element of the right cluster. Every hook
+   here is structural (data-slot / data-testid / data-tour) — never aria-label
+   text, which the reference skin keys on and i18n silently breaks. */
+html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area:controls'] {
+  justify-content: flex-start !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area:controls'] > div {
+  flex: 1 1 auto !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='composer-surface'] [data-slot='fan-menu-anchor'] {
+  margin-left: auto !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='composer-surface'] :is([data-tour='model-pill'], [data-testid='reasoning-pill']) {
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0 8px !important;
+  border: 0 !important;
+  border-radius: 9999px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: rgba(226, 232, 240, 0.72) !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='composer-surface'] :is([data-tour='model-pill'], [data-testid='reasoning-pill'])[data-state='open'] {
+  background: rgba(59, 130, 246, 0.22) !important;
+  color: #ffffff !important;
+}
+
+/* The two pill menus. They are the only dropdown surfaces that ship with an
+   exact w-64 / w-52 width class, so a word match reaches them without restyling
+   every other menu in the app. Frosted identity is kept on purpose: translucent
+   fill + blur, not the reference's solid card. */
+html[data-bubbles-skin='true'] [data-slot='dropdown-menu-content']:is([class~='w-64'], [class~='w-52']) {
+  width: 240px !important;
+  padding: 4px !important;
+  border: 1px solid rgba(147, 197, 253, 0.18) !important;
+  border-radius: 12px !important;
+  background: rgba(9, 28, 54, 0.72) !important;
+  backdrop-filter: blur(16px) saturate(1.3) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.3) !important;
+  box-shadow: 0 12px 32px rgba(2, 18, 44, 0.45) !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='dropdown-menu-content']:is([class~='w-64'], [class~='w-52']) [data-slot='dropdown-menu-item'] {
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0 8px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+}
+
+/* Composer glass. The fill is the global #0d2a4d made translucent, and two of the
+   backdrop's own light spots are repeated with background-attachment: fixed, so
+   the composer shows a continuation of the field behind it instead of its own
+   highlight. The white-5% fill plus a white stroke it replaced is exactly why the
+   surface read grey-black. */
+html[data-bubbles-skin='true'] [data-slot='composer-surface'] {
+  background:
+    radial-gradient(400px 140px at 50% 0%, rgba(147, 197, 253, 0.14), transparent 70%),
+    radial-gradient(950px 500px at 88% -5%, rgba(96, 165, 250, 0.36), transparent 60%),
+    radial-gradient(480px 480px at -5% 105%, rgba(29, 78, 216, 0.40), transparent 60%),
+    rgba(13, 42, 77, 0.42) !important;
+  background-attachment: scroll, fixed, fixed, scroll !important;
+  border: 1px solid rgba(147, 197, 253, 0.22) !important;
+  box-shadow: inset 0 1px 1px rgba(191, 219, 254, 0.26), 0 4px 20px rgba(2, 18, 44, 0.28) !important;
+  backdrop-filter: blur(16px) saturate(1.3) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.3) !important;
+  outline: none !important;
+  transition: background 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='composer-surface']:focus-within {
+  background:
+    radial-gradient(450px 160px at 50% 0%, rgba(96, 165, 250, 0.28), transparent 70%),
+    radial-gradient(950px 500px at 88% -5%, rgba(96, 165, 250, 0.36), transparent 60%),
+    radial-gradient(480px 480px at -5% 105%, rgba(29, 78, 216, 0.40), transparent 60%),
+    rgba(13, 42, 77, 0.52) !important;
+  background-attachment: scroll, fixed, fixed, scroll !important;
+  border-color: rgba(96, 165, 250, 0.70) !important;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.38), inset 0 1px 1px rgba(191, 219, 254, 0.34) !important;
+}
+
+/* Native backing layer sits inside the surface; left painted it buries the glass. */
+html[data-bubbles-skin='true'] [data-slot='composer-surface'] > [aria-hidden] {
+  background: transparent !important;
+  background-image: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   7. Focus Navigation & Accessibility (prefers-reduced-motion)
+   -------------------------------------------------------------------------- */
+/* The bare input selector is deliberately absent from this list: SearchField's
+   underline variant sizes its input to content ([field-sizing:content]), so a
+   ring there hugs the text and floats off the field (measured 58px ring on an
+   82px field). Real controls glow on their own through .desktop-input-chrome. */
+html[data-bubbles-skin='true'] :is(button, textarea, select, [role="button"]):focus-visible {
+  outline: 2px solid #60a5fa !important;
+  outline-offset: 2px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='running'],
+  html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-tool-state='running'],
+  html[data-bubbles-skin='true'] .bubbles-user-expand-btn,
+  html[data-bubbles-skin='true'] [data-slot='tool-approval-stack'],
+  html[data-bubbles-skin='true'] [data-slot='tool-approval-card'],
+  html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button,
+  html[data-bubbles-skin='true'] [data-slot='clarify-inline'],
+  html[data-bubbles-skin='true'] form[data-clarify-choices] button,
+  html[data-bubbles-skin='true'] .bubbles-tool-group-toggle,
+  html[data-bubbles-skin='true'] .bubbles-group-chevron,
+  html[data-bubbles-skin='true'] [data-bubbles-session-row='true'],
+  html[data-bubbles-skin='true'] [data-bubbles-session-row='true'][data-working='true'],
+  .bubbles-session-preview {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* A pseudo-element is not inherited from the row, so it needs its own stop. The
+     bar stays fully visible; only the breathing goes away. */
+  html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='running']::after {
+    animation: none !important;
+    opacity: 1;
+  }
+}
+`
+
+// ============================================================================
+// 2. DOM HELPERS & STORAGE
+// ============================================================================
+
+function isElement(node) {
+  return Boolean(node && node.nodeType === 1)
+}
+
+function safeGetStorage(key, fallback) {
+  if (pluginStorage && typeof pluginStorage.get === 'function') {
+    try {
+      return pluginStorage.get(key, fallback)
+    } catch {
+      // Fallback
+    }
+  }
+  try {
+    const val = localStorage.getItem(`${STORAGE_PREFIX}${key}`)
+    return val !== null ? JSON.parse(val) : fallback
+  } catch {
+    return fallback
+  }
+}
+
+function safeSetStorage(key, value) {
+  if (pluginStorage && typeof pluginStorage.set === 'function') {
+    try {
+      pluginStorage.set(key, value)
+      return
+    } catch {
+      // Fallback
+    }
+  }
+  try {
+    localStorage.setItem(`${STORAGE_PREFIX}${key}`, JSON.stringify(value))
+  } catch {
+    // Ignore quota errors
+  }
+}
+
+function safeRemoveStorage(key) {
+  if (pluginStorage && typeof pluginStorage.remove === 'function') {
+    try {
+      pluginStorage.remove(key)
+      return
+    } catch {
+      // Fallback
+    }
+  }
+  try {
+    localStorage.removeItem(`${STORAGE_PREFIX}${key}`)
+  } catch {
+    // Ignore
+  }
+}
+
+// ============================================================================
+// 3. CONVERSATION MODULE
+// ============================================================================
+
+function enhanceUserMessage(userRoot) {
+  if (!isElement(userRoot)) return
+
+  // Idempotent attribute stamp
+  if (userRoot.getAttribute('data-bubbles-user-message') !== 'true') {
+    userRoot.setAttribute('data-bubbles-user-message', 'true')
+    userRoot.setAttribute('data-bubbles-role', 'user')
+    stats.enhancedMessages += 1
+  }
+
+  setupLongMessageCollapse(userRoot)
+}
+
+function enhanceAssistantMessage(assistantRoot) {
+  if (!isElement(assistantRoot)) return
+
+  // Idempotent attribute stamp
+  if (assistantRoot.getAttribute('data-bubbles-assistant-message') !== 'true') {
+    assistantRoot.setAttribute('data-bubbles-assistant-message', 'true')
+    assistantRoot.setAttribute('data-bubbles-role', 'assistant')
+    stats.enhancedMessages += 1
+  }
+}
+
+function getMessageStorageKey(userRoot) {
+  const messageId = userRoot.getAttribute('data-message-id') || userRoot.id
+  if (messageId) return messageId
+  const text = userRoot.textContent?.trim() || ''
+  return text ? `hash_${text.slice(0, 48).replace(/\s+/g, '_')}` : null
+}
+
+function setupLongMessageCollapse(userRoot) {
+  const isEditing = Boolean(
+    userRoot.matches?.('[data-slot="aui_edit-composer-root"]') ||
+    userRoot.closest?.('[data-slot="aui_edit-composer-root"]') ||
+    userRoot.querySelector?.('[data-slot="aui_edit-composer-root"], [data-slot="composer-rich-input"], .ui-prompt-input-editor__input')
+  )
+
+  const clamp = userRoot.querySelector('.sticky-human-clamp')
+  const bubble = clamp?.closest('.composer-human-message')
+  const contextSkip = bubble?.closest('[data-context-menu-skip]')
+
+  if (isEditing) {
+    if (userRoot.getAttribute('data-bubbles-editing') !== 'true') {
+      userRoot.setAttribute('data-bubbles-editing', 'true')
+    }
+    if (userRoot.getAttribute('data-bubbles-user-expanded') !== 'true') {
+      userRoot.setAttribute('data-bubbles-user-expanded', 'true')
+    }
+    const btn = userRoot.querySelector('.bubbles-user-expand-btn')
+    if (btn && btn.style) {
+      btn.style.display = 'none'
+    }
+    return
+  } else if (userRoot.hasAttribute('data-bubbles-editing')) {
+    userRoot.removeAttribute('data-bubbles-editing')
+    const storageKey = getMessageStorageKey(userRoot)
+    const prevExpanded = storageKey ? Boolean(safeGetStorage(storageKey, false)) : false
+    if (prevExpanded) {
+      userRoot.setAttribute('data-bubbles-user-expanded', 'true')
+    } else {
+      userRoot.removeAttribute('data-bubbles-user-expanded')
+    }
+    const btn = userRoot.querySelector('.bubbles-user-expand-btn')
+    if (btn && btn.style) {
+      btn.style.display = ''
+    }
+  }
+
+  if (!clamp || !bubble || !contextSkip) {
+    clearLongUserDecoration(userRoot)
+    return
+  }
+
+  const inner = clamp.firstElementChild
+  const measuredHeight = Number.parseFloat(clamp.style.getPropertyValue('--human-msg-full'))
+  const fullHeight = Number.isFinite(measuredHeight) && measuredHeight > 0
+    ? measuredHeight
+    : inner?.scrollHeight || clamp.scrollHeight || 0
+
+  // Check if content exceeds threshold (~4-5 lines)
+  if (fullHeight <= CLAMP_LINE_THRESHOLD_PX) {
+    clearLongUserDecoration(userRoot)
+    return
+  }
+
+  if (userRoot.getAttribute('data-bubbles-long-user') !== 'true') {
+    userRoot.setAttribute('data-bubbles-long-user', 'true')
+  }
+
+  const storageKey = getMessageStorageKey(userRoot)
+  const isExpanded = storageKey ? Boolean(safeGetStorage(storageKey, false)) : false
+
+  if (isExpanded) {
+    if (userRoot.getAttribute('data-bubbles-user-expanded') !== 'true') {
+      userRoot.setAttribute('data-bubbles-user-expanded', 'true')
+    }
+  } else {
+    if (userRoot.hasAttribute('data-bubbles-user-expanded')) {
+      userRoot.removeAttribute('data-bubbles-user-expanded')
+    }
+  }
+
+  let expandBtn = userRoot.querySelector('.bubbles-user-expand-btn')
+  if (!expandBtn) {
+    expandBtn = document.createElement('button')
+    expandBtn.type = 'button'
+    expandBtn.className = 'bubbles-user-expand-btn'
+    expandBtn.setAttribute('data-bubbles-user-expand', 'true')
+
+    const labelSpan = document.createElement('span')
+    labelSpan.className = 'bubbles-expand-label'
+    labelSpan.textContent = isExpanded ? 'Show less' : 'Show more'
+
+    const chevronSpan = document.createElement('span')
+    chevronSpan.className = 'bubbles-expand-chevron'
+    chevronSpan.setAttribute('aria-hidden', 'true')
+
+    expandBtn.append(labelSpan, chevronSpan)
+
+    // Crucial: stop propagation to prevent triggering edit mode or drag/drop
+    expandBtn.addEventListener('pointerdown', (e) => {
+      e.stopPropagation()
+    })
+    expandBtn.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+
+      const currentExpanded = userRoot.getAttribute('data-bubbles-user-expanded') === 'true'
+      const nextExpanded = !currentExpanded
+
+      if (nextExpanded) {
+        userRoot.setAttribute('data-bubbles-user-expanded', 'true')
+        labelSpan.textContent = 'Show less'
+        if (storageKey) safeSetStorage(storageKey, true)
+      } else {
+        userRoot.removeAttribute('data-bubbles-user-expanded')
+        labelSpan.textContent = 'Show more'
+        if (storageKey) safeRemoveStorage(storageKey)
+      }
+    })
+
+    bubble.appendChild(expandBtn)
+  } else {
+    if (expandBtn.parentElement !== bubble) {
+      bubble.appendChild(expandBtn)
+    }
+    if (expandBtn.style && expandBtn.style.display === 'none') {
+      expandBtn.style.display = ''
+    }
+    const labelSpan = expandBtn.querySelector('.bubbles-expand-label')
+    if (labelSpan) {
+      const expectedText = isExpanded ? 'Show less' : 'Show more'
+      if (labelSpan.textContent !== expectedText) {
+        labelSpan.textContent = expectedText
+      }
+    }
+  }
+}
+
+function clearLongUserDecoration(userRoot) {
+  if (userRoot.hasAttribute('data-bubbles-long-user')) {
+    userRoot.removeAttribute('data-bubbles-long-user')
+  }
+  if (userRoot.hasAttribute('data-bubbles-user-expanded')) {
+    userRoot.removeAttribute('data-bubbles-user-expanded')
+  }
+  if (userRoot.hasAttribute('data-bubbles-editing')) {
+    userRoot.removeAttribute('data-bubbles-editing')
+  }
+  const btn = userRoot.querySelector('.bubbles-user-expand-btn')
+  if (btn) btn.remove()
+}
+
+// ============================================================================
+// 4. THINKING & TOOL CALL MODULE
+// ============================================================================
+
+function enhanceThinkingBlock(thinkingEl) {
+  if (!isElement(thinkingEl)) return
+  if (thinkingEl.getAttribute('data-bubbles-thinking') !== 'true') {
+    thinkingEl.setAttribute('data-bubbles-thinking', 'true')
+  }
+}
+
+function detectToolState(toolBlock) {
+  if (!isElement(toolBlock)) return 'completed'
+
+  // 1. Running check (highest priority: running > failed > completed > unknown)
+  if (
+    toolBlock.getAttribute('data-tool-state') === 'running' ||
+    toolBlock.getAttribute('data-tool-pending') === 'true' ||
+    toolBlock.hasAttribute('data-tool-pending') ||
+    toolBlock.querySelector('.animate-spin, [data-spinner], [data-glyph-spinner], .codicon-loading, .status-row-icon.animate-spin')
+  ) {
+    return 'running'
+  }
+
+  // Check braille spinner strictly in the header/status area (never in tool body or terminal)
+  const statusGlyph = toolBlock.querySelector('.status-row-icon, .group\\/disclosure-row, [data-slot="tool-row"], [data-slot="tool-header"], button:first-child')
+  if (statusGlyph && /[\u2800-\u28FF]/.test(statusGlyph.textContent || '')) {
+    return 'running'
+  }
+
+  // 2. Failed check (failed only when explicit error on status icon or tool attributes; NEVER inspect diff lines or content body)
+  if (
+    toolBlock.getAttribute('data-tool-status') === 'error' ||
+    toolBlock.getAttribute('data-tool-state') === 'failed' ||
+    toolBlock.getAttribute('data-tool-state') === 'error' ||
+    toolBlock.getAttribute('data-tool-error') === 'true' ||
+    toolBlock.hasAttribute('data-tool-error') ||
+    toolBlock.querySelector('[data-slot="tool-error"], [data-tool-error="true"]')
+  ) {
+    return 'failed'
+  }
+
+  // Status icon error checks (AlertCircle, codicon-error, text-destructive on status icon)
+  if (statusGlyph) {
+    const errorIcon = statusGlyph.querySelector(
+      'svg.text-destructive, .codicon-error, [aria-label*="error" i], [aria-label*="failed" i], .status-row-icon.text-destructive'
+    )
+    if (errorIcon) {
+      return 'failed'
+    }
+  }
+
+  // Check destructive class, excluding content body, diff lines, code, pre, and tabular-nums
+  const destructive = toolBlock.querySelector('.text-destructive, .bg-destructive')
+  if (destructive) {
+    const isInsideContentOrDiff = typeof destructive.closest === 'function' && Boolean(
+      destructive.closest('[data-slot="tool-fallback-content"], [data-slot="tool-content"], [class*="tabular-nums"], pre, code, .diff-stat, [data-diff]')
+    )
+    if (!isInsideContentOrDiff) {
+      return 'failed'
+    }
+  }
+
+  // Exit code failure check (explicit non-zero exit code)
+  const exitCodeEl = toolBlock.querySelector('[data-exit-code], .exit-code-failed')
+  if (exitCodeEl) {
+    const code = parseInt(exitCodeEl.getAttribute('data-exit-code') || '', 10)
+    if (!isNaN(code) && code !== 0) {
+      return 'failed'
+    }
+    if (exitCodeEl.classList?.contains?.('exit-code-failed')) {
+      return 'failed'
+    }
+  }
+
+  return 'completed'
+}
+
+// Cache the last state observed for a native ToolRun while its children were
+// mounted. React unmounts the children when the run collapses, so a failure
+// would otherwise be re-detected as 'completed' (red frame -> blue frame).
+const toolRunStateCache = new WeakMap()
+
+function enhanceToolBlock(toolBlock) {
+  if (!isElement(toolBlock)) return
+  if (toolBlock.getAttribute('data-bubbles-tool') !== 'true') {
+    toolBlock.setAttribute('data-bubbles-tool', 'true')
+  }
+  if (toolBlock.getAttribute('data-bubbles-tool-flat') !== 'true') {
+    toolBlock.setAttribute('data-bubbles-tool-flat', 'true')
+  }
+  let state = detectToolState(toolBlock)
+  if (toolBlock.hasAttribute('data-tool-group')) {
+    // Children are mounted while expanded; refresh the cached verdict then.
+    // When collapsed (no child rows), keep the verdict seen while expanded.
+    if (typeof toolBlock.querySelector === 'function' && toolBlock.querySelector('[data-tool-row]')) {
+      toolRunStateCache.set(toolBlock, state)
+    } else {
+      state = toolRunStateCache.get(toolBlock) || state
+    }
+  }
+  if (toolBlock.getAttribute('data-bubbles-tool-state') !== state) {
+    toolBlock.setAttribute('data-bubbles-tool-state', state)
+    stats.toolRefreshes += 1
+  }
+}
+
+function cleanToolTitle(raw) {
+  if (!raw || typeof raw !== 'string') return ''
+  let text = raw.trim()
+
+  // 1. Remove leading/trailing bullet or status glyphs: ▸, •, ✓, ✕, ◉, etc.
+  text = text.replace(/^[▸•✓✕◉\s\-\:]+/, '').replace(/[▸•✓✕◉\s\-\:]+$/, '').trim()
+
+  // 2. Handle embedded count/result/duration label: e.g. "Skill Manage1 resultSkill Manage"
+  const countPattern = /\d+\s*(?:results|result|entries|entry|files|file|items|item|lines|line|ms|s)(?=[A-Z\s\d_-]|$|[^a-zA-Z0-9])/i
+  if (countPattern.test(text)) {
+    const parts = text.split(countPattern).map(s => s.trim()).filter(Boolean)
+    if (parts.length > 0) {
+      text = parts[0]
+    }
+  }
+
+  // 3. Remove trailing count/result/duration: e.g. "search_files 3 results", "read_file 12ms"
+  text = text.replace(/\s*\d+\s*(?:results?|entries?|files?|items?|lines?|ms|s)$/i, '').trim()
+
+  // 4. Halving deduplication: e.g. "已加载技能已加载技能" (even length exact duplicate)
+  const len = text.length
+  if (len >= 4 && len % 2 === 0) {
+    const half = len / 2
+    if (text.slice(0, half) === text.slice(half)) {
+      text = text.slice(0, half)
+    }
+  }
+
+  // 5. Space-separated repetition: e.g. "Skill Manage Skill Manage"
+  const spaceMatch = text.match(/^(.{2,})\s+\1$/)
+  if (spaceMatch) {
+    text = spaceMatch[1]
+  }
+
+  // 6. Delimiter-separated repetition: e.g. "write_file / write_file"
+  const delimMatch = text.match(/^(.{2,})\s*[\/\|\-]\s*\1$/)
+  if (delimMatch) {
+    text = delimMatch[1]
+  }
+
+  // 7. General substring 2x repetition (for odd lengths or variable splits)
+  for (let k = 2; k <= Math.floor(text.length / 2); k++) {
+    const sub = text.slice(0, k)
+    if (text === sub + sub) {
+      text = sub
+      break
+    }
+  }
+
+  return text.trim().slice(0, 40)
+}
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.cleanToolTitle = cleanToolTitle
+}
+
+function getToolTitle(toolBlock) {
+  if (!isElement(toolBlock)) return ''
+
+  const sanitize = typeof cleanToolTitle === 'function' ? cleanToolTitle : (s) => (s || '').trim()
+
+  // 1. Explicit data attributes on toolBlock or descendants
+  const explicitName = toolBlock.getAttribute('data-tool-name') ||
+    toolBlock.getAttribute('data-tool-title') ||
+    toolBlock.getAttribute('data-call-name') ||
+    toolBlock.querySelector?.('[data-tool-name]')?.getAttribute('data-tool-name') ||
+    toolBlock.querySelector?.('[data-tool-title]')?.getAttribute('data-tool-title') ||
+    toolBlock.querySelector?.('[data-call-name]')?.getAttribute('data-call-name')
+  if (explicitName && explicitName.trim()) {
+    const cleaned = sanitize(explicitName)
+    if (cleaned) return cleaned
+  }
+
+  // 2. aria-label on toolBlock or disclosure button
+  const aria = toolBlock.getAttribute('aria-label') ||
+    toolBlock.querySelector?.('button[aria-expanded], [data-slot="tool-header"], .group\\/disclosure-row button')?.getAttribute('aria-label')
+  if (aria && typeof aria === 'string' && !/^(tool|disclosure|expand|collapse|toggle|close)$/i.test(aria.trim())) {
+    const cleanAria = sanitize(aria.replace(/^(?:run|call|executing|executed)?\s*(?:tool)?\s*[:\-]?\s*/i, ''))
+    if (cleanAria && cleanAria !== 'tool') return cleanAria
+  }
+
+  // 3. Explicit title / name slot (Hermes FadeText, ToolTitle, data-slot="tool-title", etc.)
+  const titleSlot = toolBlock.querySelector?.(
+    '[data-slot="tool-title"], [data-slot="tool-name"], .tool-title, ' +
+    'span[class*="conversation-scaffold-text"], span.FadeText, span[class*="FadeText"], span[class*="fade-text"], ' +
+    '[data-conversation-scaffold] span:not([class*="tabular-nums"]):not([class*="shrink-0"]):not(.status-row-icon), ' +
+    '[data-slot="tool-fallback-title"], span.font-medium, span.font-semibold, strong, code'
+  )
+  if (titleSlot && titleSlot.textContent?.trim()) {
+    const cleaned = sanitize(titleSlot.textContent)
+    if (cleaned) return cleaned
+  }
+
+  // 4. Header element (inspect header only, NEVER full toolBlock content)
+  const headerEl = toolBlock.querySelector?.('header, .group\\/disclosure-row, [data-slot="tool-row"], .status-row-content')
+  if (headerEl) {
+    const headerTitleEl = headerEl.querySelector?.(
+      'span:not([class*="tabular-nums"]):not([class*="shrink-0"]):not(.status-row-icon), strong, code, .font-medium, .font-semibold'
+    )
+    if (headerTitleEl && headerTitleEl.textContent?.trim()) {
+      const cleaned = sanitize(headerTitleEl.textContent)
+      if (cleaned) return cleaned
+    }
+  }
+
+  // 5. Limited fallback (sanitized first line, excluding result/output/status badges)
+  const fallbackLine = (headerEl?.textContent || toolBlock.textContent || '').trim().split('\n')[0]
+  if (fallbackLine) {
+    const cleaned = sanitize(fallbackLine)
+    if (cleaned) return cleaned
+  }
+
+  return 'Tool'
+}
+
+function getToolAnchorId(toolBlock) {
+  if (!isElement(toolBlock)) return 'anchor_unknown'
+  const explicitId = toolBlock.getAttribute('data-tool-call-id') ||
+    toolBlock.getAttribute('data-call-id') ||
+    toolBlock.getAttribute('data-tool-id') ||
+    toolBlock.id
+  if (explicitId) return explicitId
+
+  let anchorId = toolBlock.getAttribute('data-bubbles-tool-anchor-id')
+  if (!anchorId) {
+    anchorId = `anchor_${Math.random().toString(36).slice(2, 9)}`
+    toolBlock.setAttribute('data-bubbles-tool-anchor-id', anchorId)
+  }
+  return anchorId
+}
+
+function getToolGroupId(run, parent) {
+  const asstRoot = parent.closest('[data-slot="aui_assistant-message-root"]')
+  const asstId = asstRoot?.getAttribute('data-message-id') || asstRoot?.id || ''
+  const sessionEl = parent.closest('[data-session-id]') || asstRoot?.closest?.('[data-session-id]')
+  const sessId = sessionEl?.getAttribute('data-session-id') || ''
+  const anchorId = getToolAnchorId(run[0])
+  const prefix = sessId ? `${sessId}_` : ''
+  return `grp_${prefix}${asstId || 'gen'}_${anchorId}`
+}
+
+function groupCompletedTools() {
+  // Clean up any headers that were erroneously placed inside a tool block (nested tool block bug)
+  for (const h of document.querySelectorAll('[data-slot="tool-block"] .bubbles-tool-group')) {
+    h.remove()
+  }
+
+  // Clean up any grouping attributes on nested tool blocks
+  for (const nested of document.querySelectorAll('[data-slot="tool-block"] [data-slot="tool-block"]')) {
+    nested.removeAttribute('data-bubbles-group-collapsed')
+    nested.removeAttribute('data-bubbles-in-group')
+    nested.removeAttribute('data-bubbles-group-id')
+  }
+
+  // Only select top-level tool blocks (exclude tool blocks nested inside another tool block)
+  const allTools = [...document.querySelectorAll('[data-slot="tool-block"]')].filter(tool => {
+    // A native ToolRun (data-tool-group) is already grouped by Hermes and owns
+    // its own ToolRunHeader. Never re-wrap it in a skin pill: when the run
+    // collapses, React unmounts its children, which would otherwise make it
+    // look like a single completed tool -> skin pill injected, native header
+    // hidden, and the failure box reads as "open but won't close".
+    return (
+      !tool.hasAttribute('data-tool-group') &&
+      !tool.parentElement?.closest?.('[data-slot="tool-block"]')
+    )
+  })
+
+  if (allTools.length === 0) {
+    for (const h of document.querySelectorAll('.bubbles-tool-group')) {
+      h.remove()
+    }
+    for (const dh of document.querySelectorAll('[data-bubbles-duplicate-header]')) {
+      dh.removeAttribute('data-bubbles-duplicate-header')
+    }
+    return
+  }
+
+  // Clean up any headers that have no completed tools or are orphaned
+  for (const h of document.querySelectorAll('.bubbles-tool-group')) {
+    const p = h.parentElement
+    if (!p || !p.querySelector('[data-slot="tool-block"]')) {
+      h.remove()
+    }
+  }
+
+  // Group tools by parent element
+  const parentMap = new Map()
+  for (const tool of allTools) {
+    const parent = tool.parentElement
+    if (!parent) continue
+    if (!parentMap.has(parent)) {
+      parentMap.set(parent, [])
+    }
+    parentMap.get(parent).push(tool)
+  }
+
+  for (const [parent, tools] of parentMap.entries()) {
+    processParentTools(parent, tools)
+  }
+}
+
+function processParentTools(parent, tools) {
+  // Partition into consecutive completed runs
+  const runs = []
+  let currentRun = []
+
+  for (let i = 0; i < tools.length; i++) {
+    const tool = tools[i]
+    const state = detectToolState(tool)
+    // A completed tool with NO expandable disclosure cannot reveal anything
+    // when the pill opens. This happens for a file edit under "Hide code
+    // diffs": it renders as a permanent single-line summary (its disclosure
+    // button is disabled and has no aria-expanded). Treat it as a non-groupable
+    // boundary so the skin never wraps it in an expandable pill — which would
+    // show only the 2px accent border (the "blue dot" with no content).
+    const isExpandable = Boolean(tool.querySelector('button[aria-expanded]'))
+
+    if (state === 'completed' && isExpandable) {
+      if (currentRun.length === 0) {
+        currentRun.push(tool)
+      } else {
+        const lastTool = currentRun[currentRun.length - 1]
+        // Check if tool is next sibling element (skipping any existing .bubbles-tool-group)
+        let nextSibling = lastTool.nextElementSibling
+        while (nextSibling && nextSibling.classList?.contains('bubbles-tool-group')) {
+          nextSibling = nextSibling.nextElementSibling
+        }
+        if (nextSibling === tool) {
+          currentRun.push(tool)
+        } else {
+          runs.push(currentRun)
+          currentRun = [tool]
+        }
+      }
+    } else {
+      // Non-completed (running/failed) OR non-expandable (summary-only) tool:
+      // never collapse it.
+      if (currentRun.length > 0) {
+        runs.push(currentRun)
+        currentRun = []
+      }
+      // Running, failed, and summary-only tools are NEVER collapsed
+      tool.removeAttribute('data-bubbles-group-collapsed')
+      tool.removeAttribute('data-bubbles-in-group')
+      tool.removeAttribute('data-bubbles-group-id')
+      const dupHeader = tool.querySelector?.('[data-bubbles-duplicate-header]')
+      if (dupHeader) {
+        dupHeader.removeAttribute('data-bubbles-duplicate-header')
+      }
+    }
+  }
+
+  if (currentRun.length > 0) {
+    runs.push(currentRun)
+  }
+
+  const activeHeaders = new Set()
+
+  for (const run of runs) {
+    const firstTool = run[0]
+    const groupId = getToolGroupId(run, parent)
+    const storageKey = `${ID}:tool-group:${groupId}`
+    const isExpanded = Boolean(safeGetStorage(storageKey, false))
+
+    // Check if there is already a group header right before firstTool
+    let header = firstTool.previousElementSibling
+    if (!header || !header.classList?.contains('bubbles-tool-group')) {
+      header = document.createElement('div')
+      header.className = 'bubbles-tool-group'
+      header.setAttribute('data-bubbles-tool-group', 'true')
+      header.setAttribute('data-bubbles-tool-flat', 'true')
+
+      const toggleBtn = document.createElement('button')
+      toggleBtn.type = 'button'
+      toggleBtn.className = 'bubbles-tool-group-toggle'
+      toggleBtn.setAttribute('data-bubbles-tool-group-toggle', 'true')
+
+      const chevron = document.createElement('span')
+      chevron.className = 'bubbles-group-chevron'
+      chevron.setAttribute('aria-hidden', 'true')
+
+      const icon = document.createElement('span')
+      icon.className = 'bubbles-group-icon'
+      icon.textContent = '✓'
+
+      const label = document.createElement('span')
+      label.className = 'bubbles-group-label'
+
+      toggleBtn.append(chevron, icon, label)
+      header.appendChild(toggleBtn)
+
+      toggleBtn.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+
+        const currentHeader = toggleBtn.closest('.bubbles-tool-group')
+        const currentExpanded = currentHeader?.getAttribute('data-group-state') === 'expanded'
+        const nextExpanded = !currentExpanded
+
+        currentHeader?.setAttribute('data-group-state', nextExpanded ? 'expanded' : 'collapsed')
+        toggleBtn.setAttribute('aria-expanded', String(nextExpanded))
+
+        // Update all tools in this group
+        const targetGroupId = currentHeader?.getAttribute('data-group-id')
+        if (targetGroupId && currentHeader?.parentElement) {
+          const groupedTools = currentHeader.parentElement.querySelectorAll(`[data-bubbles-group-id="${targetGroupId}"]`)
+
+          // Focus Safety: If collapsing and active focus is inside any tool, safely transfer focus to toggleBtn
+          if (!nextExpanded && typeof document !== 'undefined' && document.activeElement) {
+            const hasFocusInside = Array.from(groupedTools).some(tool => {
+              return typeof tool.contains === 'function' ? tool.contains(document.activeElement) : tool === document.activeElement
+            })
+            if (hasFocusInside && typeof toggleBtn.focus === 'function') {
+              toggleBtn.focus()
+            }
+          }
+
+          for (const gt of groupedTools) {
+            gt.setAttribute('data-bubbles-group-collapsed', nextExpanded ? 'false' : 'true')
+
+            // Sync the native ToolEntry disclosure(s) inside this ToolRun.
+            // The skin pill replaces the native header in single-tool groups,
+            // but the detail body only mounts when the ToolEntry's own
+            // disclosure is open. Drive the native toggle (which runs React's
+            // open state) so the command details actually render.
+            const nativeToggles = gt.querySelectorAll(
+              ".group\\/disclosure-row button[aria-expanded], button.group\\/disclosure-row, " +
+              "[data-slot='tool-header'] button, header button[aria-expanded]"
+            )
+            for (const nt of nativeToggles) {
+              const nativeOpen = nt.getAttribute('aria-expanded') === 'true'
+              if (nativeOpen !== nextExpanded && typeof nt.click === 'function') {
+                nt.click()
+              }
+            }
+          }
+        }
+
+        // Persist to storage
+        const currentKey = currentHeader?.getAttribute('data-storage-key')
+        if (currentKey) {
+          if (nextExpanded) {
+            safeSetStorage(currentKey, true)
+          } else {
+            safeRemoveStorage(currentKey)
+          }
+        }
+      })
+
+      parent.insertBefore(header, firstTool)
+      stats.toolGroupRefreshes += 1
+    }
+
+    activeHeaders.add(header)
+    header.setAttribute('data-group-id', groupId)
+    header.setAttribute('data-storage-key', storageKey)
+    header.setAttribute('data-group-state', isExpanded ? 'expanded' : 'collapsed')
+    header.setAttribute('data-tool-count', String(run.length))
+
+    const toggleBtn = header.querySelector('.bubbles-tool-group-toggle')
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-expanded', String(isExpanded))
+      const icon = toggleBtn.querySelector('.bubbles-group-icon')
+      const label = toggleBtn.querySelector('.bubbles-group-label')
+      if (label) {
+        if (run.length === 1) {
+          const title = getToolTitle(run[0]) || 'Tool'
+          if (icon) {
+            icon.textContent = '✓'
+            if (icon.style) icon.style.display = 'inline-flex'
+          }
+          if (label.textContent !== title) {
+            label.textContent = title
+          }
+        } else {
+          const countText = `${run.length} tools completed`
+          if (icon) {
+            icon.textContent = ''
+            if (icon.style) icon.style.display = 'none'
+          }
+          if (label.textContent !== countText) {
+            label.textContent = countText
+          }
+        }
+      }
+    }
+
+    // Mark or unmark duplicate native header for single vs multi tools
+    if (run.length === 1) {
+      const singleTool = run[0]
+      const nativeHeader = singleTool.querySelector?.('header, [data-slot="tool-header"], [data-slot="tool-row"], .group\\/disclosure-row, button.group\\/disclosure-row')
+      if (nativeHeader && nativeHeader.getAttribute('data-bubbles-duplicate-header') !== 'true') {
+        nativeHeader.setAttribute('data-bubbles-duplicate-header', 'true')
+      }
+    } else {
+      for (const tool of run) {
+        const nativeHeader = tool.querySelector?.('[data-bubbles-duplicate-header]')
+        if (nativeHeader) {
+          nativeHeader.removeAttribute('data-bubbles-duplicate-header')
+        }
+      }
+    }
+
+    // Mark all tools in this run
+    for (const tool of run) {
+      if (tool.getAttribute('data-bubbles-in-group') !== 'true') {
+        tool.setAttribute('data-bubbles-in-group', 'true')
+      }
+      if (tool.getAttribute('data-bubbles-tool-flat') !== 'true') {
+        tool.setAttribute('data-bubbles-tool-flat', 'true')
+      }
+      if (tool.getAttribute('data-bubbles-group-id') !== groupId) {
+        tool.setAttribute('data-bubbles-group-id', groupId)
+      }
+      const collapsedStr = isExpanded ? 'false' : 'true'
+      if (tool.getAttribute('data-bubbles-group-collapsed') !== collapsedStr) {
+        tool.setAttribute('data-bubbles-group-collapsed', collapsedStr)
+      }
+
+      // Reconcile the native ToolEntry disclosure with the persisted group
+      // state, so expanded groups reveal their details immediately — including
+      // after a reload when the skin pill is expanded. Only drive it open;
+      // collapsed groups are hidden anyway (display:none on the ToolRun).
+      if (isExpanded) {
+        const nativeToggles = tool.querySelectorAll(
+          ".group\\/disclosure-row button[aria-expanded], button.group\\/disclosure-row, " +
+          "[data-slot='tool-header'] button, header button[aria-expanded]"
+        )
+        for (const nt of nativeToggles) {
+          if (nt.getAttribute('aria-expanded') !== 'true' && typeof nt.click === 'function') {
+            nt.click()
+          }
+        }
+      }
+    }
+  }
+
+  // Clean up any stale/orphaned headers in this parent
+  const existingHeaders = parent.querySelectorAll(':scope > .bubbles-tool-group')
+  for (const h of existingHeaders) {
+    if (!activeHeaders.has(h)) {
+      h.remove()
+    }
+  }
+}
+
+// ============================================================================
+// 5. TASK MODULE
+// ============================================================================
+
+function findTaskSection(statusStack) {
+  if (!isElement(statusStack)) return null
+  const content = statusStack.querySelector('[data-slot="status-stack-content"]') || statusStack
+  const sections = content.querySelectorAll('[data-slot="status-section"]')
+  for (const section of sections) {
+    if (section.querySelector('.codicon-checklist')) {
+      return section
+    }
+  }
+  return null
+}
+
+/**
+ * Multi-Signal Task State Recognizer
+ *
+ * Priority Hierarchy:
+ * 1. failed: Signals: .codicon-error, .bg-destructive, .text-destructive, a numeric
+ *    exit-code badge, aria-label. An error wins over a spinner, but a spinner alone
+ *    never wins an error (see the tabular-nums note in the body).
+ * 2. running: Active execution. Signals: Braille characters, .animate-spin, [data-spinner], aria-label
+ * 3. waiting: Suspended/Paused. Signals: .codicon-warning, .codicon-debug-pause, aria-label
+ * 4. completed: Successfully resolved. Signals: .codicon-pass-filled, .codicon-check, aria-label
+ * 5. cancelled: Terminated early. Signals: .codicon-circle-slash, .codicon-close, aria-label
+ * 6. pending: Default initial queue state. Signals: StatusPendingIcon (svg/circle) or fallback
+ */
+function detectTaskState(row) {
+  if (!isElement(row)) return 'pending'
+
+  const iconContainer = row.querySelector('.status-row-icon')
+  const rowAria = row.getAttribute('aria-label') || ''
+  const iconAria = iconContainer?.getAttribute('aria-label') || ''
+  const combinedAria = `${rowAria} ${iconAria}`.toLowerCase()
+  const iconText = iconContainer?.textContent || ''
+  const hasBraille = /[\u2800-\u28FF]/.test(iconText)
+
+  // 1. FAILED — but an exit-code badge has to look like one. The old check was
+  //    `row.querySelector('.tabular-nums')`, and GlyphSpinner carries that class to
+  //    keep its braille frames from jittering (glyph-spinner.tsx:98), so EVERY
+  //    running row read as failed and got tinted red (maroon over the navy card).
+  //    A destructive/error signal still wins over a spinner: a row can be both.
+  const looksLikeExitCode = text => /^\s*-?\d{1,4}\s*$/.test(text) || /^\s*(exit|code|退出码|返回码)\b/i.test(text)
+  const hasCodeBadge = [...row.querySelectorAll('.tabular-nums')]
+    .some(el => looksLikeExitCode((el.textContent || '').trim()))
+  if (
+    iconContainer?.querySelector('.codicon-error') ||
+    iconContainer?.matches?.('.codicon-error') ||
+    row.querySelector('.text-destructive, .bg-destructive') ||
+    row.querySelector('span[class*="text-destructive"], span[class*="bg-destructive"]') ||
+    hasCodeBadge ||
+    /failed|error|失败|错误/.test(combinedAria)
+  ) {
+    return 'failed'
+  }
+
+  // 2. RUNNING
+  if (
+    hasBraille ||
+    iconContainer?.querySelector('.animate-spin, [data-spinner]') ||
+    iconContainer?.matches?.('.animate-spin, [data-spinner]') ||
+    /running|executing|运行中|执行中/.test(combinedAria)
+  ) {
+    return 'running'
+  }
+
+  // 3. WAITING / PAUSED CHECK
+  if (
+    iconContainer?.querySelector('.codicon-warning, .codicon-debug-pause') ||
+    iconContainer?.matches?.('.codicon-warning, .codicon-debug-pause') ||
+    /waiting|paused|等待|暂停/.test(combinedAria)
+  ) {
+    return 'waiting'
+  }
+
+  // 4. COMPLETED CHECK
+  if (
+    iconContainer?.querySelector('.codicon-pass-filled, .codicon-check, .codicon-pass') ||
+    iconContainer?.matches?.('.codicon-pass-filled, .codicon-check, .codicon-pass') ||
+    /completed|done|finished|已完成|完成/.test(combinedAria)
+  ) {
+    return 'completed'
+  }
+
+  // 5. CANCELLED CHECK
+  if (
+    iconContainer?.querySelector('.codicon-circle-slash, .codicon-close') ||
+    iconContainer?.matches?.('.codicon-circle-slash, .codicon-close') ||
+    /cancelled|canceled|已取消|取消/.test(combinedAria)
+  ) {
+    return 'cancelled'
+  }
+
+  // 6. PENDING CHECK (Fallback)
+  if (
+    iconContainer?.querySelector('svg, circle, [data-status-icon]') ||
+    iconContainer?.matches?.('svg, circle, [data-status-icon]') ||
+    /pending|queued|待办|等待中/.test(combinedAria)
+  ) {
+    return 'pending'
+  }
+
+  return 'pending'
+}
+
+function updateTaskState(row) {
+  if (!isElement(row)) return
+  const state = detectTaskState(row)
+
+  if (row.getAttribute('data-bubbles-task') !== 'true') {
+    row.setAttribute('data-bubbles-task', 'true')
+  }
+  if (row.getAttribute('data-bubbles-task-row') !== 'true') {
+    row.setAttribute('data-bubbles-task-row', 'true')
+  }
+  if (row.getAttribute('data-task-state') !== state) {
+    row.setAttribute('data-task-state', state)
+    stats.taskRefreshes += 1
+  }
+}
+
+function updateTaskHeaderCounter(taskSection, completedCount, totalCount) {
+  const trigger = taskSection?.querySelector?.('.status-section-trigger')
+  if (!trigger) return
+
+  // There is no pill badge here any more. Hermes' own header already prints
+  // 任务 n/m (status-stack/index.tsx:87), so a second counter only duplicated it
+  // — and lied: when the section collapses, the renderer swaps the rows for a
+  // preview, we counted 0 of 0, and the pill showed that. cleanupAll still
+  // removes any pill an older build left behind.
+  //
+  // Zero rows is that same case: keep the last ratio instead of animating the
+  // bar back to zero on a section that merely folded.
+  if (totalCount <= 0) return
+
+  const ratio = Math.min(1, Math.max(0, completedCount / totalCount))
+  const next = ratio.toFixed(3)
+  if (trigger.style.getPropertyValue('--bubbles-task-progress') !== next) {
+    trigger.style.setProperty('--bubbles-task-progress', next)
+  }
+}
+
+/* Keep the running task in view — once per change. Re-scrolling on every refresh
+ * would yank the list away from anyone reading the completed rows above it. */
+let lastScrolledTaskRow = null
+
+function scrollToActiveTaskRow(sectionEl) {
+  if (!isElement(sectionEl) || typeof document === 'undefined') return false
+  const body = sectionEl.querySelector('.status-section-body')
+  const active = sectionEl.querySelector("[data-bubbles-task-row][data-task-state='running']")
+  if (!isElement(body) || !isElement(active)) return false
+  if (active === lastScrolledTaskRow) return false
+
+  const boxRect = body.getBoundingClientRect()
+  const rowRect = active.getBoundingClientRect()
+  const inView = rowRect.top >= boxRect.top - 1 && rowRect.bottom <= boxRect.bottom + 1
+  lastScrolledTaskRow = active
+  if (inView) return false
+  active.scrollIntoView({ block: 'nearest' })
+  return true
+}
+
+function enhanceTaskSection(statusStack) {
+  const taskSection = findTaskSection(statusStack)
+  if (!taskSection) {
+    if (statusStack.hasAttribute('data-bubbles-has-task-section')) {
+      statusStack.removeAttribute('data-bubbles-has-task-section')
+    }
+    return
+  }
+
+  if (statusStack.getAttribute('data-bubbles-has-task-section') !== 'true') {
+    statusStack.setAttribute('data-bubbles-has-task-section', 'true')
+  }
+  if (taskSection.getAttribute('data-bubbles-task') !== 'true') {
+    taskSection.setAttribute('data-bubbles-task', 'true')
+  }
+  if (taskSection.getAttribute('data-bubbles-task-section') !== 'true') {
+    taskSection.setAttribute('data-bubbles-task-section', 'true')
+  }
+
+  setupTaskScroll(taskSection)
+
+  const rows = taskSection.querySelectorAll('[data-slot="status-row"]')
+  let completedCount = 0
+  for (const row of rows) {
+    updateTaskState(row)
+    if (row.getAttribute('data-task-state') === 'completed') {
+      completedCount += 1
+    }
+  }
+
+  // Update dynamic header counter badge
+  updateTaskHeaderCounter(taskSection, completedCount, rows.length)
+  scrollToActiveTaskRow(taskSection)
+}
+
+function setupTaskScroll(taskSection) {
+  const body = taskSection.querySelector('.status-section-body')
+  if (!body) return
+  if (body.getAttribute('data-bubbles-task-scroll') !== 'true') {
+    body.setAttribute('data-bubbles-task-scroll', 'true')
+  }
+}
+
+// ============================================================================
+// 6. APPROVAL & CLARIFY UX MODULE
+// ============================================================================
+
+function enhanceApproval(approvalEl) {
+  if (!isElement(approvalEl)) return
+  if (approvalEl.getAttribute('data-bubbles-approval') !== 'true') {
+    approvalEl.setAttribute('data-bubbles-approval', 'true')
+    stats.approvalRefreshes += 1
+  }
+}
+
+function enhanceClarify(clarifyEl) {
+  if (!isElement(clarifyEl)) return
+  if (clarifyEl.getAttribute('data-bubbles-clarify') !== 'true') {
+    clarifyEl.setAttribute('data-bubbles-clarify', 'true')
+    stats.clarifyRefreshes += 1
+  }
+}
+
+// ============================================================================
+// 6.5. SESSION & HISTORY MODULE (Phase 5A)
+// ============================================================================
+
+function isRowActive(rowEl) {
+  if (!isElement(rowEl)) return false
+  return (
+    rowEl.classList?.contains('bg-(--ui-row-active-background)') ||
+    rowEl.classList?.contains('bg-[var(--ui-row-active-background)]') ||
+    rowEl.getAttribute?.('data-selected') === 'true' ||
+    rowEl.getAttribute?.('aria-selected') === 'true' ||
+    Boolean(rowEl.matches?.('.bg-\\(--ui-row-active-background\\)')) ||
+    false
+  )
+}
+
+function enhanceSidebarSessionRow(rowEl) {
+  if (!isElement(rowEl)) return
+
+  // Mark row as recognized session row
+  if (rowEl.getAttribute('data-bubbles-session-row') !== 'true') {
+    rowEl.setAttribute('data-bubbles-session-row', 'true')
+    stats.sessionRefreshes += 1
+  }
+
+  // Update active state dynamically
+  const active = isRowActive(rowEl)
+  const currentActiveAttr = rowEl.getAttribute('data-bubbles-session-active')
+  const newActiveAttr = active ? 'true' : 'false'
+  if (currentActiveAttr !== newActiveAttr) {
+    rowEl.setAttribute('data-bubbles-session-active', newActiveAttr)
+    stats.sessionRefreshes += 1
+  }
+}
+
+function enhanceSidebarDivider(dividerEl) {
+  if (!isElement(dividerEl)) return
+  if (dividerEl.getAttribute('data-bubbles-session-divider') !== 'true') {
+    dividerEl.setAttribute('data-bubbles-session-divider', 'true')
+  }
+}
+
+// ============================================================================
+// 6.6. SESSION PREVIEW MODULE (Phase 5B)
+// ============================================================================
+
+let previewContainer = null
+let currentPreviewRow = null
+let previewListenersAttached = false
+let handlePointerOver = null
+let handlePointerOut = null
+let handleFocusIn = null
+let handleFocusOut = null
+let handleKeyDown = null
+
+function escapeHtml(str) {
+  if (!str) return ''
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+function cleanPreviewSnippet(s, maxLen = 130) {
+  if (!s) return ''
+  const oneLiner = s.replace(/\s+/g, ' ').trim()
+  return oneLiner.length > maxLen ? `${oneLiner.slice(0, maxLen)}…` : oneLiner
+}
+
+function extractSessionRowPreviewData(rowEl) {
+  if (!isElement(rowEl)) return null
+
+  // 1. Session Title
+  const titleEl = rowEl.querySelector('.hover-marquee-inner') ||
+    rowEl.querySelector('[data-slot="sidebar-row-label"]') ||
+    rowEl.querySelector('[data-slot="sidebar-row-title"]') ||
+    rowEl.querySelector('.hover-marquee')
+  const title = (titleEl?.textContent || rowEl.querySelector('button.row-button')?.textContent || '').trim()
+  if (!title) return null
+
+  // 2. Timestamp / Age
+  const timeEl = rowEl.querySelector('time')
+  const time = (timeEl?.getAttribute('aria-label') || timeEl?.textContent || '').trim()
+
+  // 3. User & Assistant snippets
+  let userSnippet = ''
+  let asstSnippet = ''
+  let metaInfo = ''
+
+  const active = isRowActive(rowEl)
+
+  if (active) {
+    // Current open session: extract latest live messages
+    const userMsgs = document.querySelectorAll('[data-slot="aui_user-message-root"]')
+    if (userMsgs.length > 0) {
+      const lastUser = userMsgs[userMsgs.length - 1]
+      const userContent = lastUser.querySelector('[data-slot="aui_user-message-content"]') || lastUser
+      userSnippet = (userContent.textContent || '').trim()
+    }
+
+    const asstMsgs = document.querySelectorAll('[data-slot="aui_assistant-message-root"]')
+    if (asstMsgs.length > 0) {
+      const lastAsst = asstMsgs[asstMsgs.length - 1]
+      const asstContent = lastAsst.querySelector('[data-slot="aui_assistant-message-content"]') || lastAsst
+      asstSnippet = (asstContent.textContent || '').trim()
+    }
+
+    // Task & Tool stats if present in current DOM. The count comes from Hermes' own
+    // section header — we no longer paint a pill of our own to read.
+    const taskHeader = document.querySelector('.status-section-header')
+    const toolGroupLabel = document.querySelector('.bubbles-group-label')
+    if (taskHeader?.textContent?.trim()) {
+      metaInfo = `✦ ${taskHeader.textContent.trim().replace(/\s+/g, ' ').slice(0, 24)}`
+    } else if (toolGroupLabel) {
+      metaInfo = `✦ ${toolGroupLabel.textContent.trim()}`
+    }
+  } else {
+    // Inactive session: extract from row's native rendered metadata / preview lines
+    const textSpans = rowEl.querySelectorAll('.truncate, .wrap-anywhere, [data-slot="sidebar-row-preview"]')
+    for (const span of textSpans) {
+      const text = (span.textContent || '').trim()
+      if (text.includes('·') || text.includes('tokens') || text.includes('messages') || text.includes('tasks')) {
+        metaInfo = `✦ ${text}`
+      } else if (!userSnippet && text.length > 0) {
+        userSnippet = text
+      }
+    }
+  }
+
+  return {
+    title: cleanPreviewSnippet(title, 80),
+    userSnippet: cleanPreviewSnippet(userSnippet, 130),
+    asstSnippet: cleanPreviewSnippet(asstSnippet, 130),
+    metaInfo: cleanPreviewSnippet(metaInfo, 60),
+    time
+  }
+}
+
+function ensurePreviewContainer() {
+  if (previewContainer && previewContainer.isConnected) return previewContainer
+  let el = document.getElementById('bubbles-session-preview')
+  if (!el) {
+    el = document.createElement('div')
+    el.id = 'bubbles-session-preview'
+    el.className = 'bubbles-session-preview'
+    el.setAttribute('aria-hidden', 'true')
+    el.setAttribute('role', 'tooltip')
+    document.body.appendChild(el)
+  }
+  previewContainer = el
+  return el
+}
+
+function positionPreview(rowEl, previewEl) {
+  if (!isElement(rowEl) || !isElement(previewEl)) return
+  if (typeof rowEl.getBoundingClientRect !== 'function') return
+
+  const rect = rowEl.getBoundingClientRect()
+  const pad = 10
+  const viewportW = (typeof window !== 'undefined' ? window.innerWidth : 1024) || 1024
+  const viewportH = (typeof window !== 'undefined' ? window.innerHeight : 768) || 768
+
+  const cardRect = previewEl.getBoundingClientRect?.() || { width: 300, height: 180 }
+  const previewW = cardRect.width || 300
+  const previewH = cardRect.height || 180
+
+  let left = rect.right + pad
+  let top = rect.top
+
+  // Horizontal boundary defense: flip or clamp
+  if (left + previewW > viewportW - pad) {
+    if (rect.left - previewW - pad > 0) {
+      left = rect.left - previewW - pad
+    } else {
+      left = Math.max(pad, viewportW - previewW - pad)
+    }
+  }
+
+  // Vertical boundary defense: clamp
+  if (top + previewH > viewportH - pad) {
+    top = Math.max(pad, viewportH - previewH - pad)
+  }
+
+  previewEl.style.left = `${Math.round(left)}px`
+  previewEl.style.top = `${Math.round(top)}px`
+}
+
+function showPreview(rowEl) {
+  if (!isElement(rowEl)) return
+
+  const data = extractSessionRowPreviewData(rowEl)
+  if (!data || !data.title) {
+    hidePreview()
+    return
+  }
+
+  currentPreviewRow = rowEl
+  const container = ensurePreviewContainer()
+
+  let html = `<div class="bubbles-preview-card">`
+  html += `<div class="bubbles-preview-header">`
+  html += `<span class="bubbles-preview-icon">✦</span>`
+  html += `<span class="bubbles-preview-title">${escapeHtml(data.title)}</span>`
+  html += `</div>`
+
+  if (data.userSnippet || data.asstSnippet) {
+    html += `<div class="bubbles-preview-body">`
+    if (data.userSnippet) {
+      html += `<div class="bubbles-preview-section bubbles-preview-user">`
+      html += `<span class="bubbles-preview-role">You</span>`
+      html += `<p class="bubbles-preview-text">${escapeHtml(data.userSnippet)}</p>`
+      html += `</div>`
+    }
+    if (data.asstSnippet) {
+      html += `<div class="bubbles-preview-section bubbles-preview-assistant">`
+      html += `<span class="bubbles-preview-role">Hermes</span>`
+      html += `<p class="bubbles-preview-text">${escapeHtml(data.asstSnippet)}</p>`
+      html += `</div>`
+    }
+    html += `</div>`
+  }
+
+  if (data.metaInfo || data.time) {
+    html += `<div class="bubbles-preview-footer">`
+    if (data.metaInfo) {
+      html += `<span class="bubbles-preview-meta">${escapeHtml(data.metaInfo)}</span>`
+    }
+    if (data.time) {
+      html += `<span class="bubbles-preview-time">${escapeHtml(data.time)}</span>`
+    }
+    html += `</div>`
+  }
+  html += `</div>`
+
+  container.innerHTML = html
+  container.setAttribute('data-visible', 'true')
+  container.setAttribute('aria-hidden', 'false')
+
+  stats.previewShows += 1
+  positionPreview(rowEl, container)
+}
+
+function hidePreview() {
+  currentPreviewRow = null
+  if (previewContainer) {
+    previewContainer.setAttribute('data-visible', 'false')
+    previewContainer.setAttribute('aria-hidden', 'true')
+  }
+}
+
+/* Phase B v2 — anchor the composer pill menus to their trigger.
+ *
+ * Both pill menus are Radix DropdownMenus declared with align="end", so the
+ * panel's RIGHT edge tracks the pill. That was fine while the pills sat at the
+ * right of a single-row composer; Phase B moved them left, and an end-aligned
+ * 240px panel now hangs off the pill's left edge.
+ *
+ * Radix owns the popper wrapper's inline left/top (and its transform for
+ * animations), so we never fight it by writing those. We append one translateX
+ * and remember the transform we found, so a re-open cannot stack shifts. */
+const COMPOSER_PILL_MENUS = [
+  { trigger: "[data-tour='model-pill']", panel: "[data-slot='dropdown-menu-content'][class~='w-64']" },
+  { trigger: "[data-testid='reasoning-pill']", panel: "[data-slot='dropdown-menu-content'][class~='w-52']" },
+]
+
+function alignComposerPillMenu(triggerEl) {
+  if (!isElement(triggerEl) || typeof document === 'undefined') return false
+  const pair = COMPOSER_PILL_MENUS.find(p => triggerEl.matches?.(p.trigger))
+  if (!pair) return false
+  const panel = document.querySelector(pair.panel)
+  if (!isElement(panel)) return false
+
+  const wrapper = panel.closest('[data-radix-popper-content-wrapper]') || panel
+  const triggerRect = triggerEl.getBoundingClientRect()
+  const panelRect = panel.getBoundingClientRect()
+  // Left-align to the trigger, but never push the panel off-screen.
+  const targetLeft = Math.min(
+    Math.max(triggerRect.left, 8),
+    Math.max(8, window.innerWidth - 8 - panelRect.width)
+  )
+  const dx = Math.round(targetLeft - panelRect.left)
+  if (Math.abs(dx) < 1) return false
+
+  if (wrapper.dataset.bubblesMenuBaseTransform === undefined) {
+    wrapper.dataset.bubblesMenuBaseTransform = wrapper.style.transform || ''
+  }
+  wrapper.style.transform = `${wrapper.dataset.bubblesMenuBaseTransform} translateX(${dx}px)`.trim()
+  return true
+}
+
+let handleComposerPillOpen = null
+
+function setupComposerMenuAlign() {
+  if (handleComposerPillOpen || typeof document === 'undefined') return
+  handleComposerPillOpen = (e) => {
+    const target = e.target
+    if (!isElement(target)) return
+    const trigger = target.closest?.(COMPOSER_PILL_MENUS.map(p => p.trigger).join(','))
+    if (!trigger) return
+    // Radix measures and positions in its own frame; align after two paints.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => alignComposerPillMenu(trigger))
+    })
+  }
+  document.addEventListener('click', handleComposerPillOpen, true)
+}
+
+function cleanupComposerMenuAlign() {
+  if (handleComposerPillOpen && typeof document !== 'undefined') {
+    document.removeEventListener('click', handleComposerPillOpen, true)
+  }
+  handleComposerPillOpen = null
+}
+
+function setupSessionPreview() {
+  if (previewListenersAttached || typeof document === 'undefined') return
+
+  handlePointerOver = (e) => {
+    const target = e.target
+    if (!isElement(target)) return
+    const row = closestSessionRow(target)
+    if (row) {
+      showPreview(row)
+    }
+  }
+
+  handlePointerOut = (e) => {
+    const target = e.target
+    if (!isElement(target)) return
+    const row = closestSessionRow(target)
+    const related = e.relatedTarget && isElement(e.relatedTarget) ? closestSessionRow(e.relatedTarget) : null
+    if (row && row !== related) {
+      hidePreview()
+    }
+  }
+
+  handleFocusIn = (e) => {
+    const target = e.target
+    if (!isElement(target)) return
+    const row = closestSessionRow(target)
+    if (row) {
+      showPreview(row)
+    }
+  }
+
+  handleFocusOut = (e) => {
+    const target = e.target
+    if (!isElement(target)) return
+    const row = closestSessionRow(target)
+    const related = e.relatedTarget && isElement(e.relatedTarget) ? closestSessionRow(e.relatedTarget) : null
+    if (row && row !== related) {
+      hidePreview()
+    }
+  }
+
+  handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      hidePreview()
+    }
+  }
+
+  document.addEventListener('pointerover', handlePointerOver, { passive: true })
+  document.addEventListener('pointerout', handlePointerOut, { passive: true })
+  document.addEventListener('focusin', handleFocusIn, { passive: true })
+  document.addEventListener('focusout', handleFocusOut, { passive: true })
+  document.addEventListener('keydown', handleKeyDown, { passive: true })
+
+  previewListenersAttached = true
+}
+
+function cleanupSessionPreview() {
+  if (!previewListenersAttached || typeof document === 'undefined') return
+
+  if (handlePointerOver) document.removeEventListener('pointerover', handlePointerOver)
+  if (handlePointerOut) document.removeEventListener('pointerout', handlePointerOut)
+  if (handleFocusIn) document.removeEventListener('focusin', handleFocusIn)
+  if (handleFocusOut) document.removeEventListener('focusout', handleFocusOut)
+  if (handleKeyDown) document.removeEventListener('keydown', handleKeyDown)
+
+  previewListenersAttached = false
+  handlePointerOver = null
+  handlePointerOut = null
+  handleFocusIn = null
+  handleFocusOut = null
+  handleKeyDown = null
+
+  if (previewContainer) {
+    previewContainer.remove()
+    previewContainer = null
+  }
+  currentPreviewRow = null
+}
+
+// ============================================================================
+// 7. OBSERVER MODULE (Idempotent Batching)
+// ============================================================================
+
+let observerInstance = null
+let animationFrameId = null
+let isScheduled = false
+
+function processDOM() {
+  isScheduled = false
+  const startTime = performance.now()
+
+  // 1. Process Conversation Messages
+  const userMessages = document.querySelectorAll('[data-slot="aui_user-message-root"], [data-slot="aui_edit-composer-root"]')
+  for (const msg of userMessages) {
+    enhanceUserMessage(msg)
+  }
+
+  const assistantMessages = document.querySelectorAll('[data-slot="aui_assistant-message-root"]')
+  for (const msg of assistantMessages) {
+    enhanceAssistantMessage(msg)
+  }
+
+  // 2. Process Thinking & Tool Call Blocks
+  const thinkingBlocks = document.querySelectorAll('[data-slot="aui_thinking-disclosure"]')
+  for (const tb of thinkingBlocks) {
+    enhanceThinkingBlock(tb)
+  }
+
+  const toolBlocks = document.querySelectorAll('[data-slot="tool-block"]')
+  for (const tool of toolBlocks) {
+    enhanceToolBlock(tool)
+  }
+
+  // Group and collapse consecutive completed tools (Phase 4 Clean Transcript)
+  groupCompletedTools()
+
+  // 3. Process Composer Status Stack & Tasks
+  const statusStacks = document.querySelectorAll('[data-slot="composer-status-stack"]')
+  for (const stack of statusStacks) {
+    enhanceTaskSection(stack)
+  }
+
+  // 4. Process Approval & Clarify Components
+  const approvals = document.querySelectorAll('[data-slot="tool-approval-stack"], [data-slot="tool-approval-card"]')
+  for (const app of approvals) {
+    enhanceApproval(app)
+  }
+
+  const clarifies = document.querySelectorAll('[data-slot="clarify-inline"], form[data-clarify-choices]')
+  for (const cl of clarifies) {
+    enhanceClarify(cl)
+  }
+
+  // 5. Process Sidebar Sessions & Date Dividers (Phase 5A)
+  const sessionRows = document.querySelectorAll(SESSION_ROW_PROBE)
+  for (const r of sessionRows) {
+    // A row shell is a .row-hover element inside the sidebar, and nothing else.
+    // The old fallback to r itself stamped the section-collapse caret button (91x20,
+    // empty) and the age/actions column as session rows, so the shell chrome (1px
+    // border + navy fill on hover) painted a large empty frame beside the caret.
+    const rowShell = sessionRowShell(r)
+    if (rowShell) enhanceSidebarSessionRow(rowShell)
+  }
+
+  const dividers = document.querySelectorAll('.group\\/workspace')
+  for (const d of dividers) {
+    enhanceSidebarDivider(d)
+  }
+
+  stats.lastBatchDurationMs = performance.now() - startTime
+}
+
+function scheduleProcess() {
+  if (isScheduled) return
+  isScheduled = true
+  animationFrameId = requestAnimationFrame(processDOM)
+}
+
+function setupObserver(ctx) {
+  const relevantSelectors = [
+    '[data-slot="aui_user-message-root"]',
+    '[data-slot="aui_edit-composer-root"]',
+    '[data-slot="aui_assistant-message-root"]',
+    '[data-slot="aui_thinking-disclosure"]',
+    '[data-slot="tool-block"]',
+    '[data-slot="composer-status-stack"]',
+    '[data-slot="status-section"]',
+    '[data-slot="status-row"]',
+    '[data-slot="tool-approval-stack"]',
+    '[data-slot="tool-approval-card"]',
+    '[data-slot="clarify-inline"]',
+    // Trigger list only — the sidebar gate lives in sessionRowShell, which the
+    // picker applies. A stray .row-hover elsewhere costs one rAF, not a mis-stamp.
+    SESSION_ROW_PROBE,
+    '.group\\/workspace'
+  ].join(', ')
+
+  observerInstance = new MutationObserver((mutations) => {
+    stats.observerCallbacks += 1
+    let shouldUpdate = false
+
+    for (const mutation of mutations) {
+      const target = mutation.target
+      if (!isElement(target)) continue
+
+      // Ignore typing and input interactions
+      if (target.closest('[data-slot="composer-rich-input"], textarea, input')) {
+        continue
+      }
+
+      // Ignore our own expand button triggers, counter, and tool groups
+      if (target.closest('.bubbles-user-expand-btn, .bubbles-tool-group, .bubbles-tool-group-toggle')) {
+        continue
+      }
+
+      if (mutation.type === 'childList') {
+        const addedNodes = [...mutation.addedNodes].filter(isElement)
+        const removedNodes = [...mutation.removedNodes].filter(isElement)
+        const allNodes = [...addedNodes, ...removedNodes]
+
+        for (const node of allNodes) {
+          if (node.classList?.contains('bubbles-tool-group') || node.hasAttribute?.('data-bubbles-tool-group')) {
+            continue
+          }
+          if (node.matches?.(relevantSelectors) || node.querySelector?.(relevantSelectors)) {
+            shouldUpdate = true
+            break
+          }
+        }
+      } else if (mutation.type === 'attributes') {
+        const attr = mutation.attributeName
+        if (attr === 'data-clamped' || attr === 'data-streaming' || attr === 'role' || attr === 'data-selected' || attr === 'aria-selected') {
+          shouldUpdate = true
+        } else if (attr === 'class' && closestSessionRow(target)) {
+          shouldUpdate = true
+        }
+      }
+
+      if (shouldUpdate) break
+    }
+
+    if (shouldUpdate) {
+      scheduleProcess()
+    }
+  })
+
+  observerInstance.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['data-clamped', 'data-streaming', 'role', 'data-selected', 'aria-selected', 'class']
+  })
+
+  // Initial immediate pass
+  scheduleProcess()
+}
+
+// ============================================================================
+// 8. LIFECYCLE & REGISTRATION (Zero-leak re-enable guarantee)
+// ============================================================================
+
+function installStyles() {
+  let styleEl = document.getElementById(STYLE_ID)
+  if (!styleEl) {
+    styleEl = document.createElement('style')
+    styleEl.id = STYLE_ID
+    styleEl.textContent = PLUGIN_CSS
+    document.head.appendChild(styleEl)
+  }
+  document.documentElement.setAttribute('data-bubbles-skin', 'true')
+  return () => {
+    styleEl?.remove()
+    document.documentElement.removeAttribute('data-bubbles-skin')
+  }
+}
+
+function cleanupAll() {
+  if (observerInstance) {
+    observerInstance.disconnect()
+    observerInstance = null
+  }
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId)
+    animationFrameId = null
+  }
+
+  // Remove injected styles & root attribute
+  const styleEl = document.getElementById(STYLE_ID)
+  if (styleEl) styleEl.remove()
+  document.documentElement.removeAttribute('data-bubbles-skin')
+
+  // Remove long user buttons and attributes
+  for (const el of document.querySelectorAll('[data-bubbles-long-user], [data-bubbles-user-expanded], [data-bubbles-user-message], [data-bubbles-assistant-message]')) {
+    clearLongUserDecoration(el)
+    el.removeAttribute('data-bubbles-user-message')
+    el.removeAttribute('data-bubbles-assistant-message')
+    el.removeAttribute('data-bubbles-role')
+  }
+  for (const btn of document.querySelectorAll('.bubbles-user-expand-btn')) {
+    btn.remove()
+  }
+
+  // Remove thinking and tool attributes
+  for (const el of document.querySelectorAll('[data-bubbles-thinking], [data-bubbles-tool], [data-bubbles-tool-state], [data-bubbles-in-group], [data-bubbles-group-id], [data-bubbles-group-collapsed], [data-bubbles-tool-flat]')) {
+    el.removeAttribute('data-bubbles-thinking')
+    el.removeAttribute('data-bubbles-tool')
+    el.removeAttribute('data-bubbles-tool-state')
+    el.removeAttribute('data-bubbles-in-group')
+    el.removeAttribute('data-bubbles-group-id')
+    el.removeAttribute('data-bubbles-group-collapsed')
+    el.removeAttribute('data-bubbles-tool-flat')
+  }
+  for (const el of document.querySelectorAll('[data-bubbles-duplicate-header]')) {
+    el.removeAttribute('data-bubbles-duplicate-header')
+  }
+  for (const group of document.querySelectorAll('.bubbles-tool-group')) {
+    group.remove()
+  }
+
+  // Remove task attributes and counter badge
+  for (const el of document.querySelectorAll('[data-bubbles-task], [data-bubbles-task-section], [data-bubbles-has-task-section], [data-bubbles-task-row], [data-bubbles-task-scroll]')) {
+    el.removeAttribute('data-bubbles-task')
+    el.removeAttribute('data-bubbles-task-section')
+    el.removeAttribute('data-bubbles-has-task-section')
+    el.removeAttribute('data-bubbles-task-row')
+    el.removeAttribute('data-bubbles-task-scroll')
+    el.removeAttribute('data-task-state')
+  }
+  // Remove approval and clarify attributes
+  for (const el of document.querySelectorAll('[data-bubbles-approval], [data-bubbles-clarify]')) {
+    el.removeAttribute('data-bubbles-approval')
+    el.removeAttribute('data-bubbles-clarify')
+  }
+
+  // Remove session and divider attributes (Phase 5A)
+  for (const el of document.querySelectorAll('[data-bubbles-session-row], [data-bubbles-session-active], [data-bubbles-session-divider]')) {
+    el.removeAttribute('data-bubbles-session-row')
+    el.removeAttribute('data-bubbles-session-active')
+    el.removeAttribute('data-bubbles-session-divider')
+  }
+
+  // Cleanup session preview (Phase 5B)
+  cleanupSessionPreview()
+  cleanupComposerMenuAlign()
+  lastScrolledTaskRow = null
+}
+
+export default {
+  id: ID,
+  name: 'Hermes Bubbles Skin',
+  register(ctx) {
+    pluginStorage = ctx?.storage || null
+
+    // Clean up any stale artifacts before installing
+    cleanupAll()
+
+    const uninstallStyles = installStyles()
+    setupObserver(ctx)
+    setupComposerMenuAlign()
+    setupSessionPreview()
+
+    console.info(`[${ID}] Desktop plugin activated (${BUILD_ID})`)
+
+    ctx?.onDispose?.(() => {
+      uninstallStyles()
+      cleanupAll()
+      console.info(`[${ID}] Desktop plugin disposed`)
+    })
+  }
+}

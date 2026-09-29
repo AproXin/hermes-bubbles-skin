@@ -1,0 +1,11 @@
+name: hermes-bubbles-skin
+version: "0.1.0"
+description: >-
+  Bubbles Desktop Plugin for Hermes Agent. Adds robust frosted glass conversation
+  bubbles, long prompt collapse, and refined execution task UI.
+author: AproXin
+kind: standalone
+provides_tools: []
+provides_hooks: []
+provides_middleware: []
+requires_env: []

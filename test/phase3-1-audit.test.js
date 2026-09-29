@@ -1,0 +1,265 @@
+/**
+ * test/phase3-1-audit.test.js
+ *
+ * Phase 3.1 Six UI Surfaces Integration & Robustness Audit:
+ * 1. Complete Agent Flow: Conversation -> Thinking -> Tool -> Task -> Approval -> Final Answer
+ * 2. Task + Tool Coexistence & Zero Collision
+ * 3. Task + Approval / Clarify Hierarchy & Non-Clipping Defenses
+ * 4. Streaming Performance & Idempotent Processing
+ * 5. Responsive Defenses: clamp(), overflow-wrap, table/code horizontal boundaries
+ * 6. Accessibility: Keyboard focus-visible & Reduced-Motion verification
+ */
+
+const assert = require('assert')
+const fs = require('fs')
+const path = require('path')
+
+class MockElement {
+  constructor(tagName = 'div', className = '', attributes = {}) {
+    this.tagName = tagName.toUpperCase()
+    this.nodeType = 1
+    this.className = className
+    this.attributes = { ...attributes }
+    this.children = []
+    this.parentElement = null
+    this.textContent = ''
+    this.style = {
+      getPropertyValue: (prop) => this.style[prop] || ''
+    }
+  }
+
+  getAttribute(key) {
+    return this.attributes[key] ?? null
+  }
+
+  setAttribute(key, value) {
+    this.attributes[key] = String(value)
+  }
+
+  hasAttribute(key) {
+    return key in this.attributes
+  }
+
+  removeAttribute(key) {
+    delete this.attributes[key]
+  }
+
+  appendChild(child) {
+    child.parentElement = this
+    this.children.push(child)
+    return child
+  }
+
+  querySelector(selector) {
+    for (const child of this.children) {
+      if (child.matches(selector)) return child
+      const sub = child.querySelector(selector)
+      if (sub) return sub
+    }
+    return null
+  }
+
+  querySelectorAll(selector) {
+    const results = []
+    for (const child of this.children) {
+      if (child.matches(selector)) results.push(child)
+      results.push(...child.querySelectorAll(selector))
+    }
+    return results
+  }
+
+  closest(selector) {
+    if (this.matches(selector)) return this
+    return this.parentElement ? this.parentElement.closest(selector) : null
+  }
+
+  matches(selector) {
+    const parts = selector.split(',').map(s => s.trim())
+    for (const part of parts) {
+      if (part.startsWith('.') && this.className.includes(part.slice(1))) return true
+      if (part.startsWith('[') && part.endsWith(']')) {
+        const inner = part.slice(1, -1)
+        if (inner.includes('=')) {
+          const [k, v] = inner.split('=').map(s => s.replace(/['"]/g, ''))
+          if (this.attributes[k] === v) return true
+        } else if (this.hasAttribute(inner)) {
+          return true
+        }
+      }
+      if (this.tagName.toLowerCase() === part.toLowerCase()) return true
+    }
+    return false
+  }
+
+  remove() {
+    if (this.parentElement) {
+      const idx = this.parentElement.children.indexOf(this)
+      if (idx !== -1) this.parentElement.children.splice(idx, 1)
+      this.parentElement = null
+    }
+  }
+}
+
+// Read functions from src/plugin.js
+const srcCode = fs.readFileSync(path.join(__dirname, '..', 'src', 'plugin.js'), 'utf8')
+
+function extractFn(name) {
+  const match = srcCode.match(new RegExp(`function ${name}\\([^)]*\\) \\{([\\s\\S]*?)\\n\\}`))
+  if (!match) throw new Error(`Function ${name} could not be extracted`)
+  return match[1]
+}
+
+function isElement(node) { return Boolean(node && node.nodeType === 1) }
+global.isElement = isElement
+
+const enhanceUserMessage = new Function('userRoot', 'isElement', 'stats', 'setupLongMessageCollapse', extractFn('enhanceUserMessage'))
+const enhanceAssistantMessage = new Function('assistantRoot', 'isElement', 'stats', extractFn('enhanceAssistantMessage'))
+const enhanceThinkingBlock = new Function('thinkingEl', 'isElement', extractFn('enhanceThinkingBlock'))
+const detectToolState = new Function('toolBlock', extractFn('detectToolState'))
+const enhanceToolBlock = new Function('toolBlock', 'isElement', 'detectToolState', 'stats', extractFn('enhanceToolBlock'))
+const detectTaskState = new Function('row', 'isElement', extractFn('detectTaskState'))
+const updateTaskHeaderCounter = new Function('taskSection', 'completedCount', 'totalCount', extractFn('updateTaskHeaderCounter'))
+const enhanceApproval = new Function('approvalEl', 'isElement', 'stats', extractFn('enhanceApproval'))
+const enhanceClarify = new Function('clarifyEl', 'isElement', 'stats', extractFn('enhanceClarify'))
+
+console.log('=== Phase 3.1 Six Surfaces Integration Audit ===')
+
+// 1. Complete Agent Flow Verification
+{
+  console.log('[Test 1] Complete Flow: User -> Assistant -> Thinking -> Tool -> Task -> Approval -> Final Answer')
+  const statsMock = { enhancedMessages: 0, toolRefreshes: 0, taskRefreshes: 0, approvalRefreshes: 0, clarifyRefreshes: 0 }
+
+  // Step 1: User Message
+  const userMsg = new MockElement('div', 'user-root', { 'data-slot': 'aui_user-message-root' })
+  enhanceUserMessage(userMsg, isElement, statsMock, () => {})
+  assert.strictEqual(userMsg.getAttribute('data-bubbles-user-message'), 'true', 'User message tagged')
+  assert.strictEqual(userMsg.getAttribute('data-bubbles-role'), 'user', 'Role stamped')
+
+  // Step 2: Assistant Message (Initial Thinking + Tool)
+  const assistantMsg = new MockElement('div', 'asst-root', { 'data-slot': 'aui_assistant-message-root' })
+  enhanceAssistantMessage(assistantMsg, isElement, statsMock)
+  assert.strictEqual(assistantMsg.getAttribute('data-bubbles-assistant-message'), 'true', 'Assistant message tagged')
+
+  // Step 3: Thinking Block
+  const thinking = new MockElement('div', 'thinking', { 'data-slot': 'aui_thinking-disclosure' })
+  enhanceThinkingBlock(thinking, isElement)
+  assert.strictEqual(thinking.getAttribute('data-bubbles-thinking'), 'true', 'Thinking block tagged')
+
+  // Step 4: Tool Block Running -> Completed
+  const tool = new MockElement('div', 'tool', { 'data-slot': 'tool-block' })
+  const toolSpinner = new MockElement('span', 'animate-spin')
+  tool.appendChild(toolSpinner)
+  enhanceToolBlock(tool, isElement, detectToolState, statsMock)
+  assert.strictEqual(tool.getAttribute('data-bubbles-tool-state'), 'running', 'Active tool detected as running')
+
+  toolSpinner.remove()
+  tool.textContent = 'Execution success'
+  enhanceToolBlock(tool, isElement, detectToolState, statsMock)
+  assert.strictEqual(tool.getAttribute('data-bubbles-tool-state'), 'completed', 'Finished tool detected as completed')
+
+  // Step 5: Task Running
+  const taskRow = new MockElement('div', 'status-row', { 'data-slot': 'status-row' })
+  const taskIcon = new MockElement('div', 'status-row-icon')
+  taskIcon.textContent = '⠋' // braille spinner
+  taskRow.appendChild(taskIcon)
+  const taskState = detectTaskState(taskRow, isElement)
+  assert.strictEqual(taskState, 'running', 'Task row detected as running')
+
+  // Step 6: Approval Interruption
+  const approvalStack = new MockElement('div', 'approval-stack', { 'data-slot': 'tool-approval-stack' })
+  const approvalCard = new MockElement('div', 'card', { 'data-slot': 'tool-approval-card' })
+  const allowBtn = new MockElement('button', 'btn', { 'data-approval-run': 'true' })
+  approvalCard.appendChild(allowBtn)
+  approvalStack.appendChild(approvalCard)
+
+  enhanceApproval(approvalStack, isElement, statsMock)
+  enhanceApproval(approvalCard, isElement, statsMock)
+  assert.strictEqual(approvalStack.getAttribute('data-bubbles-approval'), 'true', 'Approval stack marked')
+  assert.strictEqual(allowBtn.getAttribute('data-approval-run'), 'true', 'Native allow button untouched')
+
+  // Step 7: Approval accepted & removed, Task completes
+  approvalStack.remove()
+  taskIcon.textContent = ''
+  taskIcon.appendChild(new MockElement('span', 'codicon-check'))
+  const taskStateCompleted = detectTaskState(taskRow, isElement)
+  assert.strictEqual(taskStateCompleted, 'completed', 'Task transition to completed')
+
+  console.log('  ✓ Passed')
+}
+
+// 2. Task + Tool Coexistence & Zero Collision
+{
+  console.log('[Test 2] Task + Tool Coexistence: Independent state detection and zero cross-leakage')
+  const statsMock = { toolRefreshes: 0 }
+  
+  const toolBlock = new MockElement('div', 'tool', { 'data-slot': 'tool-block' })
+  toolBlock.appendChild(new MockElement('span', 'animate-spin'))
+  enhanceToolBlock(toolBlock, isElement, detectToolState, statsMock)
+
+  const taskRow = new MockElement('div', 'status-row', { 'data-slot': 'status-row' })
+  const taskIcon = new MockElement('div', 'status-row-icon')
+  taskIcon.appendChild(new MockElement('span', 'codicon-check'))
+  taskRow.appendChild(taskIcon)
+  const taskState = detectTaskState(taskRow, isElement)
+
+  assert.strictEqual(toolBlock.getAttribute('data-bubbles-tool-state'), 'running', 'Tool state running')
+  assert.strictEqual(taskState, 'completed', 'Task state completed')
+  assert.strictEqual(toolBlock.hasAttribute('data-task-state'), false, 'Tool block must not have task state')
+  assert.strictEqual(taskRow.hasAttribute('data-bubbles-tool-state'), false, 'Task row must not have tool state')
+  console.log('  ✓ Passed')
+}
+
+// 3. Stacking & Z-Index Defenses
+{
+  console.log('[Test 3] Stacking Hierarchy: Approval (z:50) > Clarify (z:40) > Task Dock (z:30) > Conversation (z:auto)')
+  assert(srcCode.includes("[data-slot='tool-approval-stack'] {\n  z-index: 50 !important;"), 'Approval stack must be z-index 50')
+  assert(srcCode.includes("[data-slot='clarify-inline'] {\n  display: block !important;\n  visibility: visible !important;\n  overflow: visible !important;\n  opacity: 1 !important;\n  border-radius: 14px !important;\n  background:\n    radial-gradient(400px 140px at 50% 0%, rgba(96, 165, 250, 0.20), transparent 70%),\n    rgba(10, 32, 64, 0.92) !important;\n  border: 1px solid rgba(147, 197, 253, 0.35) !important;\n  box-shadow:\n    0 12px 36px rgba(2, 18, 44, 0.50),\n    inset 0 1px 1px rgba(255, 255, 255, 0.22) !important;\n  backdrop-filter: blur(20px) saturate(1.4) !important;\n  -webkit-backdrop-filter: blur(20px) saturate(1.4) !important;\n  z-index: 40 !important;"), 'Clarify must be z-index 40')
+  console.log('  ✓ Passed')
+}
+
+// 4. Responsive Clamp & Horizontal Overflow Defenses
+{
+  console.log('[Test 4] Responsive Defenses: clamp() for ultra-short windows & break-word/overflow-x for narrow screens')
+  assert(srcCode.includes('clamp(90px, 28vh, 320px)'), 'Task section body must use responsive clamp(90px, 28vh, 320px)')
+  assert(srcCode.includes('clamp(100px, 24vh, 200px)'), 'Approval pre code must use responsive clamp(100px, 24vh, 200px)')
+  assert(srcCode.includes('overflow-wrap: break-word !important'), 'Break-word defense must be present')
+  assert(srcCode.includes('word-break: break-word !important'), 'Word-break defense must be present')
+  assert(srcCode.includes('overflow-x: auto !important'), 'Horizontal code and table scrolling defense must be present')
+  console.log('  ✓ Passed')
+}
+
+// 5. Accessibility: Focus-Visible & Reduced Motion
+{
+  console.log('[Test 5] Accessibility: Keyboard focus outlines & Reduced-Motion multi-surface coverage')
+  // Text inputs are excluded on purpose: SearchField's underline variant sizes its
+  // input to content ([field-sizing:content]), so a ring on the input hugs the text
+  // and floats off the field (measured 58px ring on an 82px field). Real controls
+  // glow via .desktop-input-chrome, which owns its own :focus treatment.
+  assert(srcCode.includes(':is(button, textarea, select, [role="button"]):focus-visible'), 'Focus visible selector covers the controls that can host a ring')
+  assert(!srcCode.includes(':is(button, textarea, input, select'), 'Blanket focus ring must not target bare input')
+  assert(srcCode.includes('outline: 2px solid #60a5fa !important'), 'Focus outline must be prominent 2px solid #60a5fa')
+  assert(srcCode.includes('@media (prefers-reduced-motion: reduce)'), 'Reduced motion query exists')
+  assert(srcCode.includes('[data-slot=\'tool-approval-card\']'), 'Approval card covered by reduced motion')
+  assert(srcCode.includes('[data-slot=\'clarify-inline\']'), 'Clarify inline card covered by reduced motion')
+  console.log('  ✓ Passed')
+}
+
+// 6. Idempotent Batching Under High Frequency
+{
+  console.log('[Test 6] Streaming Idempotence: Repeated batch executions do not bloat stats or re-stamp attributes')
+  const statsMock = { enhancedMessages: 0 }
+  const asst = new MockElement('div', 'asst', { 'data-slot': 'aui_assistant-message-root' })
+
+  // First call
+  enhanceAssistantMessage(asst, isElement, statsMock)
+  assert.strictEqual(statsMock.enhancedMessages, 1, 'First pass increments counter')
+
+  // Repeated 100 streaming ticks
+  for (let i = 0; i < 100; i++) {
+    enhanceAssistantMessage(asst, isElement, statsMock)
+  }
+  assert.strictEqual(statsMock.enhancedMessages, 1, 'Subsequent ticks must be completely no-op')
+  console.log('  ✓ Passed')
+}
+
+console.log('=== All Phase 3.1 Test Assertions Passed Successfully ===')
