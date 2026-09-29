@@ -30,6 +30,12 @@
 | [phase1-task-spec.md](reports/phase1-task-spec.md) | 第一阶段任务书 |
 | [prompt-tool-nesting-fix.md](reports/prompt-tool-nesting-fix.md) | 工具卡片嵌套状态修复的提示词记录 |
 
+## 给宿主的反馈
+
+| 文档 | 内容 |
+| --- | --- |
+| [hermes-tasks-panel-lifetime-feedback.md](hermes-tasks-panel-lifetime-feedback.md) | 任务面板在轮次结束即被 Hermes 卸载（`todos.ts:146-154`），皮肤层无解；含源码行号、复现步骤与三档建议 |
+
 ## 预览图
 
 [`previews/`](previews) 由 `node scripts/render-preview.js` 生成——用真实三层样式表
