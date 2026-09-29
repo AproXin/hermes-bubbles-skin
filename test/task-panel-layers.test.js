@@ -73,12 +73,22 @@ const BODY = `
   </div>
 </div>`
 
-fs.writeFileSync(path.join(os.tmpdir(), 'bubbles-layers.html'),
+const pageHtmlFor = body =>
   `<!doctype html><html data-bubbles-skin='true' data-hermes-mode='dark'><head><meta charset="utf-8">
 <link rel="stylesheet" href="${pathToFileURL(sheets.built).href}">
 <style id="hermes-desktop-custom-css">${sheets.skinCss}</style>
 <style id="hermes-bubbles-skin-runtime-styles">${sheets.pluginCss}</style>
-</head><body style="background:#08192f;margin:0;padding:140px">${BODY}</body></html>`)
+</head><body style="background:#08192f;margin:0;padding:140px">${body}</body></html>`
+
+const LAYERS_FILE = path.join(os.tmpdir(), 'bubbles-layers.html')
+fs.writeFileSync(LAYERS_FILE, pageHtmlFor(BODY))
+
+// The failure this file could not previously see: PLUGIN_CSS paints the card ONLY
+// on the stamped section, so if enhanceTaskSection never lands the stamp, an
+// unconditional dock-card reset leaves the panel as bare text on the chat
+// background. The unstamped page is the regression guard for that.
+const UNSTAMPED_FILE = path.join(os.tmpdir(), 'bubbles-layers-unstamped.html')
+fs.writeFileSync(UNSTAMPED_FILE, pageHtmlFor(BODY.replace(` data-bubbles-task-section="true"`, '')))
 
 const MEASURE = () => {
   const q = s => document.querySelector(s)
@@ -176,6 +186,17 @@ async function launch() {
   await pg.goto(pathToFileURL(path.join(os.tmpdir(), 'bubbles-layers.html')).href)
   const m = await pg.evaluate(`(${MEASURE.toString()})()`)
   const ink = await inkOutsideCard(pg, m.sectionBox)
+
+  // Same sheets, no stamp: the app's own dock card has to be visible again.
+  const pg2 = await browser.newPage({ viewport: { width: 820, height: 460 }, colorScheme: 'dark' })
+  await pg2.goto(pathToFileURL(UNSTAMPED_FILE).href)
+  const fallback = await pg2.evaluate(() => {
+    const card = document.querySelector('[data-slot="composer-status-stack"] > div[class*="rounded-t-2xl"]')
+    const c = getComputedStyle(card)
+    return { borderW: c.borderTopWidth, borderStyle: c.borderTopStyle, bg: c.backgroundColor,
+      radius: c.borderTopLeftRadius, blur: c.backdropFilter }
+  })
+  await pg2.close()
   await browser.close()
 
   console.log('\n=== Task Panel Layers Suite ===')
@@ -243,6 +264,14 @@ async function launch() {
     `the control pixel inside the card must change when the card goes, else this harness measures nothing: ${control}`)
   assert(worst <= 3,
     `the chat background within 22px of the card must be untouched by it (band outside the frame): ${outside.map(([k, v]) => `${k}=${v}`).join('  ')}`)
+
+  // 6. And the fallback: with no stamp, the dock card must paint its own frame
+  //    again, so a detection miss degrades to "the app's card", never to "nothing".
+  console.log(`fallback: ${JSON.stringify(fallback)}`)
+  assert(parseFloat(fallback.borderW) > 0 && fallback.borderStyle === 'solid',
+    `unstamped stack lost the app's own frame: ${fallback.borderW} ${fallback.borderStyle}`)
+  assert(!/0, 0, 0, 0/.test(fallback.bg),
+    `unstamped stack has no fill, so the rows would sit bare on the chat background: ${fallback.bg}`)
 
   console.log('\n=== Task Panel Layers Suite: PASS ===\n')
 })().catch(err => {

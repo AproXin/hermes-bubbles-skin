@@ -60,6 +60,10 @@ const stats = {
   taskRefreshes: 0,
   toolRefreshes: 0,
   toolGroupRefreshes: 0,
+  // Per-stage failures from runStage(). A stage that throws is otherwise silent:
+  // the symptom is only "some surface never appears", with nothing in the console.
+  stageErrors: {},
+  lastStageError: null,
   approvalRefreshes: 0,
   clarifyRefreshes: 0,
   sessionRefreshes: 0,
@@ -882,8 +886,12 @@ html[data-bubbles-skin='true'] [data-slot='composer-status-stack'] {
    (measured live: card ~738 vs composer surface 612), so a border here draws a
    square-cornered rectangle around everything — the "outer frame" that cannot be
    aligned without reimplementing the composer's own width maths. */
-html[data-bubbles-skin='true'] [data-slot='composer-status-stack'] > div[class*='rounded-t-2xl'],
-html[data-bubbles-skin='true'] :is([data-slot='composer-root'], [data-slot='composer-dock']) div.absolute.inset-x-0.bottom-full > div:first-child {
+/* The dock card must NOT be framed — but only when our own card exists. Clearing
+   it unconditionally made the panel's visibility depend on the JS stamp: if
+   enhanceTaskSection ever fails, the rows were left as bare text on the chat
+   background with no card at all. :has() keeps the app's own card as the fallback. */
+html[data-bubbles-skin='true'] [data-slot='composer-status-stack']:has([data-bubbles-task-section='true']) > div[class*='rounded-t-2xl'],
+html[data-bubbles-skin='true'] :is([data-slot='composer-root'], [data-slot='composer-dock']):has([data-bubbles-task-section='true']) div.absolute.inset-x-0.bottom-full > div:first-child {
   margin: 0 !important;
   padding: 0 !important;
   border: 0 !important;
@@ -3233,67 +3241,77 @@ let observerInstance = null
 let animationFrameId = null
 let isScheduled = false
 
+/* Run one pass stage in isolation. Stages are sequential and the Tasks panel is
+   third — behind the message and tool passes that carry all the load when many
+   tools run concurrently — so a single throw used to silently cost every later
+   stage, and the only symptom was "that surface never appears". The count lands in
+   stats so window.__hermesBubblesSkinStats can show it. */
+function runStage(name, fn) {
+  try {
+    fn()
+  } catch (err) {
+    stats.stageErrors[name] = (stats.stageErrors[name] || 0) + 1
+    stats.lastStageError = `${name}: ${(err && err.message) || String(err)}`
+  }
+}
+
 function processDOM() {
   isScheduled = false
   const startTime = performance.now()
 
   // 1. Process Conversation Messages
-  const userMessages = document.querySelectorAll('[data-slot="aui_user-message-root"], [data-slot="aui_edit-composer-root"]')
-  for (const msg of userMessages) {
-    enhanceUserMessage(msg)
-  }
-
-  const assistantMessages = document.querySelectorAll('[data-slot="aui_assistant-message-root"]')
-  for (const msg of assistantMessages) {
-    enhanceAssistantMessage(msg)
-  }
+  runStage('messages', () => {
+    for (const msg of document.querySelectorAll('[data-slot="aui_user-message-root"], [data-slot="aui_edit-composer-root"]')) {
+      enhanceUserMessage(msg)
+    }
+    for (const msg of document.querySelectorAll('[data-slot="aui_assistant-message-root"]')) {
+      enhanceAssistantMessage(msg)
+    }
+  })
 
   // 2. Process Thinking & Tool Call Blocks
-  const thinkingBlocks = document.querySelectorAll('[data-slot="aui_thinking-disclosure"]')
-  for (const tb of thinkingBlocks) {
-    enhanceThinkingBlock(tb)
-  }
-
-  const toolBlocks = document.querySelectorAll('[data-slot="tool-block"]')
-  for (const tool of toolBlocks) {
-    enhanceToolBlock(tool)
-  }
-
-  // Group and collapse consecutive completed tools (Phase 4 Clean Transcript)
-  groupCompletedTools()
+  runStage('scaffolding', () => {
+    for (const tb of document.querySelectorAll('[data-slot="aui_thinking-disclosure"]')) {
+      enhanceThinkingBlock(tb)
+    }
+    for (const tool of document.querySelectorAll('[data-slot="tool-block"]')) {
+      enhanceToolBlock(tool)
+    }
+    // Group and collapse consecutive completed tools (Phase 4 Clean Transcript)
+    groupCompletedTools()
+  })
 
   // 3. Process Composer Status Stack & Tasks
-  const statusStacks = document.querySelectorAll('[data-slot="composer-status-stack"]')
-  for (const stack of statusStacks) {
-    enhanceTaskSection(stack)
-  }
+  runStage('tasks', () => {
+    for (const stack of document.querySelectorAll('[data-slot="composer-status-stack"]')) {
+      enhanceTaskSection(stack)
+    }
+  })
 
   // 4. Process Approval & Clarify Components
-  const approvals = document.querySelectorAll('[data-slot="tool-approval-stack"], [data-slot="tool-approval-card"]')
-  for (const app of approvals) {
-    enhanceApproval(app)
-  }
-
-  const clarifies = document.querySelectorAll('[data-slot="clarify-inline"], form[data-clarify-choices]')
-  for (const cl of clarifies) {
-    enhanceClarify(cl)
-  }
+  runStage('overlays', () => {
+    for (const app of document.querySelectorAll('[data-slot="tool-approval-stack"], [data-slot="tool-approval-card"]')) {
+      enhanceApproval(app)
+    }
+    for (const cl of document.querySelectorAll('[data-slot="clarify-inline"], form[data-clarify-choices]')) {
+      enhanceClarify(cl)
+    }
+  })
 
   // 5. Process Sidebar Sessions & Date Dividers (Phase 5A)
-  const sessionRows = document.querySelectorAll(SESSION_ROW_PROBE)
-  for (const r of sessionRows) {
-    // A row shell is a .row-hover element inside the sidebar, and nothing else.
-    // The old fallback to r itself stamped the section-collapse caret button (91x20,
-    // empty) and the age/actions column as session rows, so the shell chrome (1px
-    // border + navy fill on hover) painted a large empty frame beside the caret.
-    const rowShell = sessionRowShell(r)
-    if (rowShell) enhanceSidebarSessionRow(rowShell)
-  }
-
-  const dividers = document.querySelectorAll('.group\\/workspace')
-  for (const d of dividers) {
-    enhanceSidebarDivider(d)
-  }
+  runStage('sidebar', () => {
+    for (const r of document.querySelectorAll(SESSION_ROW_PROBE)) {
+      // A row shell is a .row-hover element inside the sidebar, and nothing else.
+      // The old fallback to r itself stamped the section-collapse caret button (91x20,
+      // empty) and the age/actions column as session rows, so the shell chrome (1px
+      // border + navy fill on hover) painted a large empty frame beside the caret.
+      const rowShell = sessionRowShell(r)
+      if (rowShell) enhanceSidebarSessionRow(rowShell)
+    }
+    for (const d of document.querySelectorAll('.group\\/workspace')) {
+      enhanceSidebarDivider(d)
+    }
+  })
 
   stats.lastBatchDurationMs = performance.now() - startTime
 }

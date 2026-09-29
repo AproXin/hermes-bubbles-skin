@@ -48,7 +48,7 @@ const consts = [
   grab('closestSessionRow', /^const closestSessionRow = .*$/m),
 ].join('\n')
 const picker = grab('the sessionRows picker',
-  /const sessionRows = document\.querySelectorAll\(SESSION_ROW_PROBE\)[\s\S]*?\n {2}}/)
+  /for \(const r of document\.querySelectorAll\(SESSION_ROW_PROBE\)\) \{[\s\S]*?if \(rowShell\) enhanceSidebarSessionRow\(rowShell\)\n {4}}/)
 
 // The gate must stay an explicit ancestor check, not a document-wide class probe.
 assert(/querySelectorAll\('\.row-hover/.test(src) === false,
