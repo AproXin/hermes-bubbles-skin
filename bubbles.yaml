@@ -325,8 +325,8 @@ customCSS: |
     margin-right: 0 !important;
     align-self: flex-end !important;
     background:
-      radial-gradient(280px 100px at 85% 0%, rgba(191, 219, 254, 0.35), transparent 70%),
-      rgba(59, 130, 246, 0.45) !important;
+      radial-gradient(280px 100px at 85% 0%, rgba(191, 219, 254, 0.22), transparent 70%),
+      rgba(41, 84, 148, 0.55) !important;
     backdrop-filter: blur(16px) saturate(1.4);
     -webkit-backdrop-filter: blur(16px) saturate(1.4);
     color: #ffffff !important;

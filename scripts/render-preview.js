@@ -145,6 +145,20 @@ const SURFACES = {
       + `<div data-slot="file-diff-panel" class="min-w-0 max-w-full overflow-hidden"><div data-slot="diff-lines" class="min-w-0"><div class="block min-w-max whitespace-pre border-l-2 px-2.5 py-px border-(--ui-diff-add-border) bg-(--ui-diff-add-background)">+ 新加入的一行</div><div class="block min-w-max whitespace-pre border-l-2 px-2.5 py-px border-(--ui-diff-remove-border) bg-(--ui-diff-remove-background)">- 被删掉的一行</div></div></div>`
       + `</div></div></div>`,
   },
+
+  // The two bubbles side by side, so a hue change can be judged by eye rather
+  // than by reading rgba() values. Selectors from bubbles.yaml section 7:
+  // assistant paints [data-slot='aui_assistant-message-content'], the user bubble
+  // is .composer-human-message inside [data-slot='aui_user-message-root'].
+  bubbles: {
+    shot: '#shot',
+    viewport: { width: 900, height: 420 },
+    body: `<div id="shot" style="padding:28px;display:flex;flex-direction:column;gap:18px;width:840px">`
+      + `<div data-slot="aui_assistant-message-root"><div data-slot="aui_assistant-message-content" class="min-w-0 max-w-full"><p>助手回复：这是白雾霜玻气泡，用来和任务/工具脚手架区分。</p></div></div>`
+      + `<div data-slot="aui_user-message-root" class="group/user-message"><div class="composer-human-message-container"><div class="composer-human-message">我的提问：这是用户气泡，之前太蓝，现在压深降饱和。</div></div></div>`
+      + `<div data-slot="aui_user-message-root" class="group/user-message"><div class="composer-human-message-container"><div class="composer-human-message">第二条短消息</div></div></div>`
+      + `</div>`,
+  },
 }
 
 // ---------------------------------------------------------------------------

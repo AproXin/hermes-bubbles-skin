@@ -1496,13 +1496,17 @@ html[data-bubbles-skin='true'] [data-slot='sidebar'] [data-sidebar='menu-button'
   box-sizing: border-box !important;
 }
 
-/* Hover State */
+/* Hover State. The sidebar container is transparent (the constellation shows
+   through), so a 50%-alpha navy wash over it barely registered. Lifted to a
+   clearly readable sapphire band with a hairline that matches the composer and
+   Tasks card stroke, plus a top inner highlight so it reads as glass, not fill. */
 html[data-bubbles-skin='true'] [data-bubbles-session-row='true']:hover,
 html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover:hover,
 html[data-bubbles-skin='true'] [data-slot='sidebar'] [data-sidebar='menu-button']:hover {
-  background: rgba(16, 42, 78, 0.50) !important;
-  border-color: rgba(147, 197, 253, 0.25) !important;
-  color: #e2e8f0 !important;
+  background: rgba(30, 71, 128, 0.62) !important;
+  border-color: rgba(147, 197, 253, 0.38) !important;
+  box-shadow: inset 0 1px 0 rgba(191, 219, 254, 0.14) !important;
+  color: #f1f5f9 !important;
 }
 
 html[data-bubbles-skin='true'] [data-bubbles-session-row='true']:hover .hover-marquee,
@@ -1802,8 +1806,29 @@ html[data-bubbles-skin='true'] [data-slot='composer-surface'] > [aria-hidden] {
    ring there hugs the text and floats off the field (measured 58px ring on an
    82px field). Real controls glow on their own through .desktop-input-chrome. */
 html[data-bubbles-skin='true'] :is(button, textarea, select, [role="button"]):focus-visible {
-  outline: 2px solid #60a5fa !important;
-  outline-offset: 2px !important;
+  /* Negative offset: an outset ring floats off the element and reads as a stray
+     highlight box (reported on the catalog facet rows, where it also appeared
+     only after keyboard-ish focus, which is :focus-visible behaving correctly).
+     Inside the box it always looks deliberate and still marks the focused control. */
+  outline: 2px solid rgba(125, 175, 250, 0.75) !important;
+  outline-offset: -2px !important;
+}
+
+/* Facet / filter ticks. CheckboxMark paints a bare Codicon check that inherits
+   the row colour — in the overlay sidebar that resolves near-black over the
+   frosted panel, so "which sources are on" was unreadable. Give the mark its own
+   light sapphire and a box to sit in. */
+html[data-bubbles-skin='true'] [data-slot='checkbox-mark'] {
+  color: #bfdbfe !important;
+  border: 1px solid rgba(147, 197, 253, 0.38) !important;
+  border-radius: 4px !important;
+  background: rgba(9, 28, 54, 0.55) !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='checkbox-mark'][data-state='checked'] {
+  color: #eaf3ff !important;
+  border-color: rgba(147, 197, 253, 0.62) !important;
+  background: rgba(59, 130, 246, 0.34) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

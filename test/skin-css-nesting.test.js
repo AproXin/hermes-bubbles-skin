@@ -137,7 +137,12 @@ const expectedTopLevel = (code.match(/\n\s*[^{}\s][^{}]*\{/g) || []).length
   assert.notStrictEqual(parsed.bubble.border, '0px none', 'user bubble must keep its border')
   assert.notStrictEqual(parsed.bubble.shadow, 'none', 'user bubble must keep its glass shadow')
   assert.strictEqual(parsed.bubble.minHeight, '30px', 'user bubble must keep the compact 30px capsule')
-  assert(parsed.bubble.bg.includes('59, 130, 246'), `user bubble must stay sapphire: ${parsed.bubble.bg}`)
+  // The hue moved off the old rgba(59,130,246,.45) the user called 过蓝, but the
+  // pin still holds: blue-dominant, and never collapsing into the assistant's
+  // white frost (rgba(255,255,255,.13)) — the distinction is the design.
+  const bg = (parsed.bubble.bg.match(/[\d.]+/g) || []).map(Number)
+  assert(bg.length >= 3 && bg[2] > bg[0] && bg[2] > bg[1], `user bubble must stay blue-dominant: ${parsed.bubble.bg}`)
+  assert(!/255,\s*255,\s*255/.test(parsed.bubble.bg), `user bubble must not become the assistant's white glass: ${parsed.bubble.bg}`)
 
   console.log(`user bubble computes: ${JSON.stringify(parsed.bubble)}`)
   console.log(`dropdown rescue: ${overlay.selector} { z-index: ${overlay.z} }`)

@@ -237,7 +237,7 @@ console.log('=== Phase 3.1 Six Surfaces Integration Audit ===')
   // glow via .desktop-input-chrome, which owns its own :focus treatment.
   assert(srcCode.includes(':is(button, textarea, select, [role="button"]):focus-visible'), 'Focus visible selector covers the controls that can host a ring')
   assert(!srcCode.includes(':is(button, textarea, input, select'), 'Blanket focus ring must not target bare input')
-  assert(srcCode.includes('outline: 2px solid #60a5fa !important'), 'Focus outline must be prominent 2px solid #60a5fa')
+  assert(srcCode.includes('outline: 2px solid rgba(125, 175, 250, 0.75) !important') && srcCode.includes('outline-offset: -2px !important'), 'Focus ring stays 2px sapphire but sits inside the box — an outset ring read as a stray highlight box')
   assert(srcCode.includes('@media (prefers-reduced-motion: reduce)'), 'Reduced motion query exists')
   assert(srcCode.includes('[data-slot=\'tool-approval-card\']'), 'Approval card covered by reduced motion')
   assert(srcCode.includes('[data-slot=\'clarify-inline\']'), 'Clarify inline card covered by reduced motion')

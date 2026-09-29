@@ -521,12 +521,15 @@ assert(
   'plugin.js normal session rows must have low contrast slate text (#94a3b8) and transparent border'
 )
 
-// C. Subtle Hover State
+// C. Hover State — lifted for legibility over the transparent sidebar (the sidebar
+//    container is transparent now, so the old 0.50 navy wash barely registered).
+//    Guards the intent, not the retired numbers: a clearly stronger wash, a brighter
+//    hairline, near-white text.
 assert(
-  pluginSource.includes("background: rgba(16, 42, 78, 0.50) !important") &&
-  pluginSource.includes("border-color: rgba(147, 197, 253, 0.25) !important") &&
-  pluginSource.includes("color: #e2e8f0 !important"),
-  'plugin.js hover state must have subtle navy highlight and #e2e8f0 text'
+  pluginSource.includes("background: rgba(30, 71, 128, 0.62) !important") &&
+  pluginSource.includes("border-color: rgba(147, 197, 253, 0.38) !important") &&
+  pluginSource.includes("color: #f1f5f9 !important"),
+  'plugin.js hover must read clearly: sapphire wash 0.62 + hairline .38 + #f1f5f9 text'
 )
 
 // D. Active Session Accent and Glow
