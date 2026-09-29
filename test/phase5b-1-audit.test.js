@@ -476,14 +476,22 @@ console.log('\n=== Phase 5B.1 Real UI Tool Transcript Polish Audit Suite ===\n')
   assert(srcCode.includes("html[data-bubbles-skin='true'] [data-bubbles-tool-state='completed']"), 'CSS must style completed tool state')
   assert(srcCode.includes("content: '✓'"), 'Completed tool must carry a check in the glyph slot')
 
-  // Failed: red text + cross, no red container.
-  assert(srcCode.includes("html[data-bubbles-skin='true'] [data-bubbles-tool-state='failed']"), 'CSS must style failed tool state')
-  assert(srcCode.includes("color: #fca5a5 !important;"), 'Failed tool must read red in its own text')
-
-  // Running: the app's own spinner, tinted — no pulsing card.
-  assert(srcCode.includes("html[data-bubbles-skin='true'] [data-bubbles-tool-state='running']"), 'CSS must style running tool state')
-  assert(srcCode.includes('animation: none !important;'), 'Running tool must not pulse a card any more')
-  assert(srcCode.includes("color: #93c5fd !important;"), 'Running tool must read sapphire')
+  // Failed / running: the MARK carries the colour, never the whole row. A row-wide
+  // colour also dyed the duration badges, so a burst of failures read as a wall of
+  // salmon (seen live: ~40 failed rows all red). The app tints the title itself.
+  const blockOf = sel => {
+    const at = srcCode.indexOf(sel + ' {')
+    assert(at !== -1, `missing CSS block for ${sel}`)
+    return srcCode.slice(at, srcCode.indexOf('\n}', at))
+  }
+  const failedBlock = blockOf("html[data-bubbles-skin='true'] [data-bubbles-tool-state='failed']")
+  const runningBlock = blockOf("html[data-bubbles-skin='true'] [data-bubbles-tool-state='running']")
+  assert(!/color:\s*#(fca5a5|93c5fd)/.test(failedBlock),
+    'the failed row must not be dyed row-wide — the badges would go with it')
+  assert(!/color:\s*#(fca5a5|93c5fd)/.test(runningBlock),
+    'the running row must not be dyed row-wide')
+  assert(/content: '✗';\s*\n\s*color: #f87171/.test(srcCode), 'the cross should carry the red')
+  assert(/\.glyph-spinner \{\s*\n?\s*color: #60a5fa/.test(srcCode), 'the app spinner should carry the sapphire')
 
   console.log('  ✓ Passed')
 }

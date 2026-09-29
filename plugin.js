@@ -748,7 +748,12 @@ html[data-bubbles-skin='true'] [data-bubbles-duplicate-header='true'] {
   display: none !important;
 }
 
-/* Tool State Variations — colour plus a mark in the glyph slot. No boxes. */
+/* Tool State Variations — a mark in the glyph slot, and nothing else. No boxes,
+   and deliberately no row-wide colour: a blanket colour here also dyed the
+   duration badges, so a run of failures turned the whole transcript salmon. The
+   app already tints the title itself (fallback.tsx:321 text-destructive for
+   error, :319 scaffold-meta + shimmer while pending), so the row keeps its own
+   hierarchy and we only add the symbol. */
 html[data-bubbles-skin='true'] [data-bubbles-tool-state='running'] {
   background: transparent !important;
   border: none !important;
@@ -757,7 +762,6 @@ html[data-bubbles-skin='true'] [data-bubbles-tool-state='running'] {
   animation: none !important;
   display: block !important;
   opacity: 1 !important;
-  color: #93c5fd !important;
 }
 
 /* The row already animates itself — GlyphSpinner with spinner='breathe'
@@ -795,7 +799,6 @@ html[data-bubbles-skin='true'] [data-bubbles-tool-state='failed'] {
   box-shadow: none !important;
   display: block !important;
   opacity: 1 !important;
-  color: #fca5a5 !important;
 }
 
 /* The glyph slot carries the state. TOOL_HEADER_GLYPH_WRAP_CLASS is

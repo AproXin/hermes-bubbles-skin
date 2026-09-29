@@ -112,6 +112,8 @@ const MEASURE = () => {
     const after = getComputedStyle(wrap, '::after')
     const inner = wrap.firstElementChild
     return { content: after.content, afterDisplay: after.display, afterColor: after.color,
+      spinnerColor: (() => { const sp = wrap.querySelector('.glyph-spinner')
+        return sp ? getComputedStyle(sp).color : null })(),
       glyphDisplay: inner ? getComputedStyle(inner).display : 'missing' }
   }
   const headerOf = id => q(id)?.querySelector(':scope > div:first-child')
@@ -180,10 +182,21 @@ const MEASURE = () => {
   assert(m.glyphs.failed.glyphDisplay === 'none', 'the error circle must be hidden where the cross takes the slot')
   assert(m.glyphs.running.glyphDisplay !== 'none',
     'running keeps the app spinner — it is already the animation the user asked for')
-  assert(/59, 130, 246|96, 165, 250|147, 197, 253/.test(m.rowColors.running),
-    `the running row should read sapphire, got ${m.rowColors.running}`)
-  assert(/252, 165, 165|248, 113, 113|239, 68, 68/.test(m.rowColors.failed),
-    `the failed row should read red, got ${m.rowColors.failed}`)
+  // The colour belongs to the mark, not to the row. A row-wide `color` also dyed
+  // the duration badges, so a burst of failures turned the entire transcript
+  // salmon (seen live: ~40 failed rows, all red). The app already tints the title
+  // itself (fallback.tsx:321 text-destructive), so painting the row is redundant
+  // and it flattens the hierarchy.
+  const red = c => /252, 165, 165|248, 113, 113|239, 68, 68/.test(c || '')
+  const blue = c => /59, 130, 246|96, 165, 250|147, 197, 253/.test(c || '')
+  assert(!red(m.rowColors.failed) && !blue(m.rowColors.failed),
+    `the failed row must not be dyed row-wide — the badges would go salmon with it: ${m.rowColors.failed}`)
+  assert(!blue(m.rowColors.running) && !red(m.rowColors.running),
+    `the running row must not be dyed row-wide: ${m.rowColors.running}`)
+  assert(red(m.glyphs.failed.afterColor),
+    `the cross should carry the red instead, got ${m.glyphs.failed.afterColor}`)
+  assert(blue(m.glyphs.running.spinnerColor),
+    `the app spinner should carry the sapphire, got ${m.glyphs.running.spinnerColor}`)
 
   // 3. The emphasis boxes survive — that is the whole point of "只保留…".
   assert(!/0, 0, 0, 0/.test(m.codeCard.bg) || m.codeCard.bgImage !== 'none',
