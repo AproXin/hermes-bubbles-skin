@@ -174,7 +174,11 @@ html[data-bubbles-skin='true'] [data-context-menu-skip] > :is(div, button, [clas
   opacity: 0.85 !important;
   pointer-events: auto !important;
   z-index: 40 !important;
-  transition: all 0.2s ease !important;
+  /* This wrapper rule outranks the button rule below (its :is() + three :not()
+     add up to 0,6,1 vs 0,4,2), so it has to carry the full list — the button's
+     own hover moves background, colour, border and transform, not just opacity. */
+  transition: opacity 0.2s ease, background-color 0.2s ease, color 0.2s ease,
+              border-color 0.2s ease, transform 0.2s ease !important;
 }
 
 html[data-bubbles-skin='true'] [data-context-menu-skip]:hover > :is(div, button, [class*='absolute']):not(.composer-human-message):not([data-slot='aui_edit']):not(.bubbles-user-expand-btn),
@@ -196,7 +200,9 @@ html[data-bubbles-skin='true'] [data-context-menu-skip] button:not(.composer-hum
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
-  transition: all 0.2s ease !important;
+  /* The hover rule moves exactly these four. */
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease,
+              transform 0.2s ease !important;
 }
 
 html[data-bubbles-skin='true'] [data-context-menu-skip] button:not(.composer-human-message):not(.bubbles-user-expand-btn):hover {
@@ -498,7 +504,12 @@ html[data-bubbles-skin='true'] .sticky-human-clamp::after {
   cursor: pointer;
   outline: none;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  /* hover moves colour/border/shadow and lifts with transform; active resets it. */
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
 }
 
@@ -1248,7 +1259,11 @@ html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button[data-a
   font-size: 12px !important;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.40) !important;
   cursor: pointer !important;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  /* The gradient background never interpolated under a blanket transition
+     either — background-image is not animatable between two gradients — so
+     listing the two properties that really move keeps the hover identical. */
+  transition: box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button[data-approval-run]:hover {
@@ -1266,7 +1281,8 @@ html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button[data-a
   padding: 5px 12px !important;
   font-size: 12px !important;
   cursor: pointer !important;
-  transition: all 0.2s ease !important;
+  /* hover only repaints. */
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
 }
 
 html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button[data-approval-deny]:hover {
@@ -1282,7 +1298,7 @@ html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button:not([d
   border-radius: 8px !important;
   color: #bfdbfe !important;
   font-size: 12px !important;
-  transition: all 0.2s ease !important;
+  transition: background-color 0.2s ease, color 0.2s ease !important;
 }
 
 html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button:not([data-approval-run]):not([data-approval-deny]):hover {
@@ -1331,7 +1347,9 @@ html[data-bubbles-skin='true'] [data-slot='clarify-inline'] button[data-choice] 
   color: #cbd5e1 !important;
   padding: 6px 10px !important;
   margin-bottom: 4px !important;
-  transition: all 0.18s ease !important;
+  /* hover repaints three; the highlighted/pressed state adds the glow. */
+  transition: background-color 0.18s ease, border-color 0.18s ease,
+              color 0.18s ease, box-shadow 0.18s ease !important;
   white-space: normal !important;
   text-align: left !important;
   word-break: break-word !important;
@@ -1386,7 +1404,8 @@ html[data-bubbles-skin='true'] form[data-clarify-choices] button[type='submit'] 
   font-size: 12px !important;
   font-weight: 500 !important;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.40) !important;
-  transition: all 0.2s ease !important;
+  /* Same reasoning as the approval button: the gradient never interpolated. */
+  transition: box-shadow 0.2s ease, transform 0.2s ease !important;
 }
 
 html[data-bubbles-skin='true'] form[data-clarify-choices] button[type='submit']:hover {
@@ -1421,7 +1440,7 @@ html[data-bubbles-skin='true'] [data-slot='sidebar-container'] {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   border-right: 1px solid rgba(147, 197, 253, 0.15) !important;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  /* No state rule changes anything on this container, so it needs no transition. */
 }
 
 html[data-bubbles-skin='true'] [data-slot='sidebar-inner'] {

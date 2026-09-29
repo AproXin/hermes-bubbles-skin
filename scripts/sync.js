@@ -18,6 +18,7 @@
 const fs = require('fs')
 const path = require('path')
 const crypto = require('crypto')
+const { execFileSync } = require('child_process')
 const { blockScalar, customCssCap } = require('./lib/sheets')
 
 const ROOT_DIR = path.resolve(__dirname, '..')
@@ -48,6 +49,18 @@ if (!fs.existsSync(SRC_FILE)) {
 }
 
 const sourceContent = fs.readFileSync(SRC_FILE, 'utf8')
+
+/* Refuse to deploy something that cannot even parse. PLUGIN_CSS is one big JS
+   template literal, so a stray backtick inside a CSS comment ends the string
+   early: the file still looks like CSS, Node refuses to load it, and the runtime
+   reports nothing useful. This has happened three times; the check belongs in the
+   deploy door, not only in the test suite. */
+try {
+  execFileSync(process.execPath, ['--check', SRC_FILE], { stdio: 'pipe' })
+} catch (e) {
+  die(`src/plugin.js does not parse:\n${(e.stderr || '').toString().trim().split('\n').slice(0, 6).join('\n')}`)
+}
+
 const generatedBanner = `/**\n * DO NOT EDIT DIRECTLY.\n * Generated from src/plugin.js via \`node scripts/sync.js\`.\n */\n\n`
 const outputContent = generatedBanner + sourceContent
 
