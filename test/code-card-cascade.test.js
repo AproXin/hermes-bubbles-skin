@@ -53,8 +53,7 @@ const skip = reason => {
 /** Newest built stylesheet: dist/ first, then the packaged app copy. */
 /* Sheet resolution lives in scripts/lib/sheets.js — one copy of these paths, so a
    test cannot drift from what the renderer actually loads. */
-const { builtCssPath: findBuiltCss, blockScalar, pluginCss: pluginCssFrom } =
-  require('../scripts/lib/sheets')
+const { builtCssPath: findBuiltCss, blockScalar, pluginCss: pluginCssFrom, launchChromium } = require('../scripts/lib/sheets')
 
 const builtCssPath = findBuiltCss()
 if (!builtCssPath) skip(`no built renderer CSS under ${DESKTOP}/dist or the packaged app`)
@@ -142,21 +141,7 @@ const SCAN = () => {
   }
 }
 
-async function launch() {
-  const candidates = [
-    'playwright-core',
-    path.join(HERMES_HOME, 'hermes-agent', 'node_modules', 'playwright-core')
-  ]
-  let chromium = null
-  for (const id of candidates) {
-    try { chromium = require(id).chromium; break } catch { /* next */ }
-  }
-  if (!chromium) return null
-  for (const opts of [{ channel: 'msedge' }, { channel: 'chrome' }, {}]) {
-    try { return await chromium.launch({ headless: true, ...opts }) } catch { /* next */ }
-  }
-  return null
-}
+async function launch() { return launchChromium() }
 
 ;(async () => {
   const browser = await launch()

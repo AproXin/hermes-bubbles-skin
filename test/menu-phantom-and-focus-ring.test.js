@@ -47,8 +47,7 @@ const skip = reason => {
 
 /* Sheet resolution lives in scripts/lib/sheets.js — one copy of these paths, so a
    test cannot drift from what the renderer actually loads. */
-const { builtCssPath: findBuiltCss, blockScalar, pluginCss: pluginCssFrom } =
-  require('../scripts/lib/sheets')
+const { builtCssPath: findBuiltCss, blockScalar, pluginCss: pluginCssFrom, launchChromium } = require('../scripts/lib/sheets')
 
 const builtCssPath = findBuiltCss()
 if (!builtCssPath) skip(`no built renderer CSS under ${DESKTOP}/dist`)
@@ -177,17 +176,7 @@ const MEASURE = () => {
   }
 }
 
-async function launch() {
-  let chromium = null
-  for (const id of ['playwright-core', path.join(HERMES_HOME, 'hermes-agent', 'node_modules', 'playwright-core')]) {
-    try { chromium = require(id).chromium; break } catch { /* next */ }
-  }
-  if (!chromium) return null
-  for (const opts of [{ channel: 'msedge' }, { channel: 'chrome' }, {}]) {
-    try { return await chromium.launch({ headless: true, ...opts }) } catch { /* next */ }
-  }
-  return null
-}
+async function launch() { return launchChromium() }
 
 // 6. The row-shell picker, run against mocks. plugin.js used to end that
 //    expression with `|| r`, so anything matching [data-row-actions] or

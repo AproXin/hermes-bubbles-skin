@@ -27,7 +27,7 @@ const fs = require('fs')
 const os = require('os')
 const path = require('path')
 const { pathToFileURL } = require('url')
-const { loadSheets } = require('../scripts/lib/sheets')
+const { loadSheets, launchChromium } = require('../scripts/lib/sheets')
 
 const HOME = os.homedir()
 const HERMES_HOME = process.env.HERMES_HOME || path.join(HOME, '.hermes')
@@ -167,17 +167,7 @@ async function inkOutsideCard(pg, [x, y, w, h]) {
   return delta
 }
 
-async function launch() {
-  let chromium = null
-  for (const id of ['playwright-core', path.join(HERMES_HOME, 'hermes-agent', 'node_modules', 'playwright-core')]) {
-    try { chromium = require(id).chromium; break } catch { /* next */ }
-  }
-  if (!chromium) return null
-  for (const opts of [{ channel: 'msedge' }, { channel: 'chrome' }, {}]) {
-    try { return await chromium.launch({ headless: true, ...opts }) } catch { /* next */ }
-  }
-  return null
-}
+async function launch() { return launchChromium() }
 
 ;(async () => {
   const browser = await launch()

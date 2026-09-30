@@ -27,23 +27,9 @@ const skip = reason => {
 }
 
 /* Sheet resolution lives in scripts/lib/sheets.js — one copy of these paths. */
-const { blockScalar } = require('../scripts/lib/sheets')
+const { blockScalar, launchChromium } = require('../scripts/lib/sheets')
 
-async function launch() {
-  const candidates = [
-    'playwright-core',
-    path.join(HERMES_HOME, 'hermes-agent', 'node_modules', 'playwright-core'),
-  ]
-  let chromium = null
-  for (const id of candidates) {
-    try { chromium = require(id).chromium; break } catch { /* next */ }
-  }
-  if (!chromium) return null
-  for (const opts of [{ channel: 'msedge' }, { channel: 'chrome' }, {}]) {
-    try { return await chromium.launch({ headless: true, ...opts }) } catch { /* next */ }
-  }
-  return null
-}
+async function launch() { return launchChromium() }
 
 const skinSource = skinSourcePath()
 const css = blockScalar(fs.readFileSync(skinSource, 'utf8'), 'customCSS')
