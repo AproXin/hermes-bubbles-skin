@@ -21,14 +21,16 @@ const { REPO } = require('../scripts/lib/sheets')
 
 const TEST_DIR = path.join(REPO, 'test')
 
-/* Ceiling as of 2026-09-30, after test/overlay-stacking.test.js replaced
-   phase3-1-audit's byte-pinned clarify block and its clamp()/z-index string checks
-   (15 → 8 here, 206 → 200 overall). Two suites hold most of what is left:
-   final-ui-polish (78) and tool-flattening (69) — 73% of the total. Much of
-   tool-flattening duplicates measurements transcript-row-flatness already makes on
-   a real DOM, so deleting its redundant text matches is the cheapest next cut.
-   Lower this number in the same commit that converts a suite. */
-const BASELINE = 200
+/* Ceiling as of 2026-09-30, after two conversions:
+   - overlay-stacking replaced phase3-1-audit's byte-pinned clarify block and its
+     z-index/clamp text checks (15 → 8; total 206 → 200)
+   - tool-flatten-layers replaced tool-flattening Tests 2-5, which asserted the
+     flattening by matching "border: none !important" out of both sheets
+     (69 → 27; total 200 → 159)
+   final-ui-polish (78) is now over half of what remains, then tool-flattening (27)
+   and phase5b-1-audit (13). Lower this number in the same commit that converts a
+   suite — a ceiling nobody moves is just a comment. */
+const BASELINE = 159
 
 const SOURCE_TEXT = /\b(?:pluginSource|srcCode|src|yamlSource|cssText|pluginCode|code|text)\s*\.includes\s*\(/g
 const SOURCE_REGEX = /\b(?:pluginSource|srcCode|yamlSource|pluginCode|cssText)\s*\.match\s*\(|\/[^/]*\/[a-z]*\.test\s*\(\s*(?:pluginSource|srcCode|yamlSource|pluginCode)/g

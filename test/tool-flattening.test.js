@@ -206,126 +206,15 @@ assert(
 console.log('  ✓ Passed: Tool flat attribute stamped on tool blocks and group headers')
 
 // ============================================================================
-// Test 2: Single Visual Layer on Grouped / Expanded Tools
+// Tests 2-5 asserted the flattening by matching stylesheet text — pluginSource
+// contains "border: none !important" and friends. Those words appear in dozens of
+// rules, so a match proved nothing about WHICH rule, and reformatting broke them.
+// They are replaced by test/tool-flatten-layers.test.js, which measures the
+// computed result on a real DOM (grouped/expanded rows, failed rows with red
+// children, running rows, the single-tool duplicate header) and reads the wildcard
+// ban out of the CSSOM.
 // ============================================================================
-console.log('[Test 2] Single Visual Layer on Grouped / Expanded Tools')
 
-// Verify that grouped tools do NOT draw duplicate glass cards
-assert(
-  pluginSource.includes("html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-in-group='true'][data-bubbles-group-collapsed='false']") &&
-  pluginSource.includes("background: transparent !important") &&
-  pluginSource.includes("border: none !important") &&
-  pluginSource.includes("box-shadow: none !important"),
-  'plugin.js must flatten expanded grouped tools to transparent background, no border, no shadow'
-)
-
-assert(
-  yamlSource.includes("[data-slot='tool-block'][data-bubbles-in-group='true'][data-bubbles-group-collapsed='false']") &&
-  yamlSource.includes("background: transparent !important") &&
-  yamlSource.includes("border: none !important") &&
-  yamlSource.includes("box-shadow: none !important"),
-  'bubbles.yaml must flatten expanded grouped tools to transparent background, no border, no shadow'
-)
-
-// Verify that child disclosure header inside grouped tools is neutralized.
-// [data-slot='tool-header'] used to be in both lists; the renderer never emits
-// that slot, so it was removed and these assertions name the live selectors.
-assert(
-  pluginSource.includes("html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-in-group='true'] :is(") &&
-  pluginSource.includes("header,") &&
-  pluginSource.includes(".group\\/disclosure-row,"),
-  'plugin.js must neutralize child tool headers inside grouped tools'
-)
-
-assert(
-  yamlSource.includes("[data-slot='tool-block'][data-bubbles-in-group='true'] :is(header, .group\\/disclosure-row, button.group\\/disclosure-row)"),
-  'bubbles.yaml must neutralize child tool headers inside grouped tools'
-)
-
-console.log('  ✓ Passed: Grouped tools render as clean flat rows without duplicate glass cards')
-
-// ============================================================================
-// Test 3: Elimination of "Double Red Border" (禁止双层红框)
-// ============================================================================
-console.log('[Test 3] Elimination of "Double Red Border" (禁止双层红框)')
-
-// A failure is carried by colour + a ✗ in the glyph slot, never by a red container:
-// the 2026-09-29 pass made every tool row bare text on the bubble, so the box is
-// gone at BOTH layers and only the inner-red stripping below still applies.
-assert(
-  pluginSource.includes("html[data-bubbles-skin='true'] [data-bubbles-tool-state='failed']") &&
-  /data-bubbles-tool-state='failed'\]\s*\{\s*background:\s*transparent\s*!important;\s*border:\s*none\s*!important;/.test(pluginSource) &&
-  pluginSource.includes("content: '✗'"),
-  'plugin.js must mark a failed tool with red text and a cross, not a red container'
-)
-
-// Verify inner child red borders and backgrounds are stripped
-assert(
-  pluginSource.includes("html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-tool-state='failed'] :is(") &&
-  pluginSource.includes("div[class*='border-destructive'],") &&
-  pluginSource.includes("div[class*='bg-destructive'],") &&
-  pluginSource.includes("div[class*='bg-red'],") &&
-  pluginSource.includes("background: transparent !important") &&
-  pluginSource.includes("border-color: transparent !important"),
-  'plugin.js must strip inner red borders and backgrounds inside failed tools'
-)
-
-assert(
-  yamlSource.includes("[data-slot='tool-block'][data-bubbles-tool-state='failed'] :is(") &&
-  yamlSource.includes("div[class*='border-destructive'],") &&
-  yamlSource.includes("div[class*='bg-destructive'],") &&
-  yamlSource.includes("background: transparent !important") &&
-  yamlSource.includes("border-color: transparent !important"),
-  'bubbles.yaml must strip inner red borders and backgrounds inside failed tools'
-)
-
-console.log('  ✓ Passed: Double red border completely eliminated, leaving exactly one clean red card')
-
-// ============================================================================
-// Test 4: Running Tool Single Glow Card
-// ============================================================================
-console.log('[Test 4] Running Tool Single Glow Card')
-
-assert(
-  pluginSource.includes("html[data-bubbles-skin='true'] [data-bubbles-tool-state='running']") &&
-  pluginSource.includes("animation: bubblesPulseGlow 3s ease-in-out infinite !important"),
-  'Running tool must have outer pulse glow'
-)
-
-assert(
-  pluginSource.includes("html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-tool-state='running'] :is(") &&
-  pluginSource.includes("background: transparent !important") &&
-  pluginSource.includes("border: none !important"),
-  'Running tool child headers must be transparent without nested boxes'
-)
-
-assert(
-  yamlSource.includes("[data-slot='tool-block'][data-bubbles-tool-state='running'] :is(") &&
-  yamlSource.includes("background: transparent !important") &&
-  yamlSource.includes("border: none !important"),
-  'bubbles.yaml running tool child headers must be transparent'
-)
-
-console.log('  ✓ Passed: Running tool is a single glowing card without nested boxes')
-
-// ============================================================================
-// Test 5: Safe Non-Invasive Scope (Zero Contamination)
-// ============================================================================
-console.log('[Test 5] Safe Non-Invasive Scope: Zero Contamination of User/Assistant')
-
-// Ensure NO wildcard tool or message rules exist
-assert(!pluginSource.includes('.tool * {'), 'plugin.js must never contain .tool * wildcards')
-assert(!pluginSource.includes('.message * {'), 'plugin.js must never contain .message * wildcards')
-assert(!yamlSource.includes('.tool * {'), 'bubbles.yaml must never contain .tool * wildcards')
-
-// Ensure user and assistant selectors are preserved
-assert(pluginSource.includes("[data-slot='aui_user-message-root']"), 'User message root must be protected')
-assert(pluginSource.includes("[data-slot='aui_assistant-message-root']"), 'Assistant message root must be protected')
-assert(pluginSource.includes("[data-slot='aui_thinking-disclosure']"), 'Thinking disclosure must be protected')
-assert(pluginSource.includes("[data-slot='clarify-inline']"), 'Clarify inline must be protected')
-assert(pluginSource.includes("[data-slot='tool-approval-stack']"), 'Approval stack must be protected')
-
-console.log('  ✓ Passed: User, Assistant, Thinking, Clarify, Approval fully protected')
 
 // ============================================================================
 // Test 6: Nested Tool Blocks Elimination (No Nested .bubbles-tool-group)
