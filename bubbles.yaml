@@ -34,11 +34,9 @@ customCSS: |
     --ui-sidebar-surface-background: transparent !important;
     --ui-bg-chrome: transparent !important;
     --color-sidebar: transparent !important;
-    /* The skin's only OPAQUE surface, and it must be one: xterm resolves this to a
-       concrete color for its WebGL renderer (terminal/selection.ts:77), which cannot
-       composite the ambient gradient. Matched to the terminal's own tab strip so it
-       stops reading as a dark rectangle — test/skin-scope-discipline.test.js pins
-       both that it stays the only opaque surface and that it is not near-black. */
+    /* The skin's only OPAQUE surface, and it must be one: xterm resolves it to a
+       concrete color for its WebGL renderer (terminal/selection.ts:82).
+       test/skin-scope-discipline.test.js keeps it the only one, and not near-black. */
     --ui-terminal-surface-background: #113c6a !important;
     --ui-widget-surface-background: rgba(255, 255, 255, 0.14) !important;
   }
@@ -47,14 +45,13 @@ customCSS: |
   html, body, #root, [data-contrib-shell], [data-slot='aui_thread-viewport'],
   [data-slot='sidebar-container'], [data-slot='sidebar-inner'], [data-sidebar='sidebar'],
   [data-slot='sidebar'], [data-slot='sidebar-wrapper'],
-  /* Anchored by surface class, not accessible name: the right-sidebar <aside>
-     takes an i18n aria-label (right-sidebar/index.tsx:80) and its border-l flips
-     to border-r when panes swap; the rail's label is on a <ul> (rail.tsx:53), so
-     the div[aria-label='终端'] this list used to carry could never match.
-     test/skin-scope-discipline.test.js keeps it that way. */
+  /* Anchored by surface class, never by accessible name: the right-sidebar <aside>
+     label is i18n, and the rail's sits on a <ul> (rail.tsx:53), so a locale literal
+     here could never match. test/skin-scope-discipline.test.js keeps it that way. */
   [class*='bg-(--ui-sidebar-surface-background)'],
-  [class*='bg-(--ui-terminal-surface-background)'], [class*='group/rail'],
-  .xterm, .xterm-viewport, .xterm-screen {
+  /* The terminal's own layers are deliberately absent here — an ambient gradient
+     cannot composite under xterm's WebGL canvas. See test/terminal-surface.test.js. */
+  [class*='group/rail'] {
     background:
       radial-gradient(650px 350px at 10% 5%, rgba(99, 102, 241, 0.22), transparent 70%),
       radial-gradient(850px 420px at 50% -8%, rgba(56, 189, 248, 0.26), transparent 65%),
@@ -68,6 +65,15 @@ customCSS: |
     border: none !important;
     box-shadow: none !important;
     color: #e2e8f0;
+  }
+
+  /* 2b. 终端面板：平涂应用自己的 surface token，不铺光斑渐变（xterm 的 WebGL
+     画布无法合成渐变，terminal/selection.ts:82 把 token 解析成具体颜色）。 */
+  .xterm, .xterm-viewport, .xterm-screen,
+  [class*='bg-(--ui-terminal-surface-background)']:not([class*='group/rail']) {
+    background: var(--ui-terminal-surface-background) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
   }
 
   /* 3. 透明过渡层：文字与容器区域 */

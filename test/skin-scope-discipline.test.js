@@ -110,6 +110,19 @@ const lum = rgb.length === 3 ? relLum(rgb) : 0
 check('the terminal surface is not near-black', rgb.length === 3 && lum >= 0.04 && rgb[2] >= 90,
   `${term} → luminance ${lum.toFixed(3)} (floor 0.040), blue ${rgb[2]} (floor 90); the old #0d2a4d was 0.021`)
 
+/* 5. The ambient backdrop must stop at the terminal. xterm hands the resolved
+   --ui-terminal-surface-background to a WebGL canvas (terminal/selection.ts:82),
+   which cannot composite a gradient, and an unlayered !important in this sheet
+   outranks the app's own utility — so listing the terminal's layers in the backdrop
+   rule froze the panel at a literal hex while the token said something else.
+   Measured live: token rgb(17,60,106), painted rgb(13,42,77). */
+const ambientPaintsTerminal = [...customCss.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+  .filter(([, sel, body]) => /\.xterm|bg-\(--ui-terminal-surface-background\)/.test(sel)
+    && /background-attachment\s*:\s*fixed/.test(body))
+  .map(([, sel]) => sel.trim().replace(/\s+/g, ' ').slice(-46))
+check('no ambient (viewport-fixed) backdrop paints a terminal layer',
+  ambientPaintsTerminal.length === 0, ambientPaintsTerminal.join(' | '))
+
 const failed = results.filter(r => !r.ok)
 console.log(`\n${failed.length ? 'FAIL' : 'OK'} — ${results.length - failed.length}/${results.length} assertions`)
 process.exit(failed.length ? 1 : 0)
