@@ -41,10 +41,15 @@ customCSS: |
   /* 2. 全窗口背景：统一蓝色拟态玻璃与光斑效果 */
   html, body, #root, [data-contrib-shell], [data-slot='aui_thread-viewport'],
   [data-slot='sidebar-container'], [data-slot='sidebar-inner'], [data-sidebar='sidebar'],
-  [data-slot='sidebar'], [data-slot='sidebar-wrapper'], aside[aria-label*='right' i],
-  aside[aria-label*='侧栏' i], aside.border-l, [data-slot*='right-sidebar'],
+  [data-slot='sidebar'], [data-slot='sidebar-wrapper'],
+  /* Anchored by surface class, not accessible name: the right-sidebar <aside>
+     takes an i18n aria-label (right-sidebar/index.tsx:80) and its border-l flips
+     to border-r when panes swap; the rail's label is on a <ul> (rail.tsx:53), so
+     the div[aria-label='终端'] this list used to carry could never match.
+     test/skin-scope-discipline.test.js keeps it that way. */
+  [class*='bg-(--ui-sidebar-surface-background)'],
   [class*='bg-(--ui-terminal-surface-background)'], [class*='group/rail'],
-  div[aria-label='终端'], div[aria-label='Terminals'], .xterm, .xterm-viewport, .xterm-screen {
+  .xterm, .xterm-viewport, .xterm-screen {
     background:
       radial-gradient(650px 350px at 10% 5%, rgba(99, 102, 241, 0.22), transparent 70%),
       radial-gradient(850px 420px at 50% -8%, rgba(56, 189, 248, 0.26), transparent 65%),
@@ -610,18 +615,18 @@ customCSS: |
     opacity: 0.88 !important;
   }
   /* 终端右侧标签栏 (Rail) 与快捷操作按钮：高质感冰蓝微边框 */
-  :is([class*='group/rail'], div[aria-label='终端'], div[aria-label='Terminals']) {
+  [class*='group/rail'] {
     border-left: 1px solid rgba(147, 197, 253, 0.20) !important;
   }
-  :is([class*='group/rail'], div[aria-label='终端']) button {
+  [class*='group/rail'] button {
     color: #93c5fd !important;
     border-radius: 6px !important;
   }
-  :is([class*='group/rail'], div[aria-label='终端']) button:hover {
+  [class*='group/rail'] button:hover {
     background: rgba(255, 255, 255, 0.12) !important;
     color: #ffffff !important;
   }
-  :is([class*='group/rail'], div[aria-label='终端']) :is([aria-pressed='true'], .text-foreground) {
+  [class*='group/rail'] :is([aria-pressed='true'], .text-foreground) {
     background: rgba(59, 130, 246, 0.35) !important;
     color: #ffffff !important;
   }
