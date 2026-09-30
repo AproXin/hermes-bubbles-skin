@@ -551,7 +551,7 @@ customCSS: |
     margin: 4px 0 6px 10px !important;
     padding: 2px 0 2px 12px !important;
   }
-  [data-slot='tool-block'][data-bubbles-in-group='true'] :is(header, [data-slot='tool-header'], .group\/disclosure-row, button.group\/disclosure-row) {
+  [data-slot='tool-block'][data-bubbles-in-group='true'] :is(header, .group\/disclosure-row, button.group\/disclosure-row) {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
@@ -559,7 +559,6 @@ customCSS: |
   /* 单个工具组展开时：隐藏重复的子层原生 disclosure header，由 Bubbles 的组标题行作为唯一标题与开关 */
   .bubbles-tool-group[data-tool-count='1'] + [data-slot='tool-block'] > :is(
     header,
-    [data-slot='tool-header'],
     .group\/disclosure-row,
     button.group\/disclosure-row
   ),
@@ -569,15 +568,10 @@ customCSS: |
   /* 错误状态：子层不再画红框/红底，失败只由外层文字变红 + ✗ 字形表示 */
   [data-slot='tool-block'][data-bubbles-tool-state='failed'] :is(
     header,
-    [data-slot='tool-header'],
     .group\/disclosure-row,
     button.group\/disclosure-row,
     div[class*='border-destructive'],
     div[class*='bg-destructive'],
-    div[class*='border-red'],
-    div[class*='bg-red'],
-    div[class*='border-rose'],
-    div[class*='bg-rose']
   ) {
     background: transparent !important;
     border-color: transparent !important;
@@ -587,7 +581,6 @@ customCSS: |
   /* 运行态工具：子层保持透明，运行由外层文字变蓝 + App 自带转圈表示 */
   [data-slot='tool-block'][data-bubbles-tool-state='running'] :is(
     header,
-    [data-slot='tool-header'],
     .group\/disclosure-row,
     button.group\/disclosure-row
   ) {

@@ -15,7 +15,7 @@
  *    - Logical separation of status, title, count
  * 3. Accurate Tool Completed vs Failed vs Running Classification
  *    - Diff lines with deletions (.text-destructive) do NOT turn tool into failed
- *    - True failure (error glyph in header / data-tool-status="error") is detected as failed
+ *    - True failure (a destructive glyph in the header cell) is detected as failed
  *    - Running tool (spinner / pending) is detected as running
  *    - Priority: running > failed > completed > unknown
  * 4. Visual Convergence
@@ -302,9 +302,13 @@ console.log('\n=== Phase 5B.1 Real UI Tool Transcript Polish Audit Suite ===\n')
 {
   console.log('[Test 1] Tool Title Extraction Priority & Deduplication')
 
-  // 1.1 Priority: data-tool-name
-  const toolWithAttr = new MockElement('div', 'tool-block', { 'data-tool-name': 'Skill Manage', 'data-slot': 'tool-block' })
-  assert.strictEqual(getToolTitle(toolWithAttr), 'Skill Manage', 'data-tool-name must have highest priority')
+  // 1.1 Priority: the disclosure row's scaffold label. There is no data-tool-name
+  //     on a tool block — the renderer expresses the title as text in the header.
+  const toolWithLabel = new MockElement('div', 'tool-block', { 'data-slot': 'tool-block' })
+  const labelSpan = new MockElement('span', 'conversation-scaffold-text')
+  labelSpan.textContent = 'Skill Manage'
+  toolWithLabel.appendChild(labelSpan)
+  assert.strictEqual(getToolTitle(toolWithLabel), 'Skill Manage', 'the header label is the title source')
 
   // 1.2 Priority: aria-label
   const toolWithAria = new MockElement('div', 'tool-block', { 'aria-label': 'Run tool: search_files', 'data-slot': 'tool-block' })
@@ -356,8 +360,15 @@ console.log('\n=== Phase 5B.1 Real UI Tool Transcript Polish Audit Suite ===\n')
 
   const parent = new MockElement('div', 'assistant-content')
 
-  // Single completed tool
-  const toolSingle = new MockElement('div', 'tool-block', { 'data-slot': 'tool-block', 'data-tool-name': 'Skill Manage' })
+  // Single completed tool. The title rides the header's scaffold label, which is
+  // where the renderer puts it (fallback.tsx ToolTitle) — there is no
+  // data-tool-name attribute on a tool block.
+  const toolSingle = new MockElement('div', 'tool-block', { 'data-slot': 'tool-block', 'data-conversation-scaffold': '' })
+  const singleRow = new MockElement('div', 'group/disclosure-row')
+  const singleTitle = new MockElement('span', 'text-(--conversation-scaffold-text)')
+  singleTitle.textContent = 'Skill Manage'
+  singleRow.appendChild(singleTitle)
+  toolSingle.appendChild(singleRow)
   parent.appendChild(toolSingle)
 
   const stats = { toolGroupRefreshes: 0 }
@@ -428,9 +439,11 @@ console.log('\n=== Phase 5B.1 Real UI Tool Transcript Polish Audit Suite ===\n')
 {
   console.log('[Test 3] Accurate Tool Completed vs Failed vs Running Classification')
 
-  // 3.1 Tool with diff line deletions must NOT be failed
-  const diffTool = new MockElement('div', 'tool-block', { 'data-slot': 'tool-block', 'data-tool-status': 'success' })
-  const diffContent = new MockElement('div', 'tool-fallback-content', { 'data-slot': 'tool-fallback-content' })
+  // 3.1 A red diff line inside the diff panel must NOT fail the tool. The diff
+  // container is [data-slot='file-diff-panel'] (FileDiffPanel); there is no
+  // data-tool-status attribute and no tool-fallback-content slot on a tool block.
+  const diffTool = new MockElement('div', 'tool-block', { 'data-slot': 'tool-block' })
+  const diffContent = new MockElement('div', 'file-diff-panel', { 'data-slot': 'file-diff-panel' })
   const deletedDiffLine = new MockElement('span', 'text-destructive')
   deletedDiffLine.textContent = '- const oldCode = true;'
   diffContent.appendChild(deletedDiffLine)
@@ -439,10 +452,17 @@ console.log('\n=== Phase 5B.1 Real UI Tool Transcript Polish Audit Suite ===\n')
   const diffState = detectToolState(diffTool)
   assert.strictEqual(diffState, 'completed', 'Tool with diff deletion inside content body must NOT be marked failed')
 
-  // 3.2 Real failed tool with error status glyph
-  const failedTool = new MockElement('div', 'tool-block', { 'data-slot': 'tool-block', 'data-tool-status': 'error' })
+  // 3.2 Real failed tool: the renderer's error signal is the AlertCircle glyph in
+  //     the header cell (fallback.tsx:210), not an attribute.
+  const failedTool = new MockElement('div', 'tool-block', { 'data-slot': 'tool-block' })
+  const failedRow = new MockElement('div', 'group/disclosure-row')
+  const glyphCell = new MockElement('span', 'grid size-3.5 shrink-0 place-items-center self-center')
+  const alert = new MockElement('svg', 'size-3.5 shrink-0 text-destructive')
+  glyphCell.appendChild(alert)
+  failedRow.appendChild(glyphCell)
+  failedTool.appendChild(failedRow)
   const failedState = detectToolState(failedTool)
-  assert.strictEqual(failedState, 'failed', 'Tool with data-tool-status="error" must be detected as failed')
+  assert.strictEqual(failedState, 'failed', 'a destructive glyph in the header cell must be detected as failed')
 
   // 3.3 Running tool with spinner
   const runningTool = new MockElement('div', 'tool-block', { 'data-slot': 'tool-block' })
@@ -451,11 +471,18 @@ console.log('\n=== Phase 5B.1 Real UI Tool Transcript Polish Audit Suite ===\n')
   const runningState = detectToolState(runningTool)
   assert.strictEqual(runningState, 'running', 'Tool with animate-spin must be detected as running')
 
-  // 3.4 Priority: running > failed > completed
-  const conflictTool = new MockElement('div', 'tool-block', { 'data-slot': 'tool-block', 'data-tool-status': 'error' })
+  // 3.4 Priority: running > failed. The host's failure signal is the AlertCircle
+  //     glyph in the header cell (fallback.tsx:210), not a data-tool-status
+  //     attribute — so the conflict has to be built the way the renderer builds it.
+  const conflictTool = new MockElement('div', 'tool-block', { 'data-slot': 'tool-block' })
+  const conflictRow = new MockElement('div', 'group/disclosure-row')
+  const conflictCell = new MockElement('span', 'grid size-3.5 shrink-0 place-items-center self-center')
+  conflictCell.appendChild(new MockElement('svg', 'size-3.5 shrink-0 text-destructive'))
+  conflictRow.appendChild(conflictCell)
+  conflictTool.appendChild(conflictRow)
   conflictTool.appendChild(new MockElement('span', 'animate-spin'))
   const conflictState = detectToolState(conflictTool)
-  assert.strictEqual(conflictState, 'running', 'Running priority must supersede failed status during active execution')
+  assert.strictEqual(conflictState, 'running', 'Running priority must supersede a failed glyph during active execution')
 
   console.log('  ✓ Passed')
 }

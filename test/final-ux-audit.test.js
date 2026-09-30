@@ -619,10 +619,17 @@ async function runFinalUxAudit() {
     const row = doc.createElement('div')
     row.className = 'row-hover'
     row.setAttribute('data-session-id', 'sess_preview_test')
+    // The host gives sidebar rows no data-slot for their label: the title lives in
+    // the marquee span inside button.row-button (app/chat/sidebar/session-row.tsx).
+    // This fixture used data-slot="sidebar-row-title", which the renderer never
+    // emits — so it was testing the skin's belief about the host, not the host.
+    const rowButton = doc.createElement('button')
+    rowButton.className = 'row-button'
     const title = doc.createElement('span')
-    title.setAttribute('data-slot', 'sidebar-row-title')
+    title.className = 'hover-marquee-inner'
     title.textContent = 'Transformer Attention Engine'
-    row.appendChild(title)
+    rowButton.appendChild(title)
+    row.appendChild(rowButton)
     const snippet = doc.createElement('span')
     snippet.className = 'truncate'
     snippet.textContent = 'Optimizing multi-head query projections'

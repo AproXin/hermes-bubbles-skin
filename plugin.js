@@ -727,7 +727,6 @@ html[data-bubbles-skin='true'] [data-bubbles-tool-flat='true'][data-bubbles-in-g
 /* Flatten child disclosure / header inside grouped tools to eliminate duplicate nested cards */
 html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-in-group='true'] :is(
   header,
-  [data-slot='tool-header'],
   .group\/disclosure-row,
   button.group\/disclosure-row
 ) {
@@ -740,7 +739,6 @@ html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-in-group='t
    Hide the duplicate native disclosure header inside the single tool block to prevent repetitive titles. */
 html[data-bubbles-skin='true'] .bubbles-tool-group[data-tool-count='1'] + [data-slot='tool-block'] > :is(
   header,
-  [data-slot='tool-header'],
   .group\/disclosure-row,
   button.group\/disclosure-row
 ),
@@ -772,7 +770,6 @@ html[data-bubbles-skin='true'] [data-bubbles-tool-state='running'] .glyph-spinne
 
 html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-tool-state='running'] :is(
   header,
-  [data-slot='tool-header'],
   .group\/disclosure-row,
   button.group\/disclosure-row
 ) {
@@ -834,15 +831,11 @@ html[data-bubbles-skin='true'] [data-bubbles-tool-state='failed'] span[class*='s
 /* Eliminate child red borders and child red backgrounds inside failed tool */
 html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-tool-state='failed'] :is(
   header,
-  [data-slot='tool-header'],
   .group\/disclosure-row,
   button.group\/disclosure-row,
   div[class*='border-destructive'],
   div[class*='bg-destructive'],
-  div[class*='border-red'],
   div[class*='bg-red'],
-  div[class*='border-rose'],
-  div[class*='bg-rose'],
   section[class*='border-destructive'],
   section[class*='bg-destructive']
 ) {
@@ -2115,12 +2108,13 @@ function enhanceThinkingBlock(thinkingEl) {
 function detectToolState(toolBlock) {
   if (!isElement(toolBlock)) return 'completed'
 
-  // 1. Running check (highest priority: running > failed > completed > unknown)
+  // 1. Running check (highest priority: running > failed > completed)
+  //    Only signals the renderer actually emits. An earlier version also read
+  //    data-tool-state / data-tool-pending / data-spinner / data-glyph-spinner;
+  //    none of those exist in apps/desktop/src (test/host-selector-drift.test.js
+  //    is what proves it), so those branches could never fire.
   if (
-    toolBlock.getAttribute('data-tool-state') === 'running' ||
-    toolBlock.getAttribute('data-tool-pending') === 'true' ||
-    toolBlock.hasAttribute('data-tool-pending') ||
-    toolBlock.querySelector('.animate-spin, [data-spinner], [data-glyph-spinner], .codicon-loading, .status-row-icon.animate-spin')
+    toolBlock.querySelector('.animate-spin, .codicon-loading, .status-row-icon.animate-spin')
   ) {
     return 'running'
   }
@@ -2139,18 +2133,9 @@ function detectToolState(toolBlock) {
     return 'running'
   }
 
-  // 2. Failed check (failed only when explicit error on status icon or tool attributes; NEVER inspect diff lines or content body)
-  if (
-    toolBlock.getAttribute('data-tool-status') === 'error' ||
-    toolBlock.getAttribute('data-tool-state') === 'failed' ||
-    toolBlock.getAttribute('data-tool-state') === 'error' ||
-    toolBlock.getAttribute('data-tool-error') === 'true' ||
-    toolBlock.hasAttribute('data-tool-error') ||
-    toolBlock.querySelector('[data-slot="tool-error"], [data-tool-error="true"]')
-  ) {
-    return 'failed'
-  }
-
+  // 2. Failed check. The renderer has no error ATTRIBUTE — fallback.tsx expresses
+  //    a failure through the glyph (AlertCircle, :210), the title class (:320) and
+  //    the body error block (:676), all of which are covered below.
   // Status icon error checks (AlertCircle, codicon-error, text-destructive on status icon)
   if (glyphCell) {
     const errorIcon = glyphCell.querySelector(
@@ -2167,20 +2152,8 @@ function detectToolState(toolBlock) {
     if (typeof destructive.closest !== 'function') return 'failed'
     // A node owned by a nested tool block is that block's verdict, not ours.
     if (destructive.closest('[data-slot="tool-block"]') !== toolBlock) continue
-    if (destructive.closest('[data-slot="tool-fallback-content"], [data-slot="tool-content"], [class*="tabular-nums"], pre, code, .diff-stat, [data-diff]')) continue
+    if (destructive.closest('[data-slot="file-diff-panel"], [data-slot="diff-lines"], [data-slot="diff-skeleton"], [class*="tabular-nums"], pre, code, .diff-stat')) continue
     return 'failed'
-  }
-
-  // Exit code failure check (explicit non-zero exit code)
-  const exitCodeEl = toolBlock.querySelector('[data-exit-code], .exit-code-failed')
-  if (exitCodeEl) {
-    const code = parseInt(exitCodeEl.getAttribute('data-exit-code') || '', 10)
-    if (!isNaN(code) && code !== 0) {
-      return 'failed'
-    }
-    if (exitCodeEl.classList?.contains?.('exit-code-failed')) {
-      return 'failed'
-    }
   }
 
   // 3. No marker. This is the host's own done state, not a missing verdict:
@@ -2281,39 +2254,36 @@ function getToolTitle(toolBlock) {
 
   const sanitize = typeof cleanToolTitle === 'function' ? cleanToolTitle : (s) => (s || '').trim()
 
-  // 1. Explicit data attributes on toolBlock or descendants
-  const explicitName = toolBlock.getAttribute('data-tool-name') ||
-    toolBlock.getAttribute('data-tool-title') ||
-    toolBlock.getAttribute('data-call-name') ||
-    toolBlock.querySelector?.('[data-tool-name]')?.getAttribute('data-tool-name') ||
-    toolBlock.querySelector?.('[data-tool-title]')?.getAttribute('data-tool-title') ||
-    toolBlock.querySelector?.('[data-call-name]')?.getAttribute('data-call-name')
-  if (explicitName && explicitName.trim()) {
-    const cleaned = sanitize(explicitName)
-    if (cleaned) return cleaned
-  }
+  // There used to be a step 1 here reading data-tool-name / data-tool-title /
+  // data-call-name off the block and its descendants. The renderer emits none of
+  // them (test/host-selector-drift.test.js), so the step could only ever fall
+  // through — and a fallback chain that starts with a branch that never fires
+  // reads as coverage where there is none.
 
-  // 2. aria-label on toolBlock or disclosure button
+  // 1. aria-label on toolBlock or disclosure button
   const aria = toolBlock.getAttribute('aria-label') ||
-    toolBlock.querySelector?.('button[aria-expanded], [data-slot="tool-header"], .group\\/disclosure-row button')?.getAttribute('aria-label')
+    toolBlock.querySelector?.('button[aria-expanded], .group\\/disclosure-row button')?.getAttribute('aria-label')
   if (aria && typeof aria === 'string' && !/^(tool|disclosure|expand|collapse|toggle|close)$/i.test(aria.trim())) {
     const cleanAria = sanitize(aria.replace(/^(?:run|call|executing|executed)?\s*(?:tool)?\s*[:\-]?\s*/i, ''))
     if (cleanAria && cleanAria !== 'tool') return cleanAria
   }
 
-  // 3. Explicit title / name slot (Hermes FadeText, ToolTitle, data-slot="tool-title", etc.)
+  // 2. Explicit title / name element. Hermes' ToolTitle renders a FadeText with
+  //    the scaffold label class and no data-slot of its own, so the class
+  //    fragments are the live path; the tool-title / tool-name /
+  //    tool-fallback-title slots that used to head this list do not exist.
   const titleSlot = toolBlock.querySelector?.(
-    '[data-slot="tool-title"], [data-slot="tool-name"], .tool-title, ' +
+    '.tool-title, ' +
     'span[class*="conversation-scaffold-text"], span.FadeText, span[class*="FadeText"], span[class*="fade-text"], ' +
     '[data-conversation-scaffold] span:not([class*="tabular-nums"]):not([class*="shrink-0"]):not(.status-row-icon), ' +
-    '[data-slot="tool-fallback-title"], span.font-medium, span.font-semibold, strong, code'
+    'span.font-medium, span.font-semibold, strong, code'
   )
   if (titleSlot && titleSlot.textContent?.trim()) {
     const cleaned = sanitize(titleSlot.textContent)
     if (cleaned) return cleaned
   }
 
-  // 4. Header element (inspect header only, NEVER full toolBlock content)
+  // 3. Header element (inspect header only, NEVER full toolBlock content)
   const headerEl = toolBlock.querySelector?.('header, .group\\/disclosure-row, [data-slot="tool-row"], .status-row-content')
   if (headerEl) {
     const headerTitleEl = headerEl.querySelector?.(
@@ -2337,11 +2307,9 @@ function getToolTitle(toolBlock) {
 
 function getToolAnchorId(toolBlock) {
   if (!isElement(toolBlock)) return 'anchor_unknown'
-  const explicitId = toolBlock.getAttribute('data-tool-call-id') ||
-    toolBlock.getAttribute('data-call-id') ||
-    toolBlock.getAttribute('data-tool-id') ||
-    toolBlock.id
-  if (explicitId) return explicitId
+  // The renderer puts no call-id on a tool block, so the element's own id is the
+  // only stable handle available; everything else falls back to the anchor we mint.
+  if (toolBlock.id) return toolBlock.id
 
   let anchorId = toolBlock.getAttribute('data-bubbles-tool-anchor-id')
   if (!anchorId) {
@@ -2547,7 +2515,7 @@ function processParentTools(parent, tools) {
             // open state) so the command details actually render.
             const nativeToggles = gt.querySelectorAll(
               ".group\\/disclosure-row button[aria-expanded], button.group\\/disclosure-row, " +
-              "[data-slot='tool-header'] button, header button[aria-expanded]"
+              "header button[aria-expanded]"
             )
             for (const nt of nativeToggles) {
               const nativeOpen = nt.getAttribute('aria-expanded') === 'true'
@@ -2610,7 +2578,7 @@ function processParentTools(parent, tools) {
     // Mark or unmark duplicate native header for single vs multi tools
     if (run.length === 1) {
       const singleTool = run[0]
-      const nativeHeader = singleTool.querySelector?.('header, [data-slot="tool-header"], [data-slot="tool-row"], .group\\/disclosure-row, button.group\\/disclosure-row')
+      const nativeHeader = singleTool.querySelector?.('header, [data-slot="tool-row"], .group\\/disclosure-row, button.group\\/disclosure-row')
       if (nativeHeader && nativeHeader.getAttribute('data-bubbles-duplicate-header') !== 'true') {
         nativeHeader.setAttribute('data-bubbles-duplicate-header', 'true')
       }
@@ -2646,7 +2614,7 @@ function processParentTools(parent, tools) {
       if (isExpanded) {
         const nativeToggles = tool.querySelectorAll(
           ".group\\/disclosure-row button[aria-expanded], button.group\\/disclosure-row, " +
-          "[data-slot='tool-header'] button, header button[aria-expanded]"
+          "header button[aria-expanded]"
         )
         for (const nt of nativeToggles) {
           if (nt.getAttribute('aria-expanded') !== 'true' && typeof nt.click === 'function') {
@@ -2689,7 +2657,7 @@ function findTaskSection(statusStack) {
  * 1. failed: Signals: .codicon-error, .bg-destructive, .text-destructive, a numeric
  *    exit-code badge, aria-label. An error wins over a spinner, but a spinner alone
  *    never wins an error (see the tabular-nums note in the body).
- * 2. running: Active execution. Signals: Braille characters, .animate-spin, [data-spinner], aria-label
+ * 2. running: Active execution. Signals: Braille characters, .animate-spin, aria-label
  * 3. waiting: Suspended/Paused. Signals: .codicon-warning, .codicon-debug-pause, aria-label
  * 4. completed: Successfully resolved. Signals: .codicon-pass-filled, .codicon-check, aria-label
  * 5. cancelled: Terminated early. Signals: .codicon-circle-slash, .codicon-close, aria-label
@@ -2727,8 +2695,8 @@ function detectTaskState(row) {
   // 2. RUNNING
   if (
     hasBraille ||
-    iconContainer?.querySelector('.animate-spin, [data-spinner]') ||
-    iconContainer?.matches?.('.animate-spin, [data-spinner]') ||
+    iconContainer?.querySelector('.animate-spin') ||
+    iconContainer?.matches?.('.animate-spin') ||
     /running|executing|运行中|执行中/.test(combinedAria)
   ) {
     return 'running'
@@ -2966,11 +2934,9 @@ function cleanPreviewSnippet(s, maxLen = 130) {
 function extractSessionRowPreviewData(rowEl) {
   if (!isElement(rowEl)) return null
 
-  // 1. Session Title
-  const titleEl = rowEl.querySelector('.hover-marquee-inner') ||
-    rowEl.querySelector('[data-slot="sidebar-row-label"]') ||
-    rowEl.querySelector('[data-slot="sidebar-row-title"]') ||
-    rowEl.querySelector('.hover-marquee')
+  // 1. Session Title. The sidebar rows carry no data-slot for their label; the
+  //    marquee span and the row button are what the renderer emits.
+  const titleEl = rowEl.querySelector('.hover-marquee-inner') || rowEl.querySelector('.hover-marquee')
   const title = (titleEl?.textContent || rowEl.querySelector('button.row-button')?.textContent || '').trim()
   if (!title) return null
 
@@ -2990,8 +2956,9 @@ function extractSessionRowPreviewData(rowEl) {
     const userMsgs = document.querySelectorAll('[data-slot="aui_user-message-root"]')
     if (userMsgs.length > 0) {
       const lastUser = userMsgs[userMsgs.length - 1]
-      const userContent = lastUser.querySelector('[data-slot="aui_user-message-content"]') || lastUser
-      userSnippet = (userContent.textContent || '').trim()
+      // No aui_user-message-content slot exists; the message root's own text is
+      // what the preview shows.
+      userSnippet = (lastUser.textContent || '').trim()
     }
 
     const asstMsgs = document.querySelectorAll('[data-slot="aui_assistant-message-root"]')
@@ -3012,7 +2979,7 @@ function extractSessionRowPreviewData(rowEl) {
     }
   } else {
     // Inactive session: extract from row's native rendered metadata / preview lines
-    const textSpans = rowEl.querySelectorAll('.truncate, .wrap-anywhere, [data-slot="sidebar-row-preview"]')
+    const textSpans = rowEl.querySelectorAll('.truncate, .wrap-anywhere')
     for (const span of textSpans) {
       const text = (span.textContent || '').trim()
       if (text.includes('·') || text.includes('tokens') || text.includes('messages') || text.includes('tasks')) {

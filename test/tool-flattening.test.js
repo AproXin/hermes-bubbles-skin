@@ -169,7 +169,11 @@ function extractFn(name) {
 
 const isElement = (node) => Boolean(node && node.nodeType === 1)
 const stats = { toolRefreshes: 0, toolGroupRefreshes: 0 }
-const detectToolState = (el) => el.getAttribute('data-tool-status') || 'completed'
+/* This used to be a stub — `(el) => el.getAttribute('data-tool-status') || 'completed'`
+   — an attribute the renderer does not emit, so every tool in this suite was
+   permanently 'completed' and the state assertions proved nothing about the real
+   detector. Run the shipped function instead. */
+const detectToolState = el => new Function('toolBlock', 'isElement', extractFn('detectToolState'))(el, isElement)
 
 const enhanceToolBlock = new Function(
   'toolBlock',
@@ -223,17 +227,18 @@ assert(
   'bubbles.yaml must flatten expanded grouped tools to transparent background, no border, no shadow'
 )
 
-// Verify that child disclosure header inside grouped tools is neutralized
+// Verify that child disclosure header inside grouped tools is neutralized.
+// [data-slot='tool-header'] used to be in both lists; the renderer never emits
+// that slot, so it was removed and these assertions name the live selectors.
 assert(
   pluginSource.includes("html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-in-group='true'] :is(") &&
   pluginSource.includes("header,") &&
-  pluginSource.includes("[data-slot='tool-header'],") &&
   pluginSource.includes(".group\\/disclosure-row,"),
   'plugin.js must neutralize child tool headers inside grouped tools'
 )
 
 assert(
-  yamlSource.includes("[data-slot='tool-block'][data-bubbles-in-group='true'] :is(header, [data-slot='tool-header'], .group\\/disclosure-row, button.group\\/disclosure-row)"),
+  yamlSource.includes("[data-slot='tool-block'][data-bubbles-in-group='true'] :is(header, .group\\/disclosure-row, button.group\\/disclosure-row)"),
   'bubbles.yaml must neutralize child tool headers inside grouped tools'
 )
 
@@ -259,7 +264,6 @@ assert(
   pluginSource.includes("html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-tool-state='failed'] :is(") &&
   pluginSource.includes("div[class*='border-destructive'],") &&
   pluginSource.includes("div[class*='bg-destructive'],") &&
-  pluginSource.includes("div[class*='border-red'],") &&
   pluginSource.includes("div[class*='bg-red'],") &&
   pluginSource.includes("background: transparent !important") &&
   pluginSource.includes("border-color: transparent !important"),

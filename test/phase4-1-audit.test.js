@@ -299,8 +299,9 @@ console.log('=== Phase 4.1 Tool Collapse Integration Audit Suite ===')
   const asstRoot = new MockElement('div', 'asst-root', { 'data-slot': 'aui_assistant-message-root', 'data-message-id': 'msg_1001' })
   asstRoot.appendChild(parent)
 
-  // Tool 1 with native call id
-  const tool1 = new MockElement('div', 'tool', { 'data-slot': 'tool-block', 'data-tool-call-id': 'call_read_pkg' })
+  // Tool 1 — the renderer puts no call-id on a tool block, so stability comes from
+  // the anchor the plugin mints on first sight and stores on the element.
+  const tool1 = new MockElement('div', 'tool', { 'data-slot': 'tool-block' })
   tool1.textContent = 'Initial short text'
   parent.appendChild(tool1)
 
@@ -309,7 +310,9 @@ console.log('=== Phase 4.1 Tool Collapse Integration Audit Suite ===')
 
   const header1 = parent.querySelector('.bubbles-tool-group')
   const initialGroupId = header1.getAttribute('data-group-id')
-  assert(initialGroupId.includes('call_read_pkg'), 'Group ID must incorporate native stable tool ID')
+  const anchorId = tool1.getAttribute('data-bubbles-tool-anchor-id')
+  assert(anchorId, 'The first pass must mint an anchor id on the tool block')
+  assert(initialGroupId.includes(anchorId), `Group identity must be keyed on that anchor, got ${initialGroupId}`)
 
   // Simulate rerender with changed text content and added preceding element (DOM index shift)
   const paragraph = new MockElement('p', 'prose')
