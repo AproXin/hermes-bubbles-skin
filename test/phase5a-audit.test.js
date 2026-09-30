@@ -389,28 +389,10 @@ console.log(`\n=== Phase 5A History & Session Visual Layer Audit Suite (Build ${
   console.log('  ✓ Passed')
 }
 
-// Test 6: Lifecycle & Zero Leak Cleanup
-{
-  console.log('[Test 6] Lifecycle: Confirms complete attribute cleanup on unmount/dispose')
-  const row = new MockElement('div', 'row-hover')
-  row.setAttribute('data-bubbles-session-row', 'true')
-  row.setAttribute('data-bubbles-session-active', 'true')
-
-  const divider = new MockElement('div', 'group/workspace')
-  divider.setAttribute('data-bubbles-session-divider', 'true')
-
-  // Simulate cleanupAll logic
-  const elements = [row, divider]
-  for (const el of elements) {
-    el.removeAttribute('data-bubbles-session-row')
-    el.removeAttribute('data-bubbles-session-active')
-    el.removeAttribute('data-bubbles-session-divider')
-  }
-
-  assert.strictEqual(row.hasAttribute('data-bubbles-session-row'), false)
-  assert.strictEqual(row.hasAttribute('data-bubbles-session-active'), false)
-  assert.strictEqual(divider.hasAttribute('data-bubbles-session-divider'), false)
-  console.log('  ✓ Passed')
-}
+// Test 6 used to live here: it stamped three attributes on two mock elements,
+// called removeAttribute on them ITSELF, and asserted they were gone. cleanupAll
+// was never invoked, so the suite could not fail whatever the plugin did. The real
+// coverage is test/cleanup-parity.test.js, which drives the shipped processDOM and
+// cleanupAll over a browser DOM and requires nothing to survive.
 
 console.log('=== All Phase 5A Test Assertions Passed Successfully ===\n')

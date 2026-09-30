@@ -64,11 +64,25 @@ for (const file of files) {
 
 const count = s => results.filter(r => r.state === s).length
 const summary = `${count('PASS')} passed, ${count('FAIL')} failed, ${count('SKIP')} skipped of ${results.length} in ${((Date.now() - started) / 1000).toFixed(1)}s`
-console.log(`\n${count('FAIL') ? 'FAIL' : 'OK'} — ${summary}`)
 
-// An all-skip run is not a verification: say so instead of reporting success.
-if (!count('FAIL') && count('PASS') === 0 && count('SKIP') > 0) {
-  console.log('note: nothing actually ran — every suite skipped itself.')
-  process.exit(2)
+/* A skip is not a pass. Before this, a run that skipped 23 of 28 suites printed
+   "OK — 5 passed, 0 failed, 23 skipped" and exited 0, which is exactly how a
+   broken skin ships green: the pixel suites are the ones that need a browser and
+   the host checkout, i.e. the ones that actually verify paint. */
+const skipped = results.filter(r => r.state === 'SKIP')
+const allowSkip = argv.includes('--allow-skip')
+console.log(`\n${count('FAIL') ? 'FAIL' : skipped.length && !allowSkip ? 'INCOMPLETE' : 'OK'} — ${summary}`)
+if (skipped.length) {
+  console.log(`\nskipped ${skipped.length} — these verified nothing:`)
+  for (const r of skipped) {
+    const reason = ((r.out.match(/SKIPPED — (.*)/) || [])[1] || 'no reason given').replace(/ =+$/, '').trim()
+    console.log(`  - ${r.label.padEnd(32)} ${reason}`)
+  }
+  if (!allowSkip) {
+    console.log('\nPass --allow-skip when this is expected (no browser, no Hermes checkout).')
+  }
 }
-process.exit(count('FAIL') ? 1 : 0)
+
+if (count('FAIL')) process.exit(1)
+if (skipped.length && !allowSkip) process.exit(2)
+process.exit(0)
