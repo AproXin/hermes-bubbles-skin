@@ -50,6 +50,22 @@ assert(css, `no customCSS block scalar found in ${skinSource}`)
 console.log(`=== Skin CSS Budget Suite (${skinSource === liveSkin ? 'live skin' : 'repo skin'}) ===`)
 console.log(`engine cap: ${cap} chars | customCSS: ${css.length} chars`)
 
+/* Headroom, not just overflow. The engine truncates silently, so the file has to
+   stay comfortably under the cap — but a hard floor assertion would fail on the
+   day the skin is legitimately rich, so this warns and asserts only when the
+   margin is small enough that the next colour iteration will hit the wall. */
+const headroom = cap - css.length
+console.log(`headroom: ${headroom} chars`)
+if (headroom < 1500) {
+  console.log(`  WARN  under 1500 chars of slack — new component CSS belongs in PLUGIN_CSS,`)
+  console.log(`        which has no cap (installStyles writes textContent verbatim).`)
+}
+if (headroom < 400) {
+  console.error(`\nFAIL — only ${headroom} chars of slack left in a ${cap}-char budget.`)
+  console.error('Move a block to PLUGIN_CSS before adding anything to customCSS.')
+  process.exit(1)
+}
+
 // A slice is only harmless when it is the identity. Report what dies.
 if (css.length > cap) {
   const cut = css.slice(0, cap)
