@@ -34,7 +34,12 @@ customCSS: |
     --ui-sidebar-surface-background: transparent !important;
     --ui-bg-chrome: transparent !important;
     --color-sidebar: transparent !important;
-    --ui-terminal-surface-background: #0d2a4d !important;
+    /* The skin's only OPAQUE surface, and it must be one: xterm resolves this to a
+       concrete color for its WebGL renderer (terminal/selection.ts:77), which cannot
+       composite the ambient gradient. Matched to the terminal's own tab strip so it
+       stops reading as a dark rectangle — test/skin-scope-discipline.test.js pins
+       both that it stays the only opaque surface and that it is not near-black. */
+    --ui-terminal-surface-background: #113c6a !important;
     --ui-widget-surface-background: rgba(255, 255, 255, 0.14) !important;
   }
 

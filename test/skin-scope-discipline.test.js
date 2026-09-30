@@ -80,6 +80,36 @@ const yaml = fs.readFileSync(path.join(REPO, 'bubbles.yaml'), 'utf8')
 check('the terminal rail keeps a structural anchor',
   yaml.includes("[class*='group/rail']"), 'rail.tsx:47 group/rail')
 
+/* 4. Opaque surfaces. Everything in this skin is transparent or alpha so the
+      ambient constellation shows through — except the terminal, which HAS to be a
+      solid color because xterm resolves the variable to a concrete value for its
+      WebGL renderer (terminal/selection.ts:77). That one exception is what made a
+      dark rectangle in an otherwise frosted UI, so: no new opaque surface may
+      appear, and the terminal's must not sit near black.
+      Measured live: the old #0d2a4d painted #0d243d against its own tab strip at
+      #133c6c. The replacement matches the strip. */
+const customCss = stripComments(require('../scripts/lib/sheets')
+  .blockScalar(yaml, 'customCSS'))
+const surfaces = [...customCss.matchAll(/(--ui-[a-z-]*background)\s*:\s*([^;!]+)/g)]
+  .map(m => ({ prop: m[1], value: m[2].trim() }))
+  .filter(s => !/transparent/.test(s.value))
+const opaque = surfaces.filter(s => !/\brgba?\([^,]+,[^,]+,[^,]+,/.test(s.value))
+check('the terminal is the only opaque surface in the skin',
+  opaque.length === 1 && opaque[0].prop === '--ui-terminal-surface-background',
+  opaque.map(o => `${o.prop}=${o.value}`).join(' '))
+
+const relLum = rgb => {
+  const [r, g, b] = rgb.map(v => { const s = v / 255
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4) })
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+const term = (opaque[0] || {}).value || ''
+const rgb = (term.match(/^#([0-9a-f]{6})$/i) || []).slice(1).map(h => parseInt(h, 16))
+  .flatMap(v => [v >> 16 & 255, v >> 8 & 255, v & 255])
+const lum = rgb.length === 3 ? relLum(rgb) : 0
+check('the terminal surface is not near-black', rgb.length === 3 && lum >= 0.04 && rgb[2] >= 90,
+  `${term} → luminance ${lum.toFixed(3)} (floor 0.040), blue ${rgb[2]} (floor 90); the old #0d2a4d was 0.021`)
+
 const failed = results.filter(r => !r.ok)
 console.log(`\n${failed.length ? 'FAIL' : 'OK'} — ${results.length - failed.length}/${results.length} assertions`)
 process.exit(failed.length ? 1 : 0)
