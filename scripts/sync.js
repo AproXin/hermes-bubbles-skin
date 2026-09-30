@@ -38,6 +38,19 @@ const SKIN_TARGET_FILE = path.join(HERMES_DIR, 'skins', `${SKIN_NAME}.yaml`)
 const SKIN_STAMP_FILE = path.join(HERMES_DIR, 'skins', `.${SKIN_NAME}.deployed-sha`)
 
 const sha256 = text => crypto.createHash('sha256').update(text).digest('hex')
+
+/* Reject anything we do not recognise BEFORE doing work. sync.js used to test for
+   its two flags with argv.includes(), so `--dry-run`, `--on-skin`, or a stray
+   positional parsed as "plain deploy" — and the plain deploy overwrites the live
+   skin the user is running. An unknown flag must be an error, never a guess. */
+const KNOWN_FLAGS = ['--force-skin', '--no-skin']
+const unknownArgs = process.argv.slice(2).filter(a => !KNOWN_FLAGS.includes(a))
+if (unknownArgs.length) {
+  console.error(`[sync] Unknown argument(s): ${unknownArgs.join(' ')}`)
+  console.error(`[sync] Accepted: (none), ${KNOWN_FLAGS.join(', ')}`)
+  console.error('[sync] Nothing was deployed.')
+  process.exit(2)
+}
 const die = msg => {
   console.error(`\n[sync] REFUSING — ${msg}\n`)
   process.exit(1)

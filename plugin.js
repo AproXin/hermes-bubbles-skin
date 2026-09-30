@@ -3083,6 +3083,12 @@ function positionPreview(rowEl, previewEl) {
 
 function showPreview(rowEl) {
   if (!isElement(rowEl)) return
+  /* One build per hovered row. `pointerover` fires for every child the pointer
+     crosses, and for the ACTIVE row a build walks the whole document for the
+     latest messages — so a mouse sweep down the sidebar re-ran that per crossing.
+     The preview is a snapshot taken when the hover starts, which is what a tooltip
+     does; it refreshes when the pointer enters another row. */
+  if (rowEl === currentPreviewRow) return
 
   const data = extractSessionRowPreviewData(rowEl)
   if (!data || !data.title) {
