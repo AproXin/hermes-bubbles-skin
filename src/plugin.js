@@ -571,7 +571,6 @@ html[data-bubbles-skin='true'] [data-slot='aui_thinking-disclosure']:hover:not(:
 html[data-bubbles-skin='true'] [data-slot='aui_thinking-body'] {
   padding-top: 2px !important;
   margin-top: 2px !important;
-  border-top: none !important;
   color: rgba(226, 232, 240, 0.72) !important;
   font-size: 11.5px !important;
   line-height: 1.6 !important;
@@ -686,24 +685,26 @@ html[data-bubbles-skin='true'] [data-slot='tool-block']:hover:not([data-tool-ope
   border-color: transparent !important;
 }
 
-/* Expanded = framed, at rest = bare text.
-   The flattening above is right for a collapsed row and wrong once you open it:
-   the output then floats with no edge saying which line it came from. So the
-   header and its detail are framed together, in the skin's hairline language
-   rather than the app's stroke colour. Both states are readable in CSS alone —
-   the host renders aui_thinking-body only while open (message-parts.tsx:287) and
-   marks an open ToolEntry with data-tool-open (fallback.tsx:577) — so no stamping
-   is needed and a collapsed row can never inherit the box by accident.
-   Grouped tools: the pill is a SIBLING of its members, so wrapping the whole
-   expanded set would mean moving host DOM (the React-unmount bug recorded in
-   groupCompletedTools). Each member that is itself open gets its own frame.
-   [data-tool-row] is load-bearing, not decoration: the state rules further down
-   (data-bubbles-tool-state='completed' with its :not(), :running, :failed) also
-   say border: none !important and tie with this rule at 0,3,1, so without the
-   extra attribute they win purely on source order and no frame appears on a real
-   row. */
-html[data-bubbles-skin='true'] [data-slot='aui_thinking-disclosure']:has(> [data-slot='aui_thinking-body']),
-html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-open][data-tool-row] {
+/* Expanded = framed, at rest = bare text — and the frame wraps the DETAIL, never
+   the title line. Framing the row made the same title read two different ways: a
+   standalone row keeps its native header so the title landed inside the box, while a
+   single-tool group hides that header (data-bubbles-duplicate-header) and shows the
+   skin's pill above the box, so the identical title looked outside it. That was the
+   ✓-outside / ✗-inside split reported from the live window.
+   The three targets are the three containers the host renders only while open:
+     thinking body            message-parts.tsx:287
+     ToolEntry body           fallback.tsx:635  (the row's second child; the header
+                              wrapper at :580 is first, and 635-745 is one div)
+     ToolRun members          fallback.tsx:1025 (the sibling after [data-tool-summary])
+   The members wrapper needs the aria-expanded guard because a collapsed *live* run
+   renders a ticker in the same slot (fallback.tsx:1024) and that stays bare.
+   Sitting on the detail also escapes the inner-row flatten rule (plugin.js:898,
+   (0,5,1) on a ToolEntry nested in a ToolRun), which is why every grouped row —
+   Unnamed call, Process Manage poll, 已运行代码 — showed no frame at all while a
+   top-level file edit (config.yaml, which never joins a run) did. */
+html[data-bubbles-skin='true'] [data-slot='aui_thinking-body'],
+html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-open][data-tool-row] > :not(:first-child),
+html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-group]:has([data-tool-summary] button[aria-expanded='true']) > [data-tool-summary] + div {
   background: rgba(147, 197, 253, 0.05) !important;
   border: 1px solid rgba(147, 197, 253, 0.22) !important;
   border-radius: 8px !important;
@@ -711,7 +712,7 @@ html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-open][data-too
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   margin: 4px 0 !important;
-  padding: 2px 8px 4px !important;
+  padding: 6px 10px !important;
 }
 
 /* Inside that frame, a <pre> must not paint its own card. The assistant-bubble

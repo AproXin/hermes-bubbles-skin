@@ -76,9 +76,16 @@ const BODY = `
         <span class="text-(--ui-text-tertiary) truncate">已探索 4 个文件、运行 4 条命令</span>
       </button>
     </div>
-    ${entry('completed', '已读取 disclosure-row.tsx', '<svg viewBox="0 0 256 256" class="shrink-0"></svg>')}
-    ${entry('running', '已运行 sleep 20', '<span role="status" class="glyph-spinner size-3.5 shrink-0 text-[0.95rem]"></span>')}
-    ${entry('failed', 'Reading https://this-domain-surely-not-exist.invalid', '<svg viewBox="0 0 24 24" class="size-3.5 shrink-0 text-destructive"></svg>')}
+    <!-- The members sit in their own wrapper, as in the renderer: fallback.tsx:1025
+         renders <div class="grid …">{children}</div> after the summary, and that
+         wrapper — not the first member — is what the expanded frame rule paints.
+         Without it this fixture made [data-tool-summary] + div land on a row and
+         the suite read the design as broken. -->
+    <div class="grid min-w-0 max-w-full gap-(--tool-row-gap)">
+      ${entry('completed', '已读取 disclosure-row.tsx', '<svg viewBox="0 0 256 256" class="shrink-0"></svg>')}
+      ${entry('running', '已运行 sleep 20', '<span role="status" class="glyph-spinner size-3.5 shrink-0 text-[0.95rem]"></span>')}
+      ${entry('failed', 'Reading https://this-domain-surely-not-exist.invalid', '<svg viewBox="0 0 24 24" class="size-3.5 shrink-0 text-destructive"></svg>')}
+    </div>
   </div>
 
   <div class="bubbles-tool-group" data-tool-count="3" id="group">
