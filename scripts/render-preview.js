@@ -48,10 +48,14 @@ const GLYPH = {
 }
 
 // fallback.tsx:567-580 — an OPEN ToolEntry carries the app's own frame classes,
-// which is the box the skin now has to beat.
-const TOOL_ROW = (state, label, glyph) =>
-  `<div data-slot="tool-block" data-tool-row="" data-conversation-scaffold="" data-tool-open="" data-bubbles-tool-state="${state}" class="group/tool-block min-w-0 max-w-full overflow-hidden rounded-[0.3125rem] border border-(--ui-stroke-tertiary) text-[length:var(--conversation-tool-font-size)] text-(--ui-text-tertiary)">`
-  + `<div class="border-b border-(--ui-stroke-tertiary) px-2 py-1.5 flex items-center gap-1.5"><span class="grid size-3.5 shrink-0 place-items-center self-center">${glyph}</span><span>${label}</span></div></div>`
+// which is the box the skin now has to beat. `open` is explicit here because the
+// skin frames an open row and leaves a closed one as bare text: a fixture that set
+// data-tool-open on every row would render nothing but frames.
+const TOOL_ROW = (state, label, glyph, { open = false, detail = '' } = {}) =>
+  `<div data-slot="tool-block" data-tool-row="" data-conversation-scaffold=""${open ? ' data-tool-open=""' : ''} data-bubbles-tool-state="${state}" class="group/tool-block min-w-0 max-w-full overflow-hidden rounded-[0.3125rem] border border-(--ui-stroke-tertiary) text-[length:var(--conversation-tool-font-size)] text-(--ui-text-tertiary)">`
+  + `<div class="border-b border-(--ui-stroke-tertiary) px-2 py-1.5 flex items-center gap-1.5"><span class="grid size-3.5 shrink-0 place-items-center self-center">${glyph}</span><span>${label}</span></div>`
+  + (open ? `<div class="max-h-20 overflow-auto bg-transparent px-2 py-1.5 text-(--ui-text-secondary)"><pre class="font-mono text-[0.7rem]">${detail}</pre></div>` : '')
+  + `</div>`
 
 const SURFACES = {
   // status-section.tsx:40-55 + status-row.tsx leadingGlyph, with the plugin's
@@ -129,11 +133,16 @@ const SURFACES = {
   // every newline as a blank row (JSX emits no such text nodes in the real DOM).
   'transcript-rows': {
     shot: '#shot',
-    viewport: { width: 760, height: 360 },
+    viewport: { width: 760, height: 480 },
     body: `<div style="padding:24px;width:680px"><div data-slot="aui_assistant-message-root"><div data-slot="aui_assistant-message-content" id="shot" class="min-w-0 max-w-full">`
       + `<p>我先把三个候选文件读一遍，再决定改哪一层。</p>`
       + `<div data-slot="aui_thinking-disclosure" data-conversation-scaffold="" class="text-[length:var(--conversation-tool-font-size)] text-(--ui-text-tertiary)">`
       + `<button type="button" aria-expanded="false" class="group/disclosure-row flex items-center gap-1.5"><span class="grid size-3.5 shrink-0 place-items-center self-center"><i class="codicon codicon-chevron-right shrink-0 rotate-90"></i></span><span class="text-(--conversation-scaffold-text)">已思考</span></button></div>`
+      // The same disclosure, open: aui_thinking-body only exists in this state
+      // (message-parts.tsx:287), and it is the state the skin frames.
+      + `<div data-slot="aui_thinking-disclosure" data-conversation-scaffold="" class="text-[length:var(--conversation-tool-font-size)] text-(--ui-text-tertiary)">`
+      + `<button type="button" aria-expanded="true" class="group/disclosure-row flex items-center gap-1.5"><span class="grid size-3.5 shrink-0 place-items-center self-center"><i class="codicon codicon-chevron-right shrink-0 rotate-90"></i></span><span class="text-(--conversation-scaffold-text)">已思考</span></button>`
+      + `<div data-slot="aui_thinking-body" class="mt-0.5 w-full min-w-0 overflow-auto wrap-anywhere pb-1"><div>先看宿主在展开时渲染哪个节点，再决定框挂在哪一层。</div></div></div>`
       + `<div class="bubbles-tool-group" data-tool-count="3"><button type="button" aria-expanded="true" class="bubbles-tool-group-toggle"><span class="bubbles-group-icon">✓</span><span>3 个工具调用</span><span class="bubbles-group-chevron"></span></button></div>`
       + `<div data-slot="tool-block" data-tool-group="" class="grid min-w-0 max-w-full gap-(--tool-row-gap) overflow-hidden">`
       + `<div data-tool-summary="" data-conversation-scaffold=""><button type="button" aria-expanded="true" class="group/disclosure-row flex items-center gap-1.5"><span class="text-(--ui-text-tertiary) truncate">已探索 4 个文件、运行 4 条命令</span></button></div>`
@@ -141,6 +150,9 @@ const SURFACES = {
       + TOOL_ROW('running', '已运行 sleep 20 + 1 command', '<span role="status" class="glyph-spinner size-3.5 shrink-0 text-[0.95rem]"></span>')
       + TOOL_ROW('failed', 'Reading https://this-domain-surely-not-exist.invalid', '<svg viewBox="0 0 24 24" class="size-3.5 shrink-0 text-destructive"></svg>')
       + `</div>`
+      // A single open ToolEntry, framed: header + output under one edge.
+      + TOOL_ROW('completed', '已运行 npm test', '<svg viewBox="0 0 256 256" class="shrink-0"></svg>',
+        { open: true, detail: 'PASS  src/lib/sheets (1.2s)\n  36 passed, 0 failed' })
       + `<div data-slot="code-card" class="group/code relative min-w-0 max-w-full overflow-hidden rounded-[0.625rem] bg-(--ui-bg-editor)"><pre class="code-card-body font-mono text-[0.7rem] leading-relaxed">status === 'success' &amp;&amp; 'text-green-600 dark:text-green-400'</pre></div>`
       + `<div data-slot="file-diff-panel" class="min-w-0 max-w-full overflow-hidden"><div data-slot="diff-lines" class="min-w-0"><div class="block min-w-max whitespace-pre border-l-2 px-2.5 py-px border-(--ui-diff-add-border) bg-(--ui-diff-add-background)">+ 新加入的一行</div><div class="block min-w-max whitespace-pre border-l-2 px-2.5 py-px border-(--ui-diff-remove-border) bg-(--ui-diff-remove-background)">- 被删掉的一行</div></div></div>`
       + `</div></div></div>`,

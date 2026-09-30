@@ -63,7 +63,10 @@ const BODY = `
         <span class="text-(--conversation-scaffold-text)">已思考</span>
       </button>
     </div>
-    <div data-slot="aui_thinking-body" class="mt-0.5 w-full min-w-0 max-w-full overflow-auto pb-1">推理内容</div>
+    <!-- Resting state on purpose: [data-slot='aui_thinking-body'] only exists
+         while the disclosure is open (message-parts.tsx:287), and an OPEN row is
+         framed by design — see test/transcript-expanded-frame.test.js. Keeping the
+         body here would make this suite assert the old, always-flat rule. -->
   </div>
 
   <div data-slot="tool-block" data-tool-group="" id="tool-run"

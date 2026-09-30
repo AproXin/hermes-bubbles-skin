@@ -560,7 +560,9 @@ html[data-bubbles-skin='true'] [data-slot='aui_thinking-disclosure'] {
   transition: color 0.2s ease !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='aui_thinking-disclosure']:hover {
+/* The :hover rules clear the frame, so they must exclude the expanded state —
+   they tie with the frame rule on specificity and would win on order alone. */
+html[data-bubbles-skin='true'] [data-slot='aui_thinking-disclosure']:hover:not(:has(> [data-slot='aui_thinking-body'])) {
   background: transparent !important;
   border-color: transparent !important;
   color: #ffffff !important;
@@ -679,9 +681,52 @@ html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-open] > div:fi
   background: transparent !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='tool-block']:hover {
+html[data-bubbles-skin='true'] [data-slot='tool-block']:hover:not([data-tool-open]) {
   background: transparent !important;
   border-color: transparent !important;
+}
+
+/* Expanded = framed, at rest = bare text.
+   The flattening above is right for a collapsed row and wrong once you open it:
+   the output then floats with no edge saying which line it came from. So the
+   header and its detail are framed together, in the skin's hairline language
+   rather than the app's stroke colour. Both states are readable in CSS alone —
+   the host renders aui_thinking-body only while open (message-parts.tsx:287) and
+   marks an open ToolEntry with data-tool-open (fallback.tsx:577) — so no stamping
+   is needed and a collapsed row can never inherit the box by accident.
+   Grouped tools: the pill is a SIBLING of its members, so wrapping the whole
+   expanded set would mean moving host DOM (the React-unmount bug recorded in
+   groupCompletedTools). Each member that is itself open gets its own frame.
+   [data-tool-row] is load-bearing, not decoration: the state rules further down
+   (data-bubbles-tool-state='completed' with its :not(), :running, :failed) also
+   say border: none !important and tie with this rule at 0,3,1, so without the
+   extra attribute they win purely on source order and no frame appears on a real
+   row. */
+html[data-bubbles-skin='true'] [data-slot='aui_thinking-disclosure']:has(> [data-slot='aui_thinking-body']),
+html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-open][data-tool-row] {
+  background: rgba(147, 197, 253, 0.05) !important;
+  border: 1px solid rgba(147, 197, 253, 0.22) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  margin: 4px 0 !important;
+  padding: 2px 8px 4px !important;
+}
+
+/* Inside that frame, a <pre> must not paint its own card. The assistant-bubble
+   code-block rule (line ~335) gives every pre a dark fill, a hairline and an 8px
+   radius, so an opened tool call rendered as two nested boxes — the exact
+   "外框看起来很复杂、花眼" the flattening was asked to remove. The 52px right pad
+   is the copy-button gutter, which a tool block has no copy button for. */
+html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-open] pre,
+html[data-bubbles-skin='true'] [data-slot='aui_thinking-body'] pre {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 2px 0 !important;
+  margin: 2px 0 !important;
 }
 
 /* Collapsed Grouped Tools (Strict Complete Hiding: Never Deleted, Completely Hidden) */
