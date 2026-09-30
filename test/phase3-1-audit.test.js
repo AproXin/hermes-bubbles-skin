@@ -209,24 +209,12 @@ console.log('=== Phase 3.1 Six Surfaces Integration Audit ===')
   console.log('  ✓ Passed')
 }
 
-// 3. Stacking & Z-Index Defenses
-{
-  console.log('[Test 3] Stacking Hierarchy: Approval (z:50) > Clarify (z:40) > Task Dock (z:30) > Conversation (z:auto)')
-  assert(srcCode.includes("[data-slot='tool-approval-stack'] {\n  z-index: 50 !important;"), 'Approval stack must be z-index 50')
-  assert(srcCode.includes("[data-slot='clarify-inline'] {\n  display: block !important;\n  visibility: visible !important;\n  overflow: visible !important;\n  opacity: 1 !important;\n  border-radius: 14px !important;\n  background:\n    radial-gradient(400px 140px at 50% 0%, rgba(96, 165, 250, 0.20), transparent 70%),\n    rgba(10, 32, 64, 0.92) !important;\n  border: 1px solid rgba(147, 197, 253, 0.35) !important;\n  box-shadow:\n    0 12px 36px rgba(2, 18, 44, 0.50),\n    inset 0 1px 1px rgba(255, 255, 255, 0.22) !important;\n  backdrop-filter: blur(20px) saturate(1.4) !important;\n  -webkit-backdrop-filter: blur(20px) saturate(1.4) !important;\n  z-index: 40 !important;"), 'Clarify must be z-index 40')
-  console.log('  ✓ Passed')
-}
-
-// 4. Responsive Clamp & Horizontal Overflow Defenses
-{
-  console.log('[Test 4] Responsive Defenses: clamp() for ultra-short windows & break-word/overflow-x for narrow screens')
-  assert(srcCode.includes('clamp(90px, 28vh, 320px)'), 'Task section body must use responsive clamp(90px, 28vh, 320px)')
-  assert(srcCode.includes('clamp(100px, 24vh, 200px)'), 'Approval pre code must use responsive clamp(100px, 24vh, 200px)')
-  assert(srcCode.includes('overflow-wrap: break-word !important'), 'Break-word defense must be present')
-  assert(srcCode.includes('word-break: break-word !important'), 'Word-break defense must be present')
-  assert(srcCode.includes('overflow-x: auto !important'), 'Horizontal code and table scrolling defense must be present')
-  console.log('  ✓ Passed')
-}
+// Tests 3 and 4 used to assert on source text here — including a byte-for-byte
+// pin of the whole 13-line clarify block, which failed on a reindent and passed on
+// any semantic edit that kept the shape. Their header also advertised a
+// "Task Dock (z:30)" tier that exists nowhere in the CSS.
+// Replaced by test/overlay-stacking.test.js, which reads z-index off a browser and
+// proves the clamp()s by measuring max-height at two viewport sizes.
 
 // 5. Accessibility: Focus-Visible & Reduced Motion
 {
