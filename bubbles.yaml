@@ -314,7 +314,7 @@ customCSS: |
     width: 0; height: 0;
     border-top: 5px solid transparent;
     border-bottom: 5px solid transparent;
-    border-left: 5px solid rgba(148, 178, 214, 0.42);
+    border-left: 5px solid rgba(255, 255, 255, 0.48);
     z-index: 41;
   }
   .composer-human-message,
@@ -325,13 +325,13 @@ customCSS: |
     margin-right: 0 !important;
     align-self: flex-end !important;
     background:
-      radial-gradient(240px 90px at 85% 0%, rgba(219, 234, 254, 0.08), transparent 70%),
-      linear-gradient(180deg, rgba(191, 219, 254, 0.10), transparent 45%, rgba(3, 8, 20, 0.46)),
-      rgba(29, 43, 64, 0.78) !important;
+      radial-gradient(240px 90px at 85% 0%, rgba(255, 255, 255, 0.22), transparent 70%),
+      linear-gradient(170deg, rgba(241, 89, 75, 0.55) 0%, rgba(236, 143, 50, 0.55) 20%, rgba(212, 178, 54, 0.55) 40%, rgba(143, 182, 111, 0.55) 60%, rgba(78, 168, 176, 0.55) 80%, rgba(57, 141, 246, 0.55) 100%),
+      rgba(147, 197, 253, 0.62) !important;
     backdrop-filter: blur(16px) saturate(1.4);
     -webkit-backdrop-filter: blur(16px) saturate(1.4);
-    color: #ffffff !important;
-    border: 1px solid rgba(148, 178, 214, 0.30) !important;
+    color: #0a2440 !important;
+    border: 1px solid rgba(255, 255, 255, 0.55) !important;
     border-radius: 10px !important;
     padding: 6px 14px !important;
     width: fit-content !important;
@@ -346,7 +346,7 @@ customCSS: |
     overflow-y: visible !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
-    box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.30), 0 4px 20px rgba(2, 8, 20, 0.40) !important;
+    box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.60), 0 6px 22px rgba(2, 10, 28, 0.45) !important;
     box-sizing: border-box !important;
   }
 
@@ -376,7 +376,14 @@ customCSS: |
   }
 
   .composer-human-message * { color: inherit !important; }
-  .composer-human-message a { color: #bfdbfe !important; }
+  /* Links sit on the pastel spectrum now, so the old light sapphire (#bfdbfe)
+     read as ~1.5:1. Same navy family as the body ink, kept distinct by weight
+     and underline. */
+  .composer-human-message a {
+    color: #0d3a66 !important;
+    text-decoration: underline !important;
+    text-underline-offset: 2px !important;
+  }
 
   /* Inner rich input stays left-aligned for natural writing direction */
   [data-slot='aui_edit-composer-root'] [data-slot='composer-rich-input'],

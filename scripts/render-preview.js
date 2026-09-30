@@ -150,13 +150,17 @@ const SURFACES = {
   // than by reading rgba() values. Selectors from bubbles.yaml section 7:
   // assistant paints [data-slot='aui_assistant-message-content'], the user bubble
   // is .composer-human-message inside [data-slot='aui_user-message-root'].
+  // The third bubble is deliberately long: the user bubble is content-sized, so a
+  // gradient that reads as "warm top, cool bottom" on one line stretches into a
+  // wide middle band on five, and that is the case worth seeing.
   bubbles: {
     shot: '#shot',
-    viewport: { width: 900, height: 420 },
+    viewport: { width: 900, height: 560 },
     body: `<div id="shot" style="padding:28px;display:flex;flex-direction:column;gap:18px;width:840px">`
       + `<div data-slot="aui_assistant-message-root"><div data-slot="aui_assistant-message-content" class="min-w-0 max-w-full"><p>助手回复：这是白雾霜玻气泡，用来和任务/工具脚手架区分。</p></div></div>`
-      + `<div data-slot="aui_user-message-root" class="group/user-message"><div class="composer-human-message-container"><div class="composer-human-message">我的提问：这是用户气泡，之前太蓝，现在压深降饱和。</div></div></div>`
+      + `<div data-slot="aui_user-message-root" class="group/user-message"><div class="composer-human-message-container"><div class="composer-human-message">我的提问：这是用户气泡，现在穿的是图标里那条暖到冷的谱。</div></div></div>`
       + `<div data-slot="aui_user-message-root" class="group/user-message"><div class="composer-human-message-container"><div class="composer-human-message">第二条短消息</div></div></div>`
+      + `<div data-slot="aui_user-message-root" class="group/user-message"><div class="composer-human-message-container"><div class="composer-human-message">长消息用来验证渐变被拉开的样子：气泡宽度跟着内容走，高度跟着行数走，所以同一份 linear-gradient 在一行时是"上暖下蓝"，到五六行中间那一段会被摊得很宽。看这个才知道真机里多条长提问会不会糊成一片，或者把黄色绿色顶到不该出现的位置。</div></div></div>`
       + `</div>`,
   },
 }
