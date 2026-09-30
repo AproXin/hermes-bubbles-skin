@@ -747,9 +747,14 @@ html[data-bubbles-skin='true'] [data-bubbles-group-collapsed='true'] {
   display: none !important;
 }
 
-/* Expanded Grouped Tools: Flatten outer container into clean indented content block (Single Visual Layer) */
-html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-in-group='true'][data-bubbles-group-collapsed='false'],
-html[data-bubbles-skin='true'] [data-bubbles-tool-flat='true'][data-bubbles-in-group='true'][data-bubbles-group-collapsed='false'] {
+/* Expanded Grouped Tools: Flatten outer container into clean indented content block (Single Visual Layer)
+   :not([data-tool-open]) is required, not cosmetic. This rule ties with the frame
+   rule on specificity (0,4,1) and sits later in the file, so before it excluded
+   open rows the transcript framed a FAILED row (which stands alone, because only
+   consecutive completed tools get grouped) while a grouped SUCCESS row kept the
+   2px rail and no frame — the exact inconsistency reported from the live window. */
+html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-in-group='true'][data-bubbles-group-collapsed='false']:not([data-tool-open]),
+html[data-bubbles-skin='true'] [data-bubbles-tool-flat='true'][data-bubbles-in-group='true'][data-bubbles-group-collapsed='false']:not([data-tool-open]) {
   display: block !important;
   background: transparent !important;
   border: none !important;

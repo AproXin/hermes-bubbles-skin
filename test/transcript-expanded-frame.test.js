@@ -31,7 +31,7 @@ if (sheets.error) { console.log(`SKIPPED — ${sheets.error}`); process.exit(0) 
 // set `border: none !important` at the same specificity as the frame rule. Leave it
 // out and the suite passes while the real transcript shows no frame — which is
 // exactly how this test first lied.
-const TOOL = (open, state = 'completed', extra = '') => `<div data-slot="tool-block" data-tool-row="" data-conversation-scaffold=""${open ? ' data-tool-open=""' : ''} data-bubbles-tool-state="${state}" class="group/tool-block min-w-0 max-w-full overflow-hidden rounded-[0.3125rem] border border-(--ui-stroke-tertiary) text-[length:var(--conversation-tool-font-size)] text-(--ui-text-tertiary)"><div class="border-b border-(--ui-stroke-tertiary) px-2 py-1.5 flex items-center gap-1.5"><span class="grid size-3.5 shrink-0 place-items-center self-center"><svg class="size-3.5 shrink-0 text-emerald-600/85"></svg></span><span>已运行 npm test</span></div>${open ? '<div class="max-h-20 max-w-full overflow-auto bg-transparent px-2 py-1.5 text-(--ui-text-secondary)"><pre class="font-mono text-[0.7rem]">PASS 3 suites</pre></div>' : ''}${extra}</div>`
+const TOOL = (open, state = 'completed', extra = '') => `<div data-slot="tool-block" data-tool-row="" data-conversation-scaffold=""${open ? ' data-tool-open=""' : ''} data-bubbles-tool-state="${state}"${extra} class="group/tool-block min-w-0 max-w-full overflow-hidden rounded-[0.3125rem] border border-(--ui-stroke-tertiary) text-[length:var(--conversation-tool-font-size)] text-(--ui-text-tertiary)"><div class="border-b border-(--ui-stroke-tertiary) px-2 py-1.5 flex items-center gap-1.5"><span class="grid size-3.5 shrink-0 place-items-center self-center"><svg class="size-3.5 shrink-0 text-emerald-600/85"></svg></span><span>已运行 npm test</span></div>${open ? '<div class="max-h-20 max-w-full overflow-auto bg-transparent px-2 py-1.5 text-(--ui-text-secondary)"><pre class="font-mono text-[0.7rem]">PASS 3 suites</pre></div>' : ''}</div>`
 
 const THINKING = open => `<div data-slot="aui_thinking-disclosure" data-conversation-scaffold="" class="text-[length:var(--conversation-tool-font-size)] text-(--ui-text-tertiary)"><button type="button" aria-expanded="${open ? 'true' : 'false'}" class="group/disclosure-row flex items-center gap-1.5"><span class="grid size-3.5 shrink-0 place-items-center self-center"><svg class="codicon codicon-chevron-right"></svg></span><span>已思考</span></button>${open ? '<div data-slot="aui_thinking-body" class="mt-0.5 w-full min-w-0 max-w-full overflow-auto wrap-anywhere pb-1"><div>先确认宿主在展开时渲染哪个节点。</div></div>' : ''}</div>`
 
@@ -41,6 +41,11 @@ const BODY = `<div style="padding:24px;width:680px"><div data-slot="aui_assistan
   + `<div id="t-open">${THINKING(true)}</div>`
   + `<div id="b-closed">${TOOL(false)}</div>`
   + `<div id="b-open">${TOOL(true)}</div>`
+  /* A grouped row: the skin only groups CONSECUTIVE completed tools, so this is
+     the shape that failed live while a standalone failed row looked correct.
+     The in-group flatten rule (plugin.js:751) sets border: none at the same
+     specificity as the frame rule and sits later in the file. */
+  + `<div id="b-grouped">${TOOL(true, 'completed', ' data-bubbles-in-group="true" data-bubbles-group-collapsed="false" data-bubbles-tool-flat="true"')}</div>`
   + `<div data-slot="code-card" class="group/code relative min-w-0 max-w-full overflow-hidden rounded-[0.625rem] bg-(--ui-bg-editor)"><pre class="code-card-body font-mono text-[0.7rem]">const x = 1</pre></div>`
   + `</div></div></div>`
 
@@ -101,6 +106,15 @@ const BODY = `<div style="padding:24px;width:680px"><div data-slot="aui_assistan
       `border ${at.openB.width} ${at.openB.style} radius ${at.openB.radius} fill α ${at.openB.fillAlpha}`)
     check('the frame wraps header + content, inside the bubble',
       at.openB.inBubble && at.openT.inBubble)
+    const grouped = await page.evaluate(() => {
+      const el = document.querySelector('#b-grouped [data-slot="tool-block"]')
+      const cs = getComputedStyle(el)
+      return { width: cs.borderTopWidth, style: cs.borderTopStyle, radius: cs.borderTopLeftRadius,
+        leftRail: cs.borderLeftWidth }
+    })
+    check('an OPEN row inside a tool group carries the frame too',
+      parseFloat(grouped.width) >= 1 && grouped.style !== 'none',
+      `border ${grouped.width} ${grouped.style}, radius ${grouped.radius}, left rail ${grouped.leftRail}`)
 
     console.log('\n[hover — the trap: two :hover rules set border-color: transparent]')
     /* A raw pointer move rather than page.hover(): hover actionability wants an
@@ -144,6 +158,6 @@ const BODY = `<div style="padding:24px;width:680px"><div data-slot="aui_assistan
   } finally {
     await browser.close()
   }
-  console.log(`\n${failures ? 'FAIL' : 'OK'} — ${9 - failures}/9 assertions`)
+  console.log(`\n${failures ? 'FAIL' : 'OK'} — ${12 - failures}/12 assertions`)
   process.exit(failures ? 1 : 0)
 })().catch(err => { console.error(err); process.exit(1) })
