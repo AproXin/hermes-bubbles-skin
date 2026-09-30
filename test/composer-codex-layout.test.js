@@ -15,7 +15,8 @@
  *       writes the utility INTO the class attribute, so it is matchable)
  *   [data-tour='model-pill']  [data-testid='reasoning-pill']  (renderer-owned)
  *   [data-slot='fan-menu-anchor']  (the first element of the right cluster)
- *   [data-slot='dropdown-menu-content'][class~='w-64'/'w-52']  (the two pill menus)
+ *   [data-slot='dropdown-menu-content'][data-state='open'][class~='w-64'/'w-52']
+ *       (the two pill menus, while open — see test/composer-menu-align.test.js)
  * Deliberately NOT used: aria-label text — the reference skin selects on
  * 'Voice dictation'/'Send', which breaks the moment the UI is Chinese.
  *
@@ -90,7 +91,7 @@ const COMPOSER = `
  </div>
 </div>
 <div data-radix-popper-content-wrapper style="position:fixed;left:300px;top:500px">
- <div data-slot="dropdown-menu-content" role="menu" class="w-64 p-0 rounded-lg border text-xs shadow-md" data-probe="model-menu">
+ <div data-slot="dropdown-menu-content" role="menu" data-state="open" class="w-64 p-0 rounded-lg border text-xs shadow-md" data-probe="model-menu">
   <div data-slot="dropdown-menu-item" role="menuitem" class="relative flex items-center gap-2 rounded-md px-2 py-1 text-xs">Qwen3.8-Flash</div>
   <div data-slot="dropdown-menu-item" role="menuitem" class="relative flex items-center gap-2 rounded-md px-2 py-1 text-xs">DeepSeek-V4</div>
  </div>

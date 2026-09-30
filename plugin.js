@@ -3159,17 +3159,26 @@ function hidePreview() {
  *
  * Radix owns the popper wrapper's inline left/top (and its transform for
  * animations), so we never fight it by writing those. We append one translateX
- * and remember the transform we found, so a re-open cannot stack shifts. */
+ * and remember the transform we found, so a re-open cannot stack shifts.
+ *
+ * The panel is chosen by state, not by position in the document: Radix keeps a
+ * closed content mounted while it animates out, and w-64 is not a unique width in
+ * the app, so "first w-64" was regularly not "the menu that just opened".
+ * data-state is on MenuContent itself (@radix-ui/react-menu dist/index.mjs:300). */
 const COMPOSER_PILL_MENUS = [
-  { trigger: "[data-tour='model-pill']", panel: "[data-slot='dropdown-menu-content'][class~='w-64']" },
-  { trigger: "[data-testid='reasoning-pill']", panel: "[data-slot='dropdown-menu-content'][class~='w-52']" },
+  { trigger: "[data-tour='model-pill']", width: 'w-64' },
+  { trigger: "[data-testid='reasoning-pill']", width: 'w-52' },
 ]
 
 function alignComposerPillMenu(triggerEl) {
   if (!isElement(triggerEl) || typeof document === 'undefined') return false
   const pair = COMPOSER_PILL_MENUS.find(p => triggerEl.matches?.(p.trigger))
   if (!pair) return false
-  const panel = document.querySelector(pair.panel)
+  const open = `[data-slot='dropdown-menu-content'][data-state='open']`
+  /* The width stays as the trigger→panel hint (Radix links them only for
+     submenus), but it filters rather than falls back: shifting some other
+     menu that happens to be open is worse than not aligning ours. */
+  const panel = document.querySelector(`${open}[class~='${pair.width}']`)
   if (!isElement(panel)) return false
 
   const wrapper = panel.closest('[data-radix-popper-content-wrapper]') || panel
@@ -3507,7 +3516,7 @@ function cleanupAll() {
   }
 
   // Remove thinking and tool attributes
-  for (const el of document.querySelectorAll('[data-bubbles-thinking], [data-bubbles-tool], [data-bubbles-tool-state], [data-bubbles-in-group], [data-bubbles-group-id], [data-bubbles-group-collapsed], [data-bubbles-tool-flat]')) {
+  for (const el of document.querySelectorAll('[data-bubbles-thinking], [data-bubbles-tool], [data-bubbles-tool-state], [data-bubbles-in-group], [data-bubbles-group-id], [data-bubbles-group-collapsed], [data-bubbles-tool-flat], [data-bubbles-tool-anchor-id]')) {
     el.removeAttribute('data-bubbles-thinking')
     el.removeAttribute('data-bubbles-tool')
     el.removeAttribute('data-bubbles-tool-state')
@@ -3515,6 +3524,10 @@ function cleanupAll() {
     el.removeAttribute('data-bubbles-group-id')
     el.removeAttribute('data-bubbles-group-collapsed')
     el.removeAttribute('data-bubbles-tool-flat')
+    // The anchor id is a stable handle the group pill uses to find its first run.
+    // Leaving it behind is harmless until the plugin is re-enabled, when a stale
+    // id can point a rebuilt header at a row that no longer exists.
+    el.removeAttribute('data-bubbles-tool-anchor-id')
   }
   for (const el of document.querySelectorAll('[data-bubbles-duplicate-header]')) {
     el.removeAttribute('data-bubbles-duplicate-header')
@@ -3543,6 +3556,17 @@ function cleanupAll() {
     el.removeAttribute('data-bubbles-session-row')
     el.removeAttribute('data-bubbles-session-active')
     el.removeAttribute('data-bubbles-session-divider')
+  }
+
+  /* Inline custom properties. Everything else the plugin paints lives in its own
+     <style>, but per-element state has to be written onto host nodes — the task
+     progress bar carries its ratio on Hermes' own .status-section-trigger. Those
+     survive a `data-bubbles-*` sweep because they are not attributes we stamp, and
+     the plugin's header claims every side effect is released. */
+  for (const el of document.querySelectorAll('[style*="--bubbles-"]')) {
+    const declared = (el.getAttribute('style') || '').match(/--bubbles-[a-z0-9-]+/g)
+    if (!declared) continue
+    for (const name of new Set(declared)) el.style.removeProperty(name)
   }
 
   // Cleanup session preview (Phase 5B)
