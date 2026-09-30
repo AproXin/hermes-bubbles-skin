@@ -127,9 +127,29 @@ function pathToFileUrl(p) {
   return require('url').pathToFileURL(p).href
 }
 
+/**
+ * src/plugin.js rewritten as a classic script, so a browser page can call its
+ * internal functions directly.
+ *
+ * Why not scrape one function out with a brace counter: the plugin's detection
+ * rules are DOM semantics (`button:first-child`, `closest`, nested subtrees), and
+ * a hand-rolled mock gets those wrong — a mock that does not implement
+ * `:first-child` cannot catch a bug caused by `:first-child`. Loading the real
+ * file into a real DOM tests the shipped code. The only edit is the module
+ * export, which a classic script cannot contain; every top-level `function`
+ * declaration becomes a window binding as-is.
+ */
+function pluginScriptForPage(source = null) {
+  const src = source ?? fs.readFileSync(path.join(REPO, 'src', 'plugin.js'), 'utf8')
+  const marker = 'export default {'
+  const i = src.indexOf(marker)
+  if (i === -1) throw new Error('pluginScriptForPage: no `export default {` in the plugin source')
+  return src.slice(0, i) + 'globalThis.__bubblesPlugin = {' + src.slice(i + marker.length)
+}
+
 module.exports = {
   HOME, HERMES_HOME, REPO, DESKTOP,
   builtCssPath, blockScalar, skinYamlPath, pluginCss, loadSheets,
   customCssCap,
-  launchChromium, pageHtml, pathToFileUrl,
+  launchChromium, pageHtml, pathToFileUrl, pluginScriptForPage,
 }

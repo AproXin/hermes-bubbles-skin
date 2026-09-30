@@ -2103,6 +2103,15 @@ function enhanceThinkingBlock(thinkingEl) {
   }
 }
 
+/* The host puts every header verdict in one place: fallback.tsx:257 wraps the
+   glyph node in TOOL_HEADER_GLYPH_WRAP_CLASS (`span.grid.size-3.5`), and both the
+   braille spinner (:200-207) and the error AlertCircle (:210) go through it. Read
+   that cell, never the whole header row — the row also carries the title, and a
+   title is command- or path-derived text, so one braille character in it used to
+   pin a finished tool to "running" forever.
+   Everything below stays inline inside detectToolState on purpose: several suites
+   eval this one function's source in isolation, so a top-level helper would be
+   undefined there. test/tool-state-detection.test.js runs the real module. */
 function detectToolState(toolBlock) {
   if (!isElement(toolBlock)) return 'completed'
 
@@ -2116,9 +2125,17 @@ function detectToolState(toolBlock) {
     return 'running'
   }
 
-  // Check braille spinner strictly in the header/status area (never in tool body or terminal)
-  const statusGlyph = toolBlock.querySelector('.status-row-icon, .group\\/disclosure-row, [data-slot="tool-row"], [data-slot="tool-header"], button:first-child')
-  if (statusGlyph && /[\u2800-\u28FF]/.test(statusGlyph.textContent || '')) {
+  // The braille frames of glyph-spinner.tsx:96-110 are ALL in the DOM from mount
+  // (a transform keyframe scrolls between them), so this text test is the only
+  // thing that detects the host's spinner — `.animate-spin` never matches it.
+  const headerRow = toolBlock.querySelector('.status-row-icon, .group\\/disclosure-row, [data-slot="tool-row"]')
+  let glyphCell = null
+  if (headerRow) {
+    glyphCell = headerRow.classList?.contains('status-row-icon')
+      ? headerRow
+      : headerRow.querySelector('.status-row-icon, .grid.size-3\\.5')
+  }
+  if (glyphCell && /[\u2800-\u28FF]/.test(glyphCell.textContent || '')) {
     return 'running'
   }
 
@@ -2135,8 +2152,8 @@ function detectToolState(toolBlock) {
   }
 
   // Status icon error checks (AlertCircle, codicon-error, text-destructive on status icon)
-  if (statusGlyph) {
-    const errorIcon = statusGlyph.querySelector(
+  if (glyphCell) {
+    const errorIcon = glyphCell.querySelector(
       'svg.text-destructive, .codicon-error, [aria-label*="error" i], [aria-label*="failed" i], .status-row-icon.text-destructive'
     )
     if (errorIcon) {
@@ -2144,15 +2161,14 @@ function detectToolState(toolBlock) {
     }
   }
 
-  // Check destructive class, excluding content body, diff lines, code, pre, and tabular-nums
-  const destructive = toolBlock.querySelector('.text-destructive, .bg-destructive')
-  if (destructive) {
-    const isInsideContentOrDiff = typeof destructive.closest === 'function' && Boolean(
-      destructive.closest('[data-slot="tool-fallback-content"], [data-slot="tool-content"], [class*="tabular-nums"], pre, code, .diff-stat, [data-diff]')
-    )
-    if (!isInsideContentOrDiff) {
-      return 'failed'
-    }
+  // Destructive classes. Every match is examined, not just the first: a red line
+  // inside a <pre> earlier in the document used to hide a real error marker later.
+  for (const destructive of toolBlock.querySelectorAll('.text-destructive, .bg-destructive')) {
+    if (typeof destructive.closest !== 'function') return 'failed'
+    // A node owned by a nested tool block is that block's verdict, not ours.
+    if (destructive.closest('[data-slot="tool-block"]') !== toolBlock) continue
+    if (destructive.closest('[data-slot="tool-fallback-content"], [data-slot="tool-content"], [class*="tabular-nums"], pre, code, .diff-stat, [data-diff]')) continue
+    return 'failed'
   }
 
   // Exit code failure check (explicit non-zero exit code)
@@ -2167,6 +2183,11 @@ function detectToolState(toolBlock) {
     }
   }
 
+  // 3. No marker. This is the host's own done state, not a missing verdict:
+  //    fallback.tsx:262 says "Success is silent — the row reads as done without a
+  //    checkmark", and ToolGlyph returns null when the tool has no status, no file
+  //    and no icon. An unmarked row therefore means completed, and adding an
+  //    'unknown' tier here would only invent a state the renderer never emits.
   return 'completed'
 }
 

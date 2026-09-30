@@ -146,7 +146,7 @@ console.log('=== Phase 2 Regression Tests ===')
 // 2. Tool State Assertions
 {
   console.log('[Test 2] Tool State: Active spinning tool detected as running')
-  const tool = new MockElement('div', 'tool-block')
+  const tool = new MockElement('div', 'tool-block', { 'data-slot': 'tool-block' })
   const spinner = new MockElement('span', 'animate-spin')
   tool.appendChild(spinner)
 
@@ -157,7 +157,7 @@ console.log('=== Phase 2 Regression Tests ===')
 
 {
   console.log('[Test 3] Tool State: Error tool block detected as failed')
-  const tool = new MockElement('div', 'tool-block')
+  const tool = new MockElement('div', 'tool-block', { 'data-slot': 'tool-block' })
   const err = new MockElement('span', 'text-destructive')
   err.textContent = 'Error: ENOENT'
   tool.appendChild(err)
@@ -169,7 +169,7 @@ console.log('=== Phase 2 Regression Tests ===')
 
 {
   console.log('[Test 4] Tool State: Quiet tool block detected as completed')
-  const tool = new MockElement('div', 'tool-block')
+  const tool = new MockElement('div', 'tool-block', { 'data-slot': 'tool-block' })
   tool.textContent = 'Output: 42'
 
   const state = detectToolState(tool, isElement)
