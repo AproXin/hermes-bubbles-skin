@@ -34,13 +34,11 @@ customCSS: |
     --ui-sidebar-surface-background: transparent !important;
     --ui-bg-chrome: transparent !important;
     --color-sidebar: transparent !important;
-    /* 看板根节点用的是 --ui-surface-background（board.tsx:1327），而它等于
-       --ui-bg-editor（styles.css:365）——编辑器近黑底色。全应用只有 3 处引用这个
-       token，所以把它接到皮肤一致的透明层，而不是给看板单独写一条背景。 */
+    /* 看板根节点用的就是它（board.tsx:1327 = --ui-bg-editor）；全应用仅 3 处引用。
+       test/kanban-surface.test.js。 */
     --ui-surface-background: transparent !important;
-    /* The skin's only OPAQUE surface, and it must be one: xterm resolves it to a
-       concrete color for its WebGL renderer (terminal/selection.ts:82).
-       test/skin-scope-discipline.test.js keeps it the only one, and not near-black. */
+    /* The skin's only OPAQUE surface: xterm needs a concrete color (selection.ts:82).
+       Pinned by test/skin-scope-discipline.test.js and test/terminal-surface.test.js. */
     --ui-terminal-surface-background: #113c6a !important;
     --ui-widget-surface-background: rgba(255, 255, 255, 0.14) !important;
   }
@@ -49,12 +47,10 @@ customCSS: |
   html, body, #root, [data-contrib-shell], [data-slot='aui_thread-viewport'],
   [data-slot='sidebar-container'], [data-slot='sidebar-inner'], [data-sidebar='sidebar'],
   [data-slot='sidebar'], [data-slot='sidebar-wrapper'],
-  /* Anchored by surface class, never by accessible name: the right-sidebar <aside>
-     label is i18n, and the rail's sits on a <ul> (rail.tsx:53), so a locale literal
-     here could never match. test/skin-scope-discipline.test.js keeps it that way. */
+  /* Anchored by surface class, never by accessible name (i18n). Guarded by
+     test/skin-scope-discipline.test.js. */
   [class*='bg-(--ui-sidebar-surface-background)'],
-  /* The terminal's own layers are deliberately absent here — an ambient gradient
-     cannot composite under xterm's WebGL canvas. See test/terminal-surface.test.js. */
+  /* The terminal's layers are NOT here — see 2b and test/terminal-surface.test.js. */
   [class*='group/rail'] {
     background:
       radial-gradient(650px 350px at 10% 5%, rgba(99, 102, 241, 0.22), transparent 70%),
@@ -71,8 +67,7 @@ customCSS: |
     color: #e2e8f0;
   }
 
-  /* 2b. 终端面板：平涂应用自己的 surface token，不铺光斑渐变（xterm 的 WebGL
-     画布无法合成渐变，terminal/selection.ts:82 把 token 解析成具体颜色）。 */
+  /* 2b. 终端面板平涂自己的 token：光斑渐变无法合成进 xterm 的 WebGL 画布。 */
   .xterm, .xterm-viewport, .xterm-screen, .xterm-scrollable-element,
   [class*='bg-(--ui-terminal-surface-background)']:not([class*='group/rail']) {
     background: var(--ui-terminal-surface-background) !important;
