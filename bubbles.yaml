@@ -34,6 +34,10 @@ customCSS: |
     --ui-sidebar-surface-background: transparent !important;
     --ui-bg-chrome: transparent !important;
     --color-sidebar: transparent !important;
+    /* 看板根节点用的是 --ui-surface-background（board.tsx:1327），而它等于
+       --ui-bg-editor（styles.css:365）——编辑器近黑底色。全应用只有 3 处引用这个
+       token，所以把它接到皮肤一致的透明层，而不是给看板单独写一条背景。 */
+    --ui-surface-background: transparent !important;
     /* The skin's only OPAQUE surface, and it must be one: xterm resolves it to a
        concrete color for its WebGL renderer (terminal/selection.ts:82).
        test/skin-scope-discipline.test.js keeps it the only one, and not near-black. */
