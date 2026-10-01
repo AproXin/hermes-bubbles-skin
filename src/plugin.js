@@ -730,6 +730,33 @@ html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-group] [data-s
   padding: 2px 0 2px 8px !important;
 }
 
+/* Two surfaces the rules above never reached, because neither emits data-tool-open
+   or data-tool-row: a delegate_task card row (message-parts.tsx:102 →
+   delegate.tsx:159/95) wore the app's grey stroke, and an Agents-view node
+   (app/agents/index.tsx:352) revealed its stream with no edge at all. Both now borrow
+   the transcript hairline, and the agents frame wraps only what the node reveals —
+   the title button stays outside it, exactly like a transcript row.
+   The children wrapper (index.tsx:411) is deliberately left alone: a nested node
+   frames its own stream, so boxing the subtree would frame frames. */
+html[data-bubbles-skin='true'] [data-slot='tool-block'][data-delegate-card] > div,
+html[data-bubbles-skin='true'] [data-slot='tool-block']:has(> button[aria-expanded='true']) > [data-selectable-text='true'] {
+  background: rgba(147, 197, 253, 0.05) !important;
+  border: 1px solid rgba(147, 197, 253, 0.22) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  margin: 4px 0 !important;
+  padding: 6px 10px !important;
+}
+
+/* The agents stream carries its column indent as pl-6 inside the wrapper. Under a
+   frame that reads as 24px of empty gutter on the left of the box, so the indent
+   moves outside it and the frame lines up with the title text instead. */
+html[data-bubbles-skin='true'] [data-slot='tool-block']:has(> button[aria-expanded='true']) > [data-selectable-text='true'] {
+  margin-left: 24px !important;
+}
+
 /* Inside that frame, a <pre> must not paint its own card. The assistant-bubble
    code-block rule (line ~335) gives every pre a dark fill, a hairline and an 8px
    radius, so an opened tool call rendered as two nested boxes — the exact
