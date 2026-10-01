@@ -17,7 +17,11 @@
  * DOM proves nothing.
  *
  * Caveats printed with every run: codicon glyphs may not resolve offline, so icons
- * are approximate while geometry, colour and typography are real. And the PNG bytes
+ * are approximate while geometry, colour and typography are real. And a surface that
+ * leans on the app's own --ui-bg-* / --ui-text-* tokens reads lighter offline than
+ * live, because ThemeProvider writes those inline on <html> at runtime — pass
+ * `htmlClass: 'dark'` on the surface to get partway there, and judge the thing the
+ * change was actually about (the page background) rather than the card fill. And the PNG bytes
  * are NOT stable — two runs of the same CSS can differ by a few hundred bytes
  * (measured: 192890 / 192890 / 192833 for one unchanged stylesheet), so never use
  * a byte or hash diff of a preview as a regression signal. The measured-style and
@@ -175,6 +179,56 @@ const SURFACES = {
       + `<div data-slot="aui_user-message-root" class="group/user-message"><div class="composer-human-message-container"><div class="composer-human-message">长消息用来验证渐变被拉开的样子：气泡宽度跟着内容走，高度跟着行数走，所以同一份 linear-gradient 在一行时是"上暖下蓝"，到五六行中间那一段会被摊得很宽。看这个才知道真机里多条长提问会不会糊成一片，或者把黄色绿色顶到不该出现的位置。</div></div></div>`
       + `</div>`,
   },
+
+  // The kanban page, to judge the surface unification by eye: board.tsx:1327 roots
+  // itself in bg-(--ui-surface-background), which styles.css:365 defines as
+  // --ui-bg-editor (the editor's near-black) until the skin routes that token to
+  // transparent. Class strings copied from board.tsx:1327 (root), :1332-1335 (header
+  // + count chip), :855 (notice) and :268 (card). The column wrapper is layout
+  // filler — the real one is virtualised — so judge the background and the card fill
+  // here, not column spacing. One limit worth stating: the card and text colours come
+  // from --ui-bg-elevated / --ui-text-*, which the live app paints from
+  // ThemeProvider's inline custom props on <html>. Offline we only have the built
+  // sheet plus `.dark`, so the card reads light-grey. What this preview IS faithful
+  // about is the thing that changed: the page no longer paints the editor's slab.
+  kanban: {
+    shot: '#shot',
+    htmlClass: 'dark',
+    viewport: { width: 900, height: 460 },
+    body: `<div id="shot" style="width:860px;height:420px;display:flex">`
+      + `<div class="relative flex h-full flex-col overflow-hidden bg-(--ui-surface-background)" style="flex:1">`
+      + `<header class="flex shrink-0 flex-wrap items-center gap-2 px-4 py-2"><h1 class="text-sm font-semibold text-foreground">看板</h1><span class="rounded-full bg-(--ui-bg-quaternary) px-1.5 py-px text-[0.625rem] tabular-nums text-(--ui-text-tertiary)">35</span></header>`
+      + `<div class="mx-4 mb-2 flex flex-col items-start gap-1.5 rounded-lg bg-(--ui-bg-quinary) px-3 py-2.5 text-[0.75rem] leading-relaxed text-(--ui-text-secondary)">卡片不由你运行，而是由代理运行。把带有负责人的卡片放入"就绪"，代理会在一分钟内领取。</div>`
+      + `<div style="display:flex;min-height:0;flex:1;gap:8px;padding:0 16px"><div style="width:250px;display:flex;flex-direction:column;gap:8px">`
+      + `<div class="flex items-center gap-1.5 text-[0.7rem] text-(--ui-text-tertiary)"><span>●</span><span>完成</span><span class="rounded-full bg-(--ui-bg-quaternary) px-1.5 py-px text-[0.625rem] tabular-nums">35</span></div>`
+      + `<div class="group relative flex cursor-grab flex-col gap-2 rounded-md border border-(--ui-stroke-tertiary) border-l-2 bg-(--ui-bg-elevated) p-2.5"><div class="text-[0.78rem] font-medium text-foreground/85">核实 Eppendorf 5425R 停产/替代情报</div><div class="text-[0.68rem] text-(--ui-text-tertiary)">5425R 情报已开源并编译竞品层</div></div>`
+      + `<div class="group relative flex cursor-grab flex-col gap-2 rounded-md border border-(--ui-stroke-tertiary) border-l-2 bg-(--ui-bg-elevated) p-2.5"><div class="text-[0.78rem] font-medium text-foreground/85">贝克曼国产 C 系列参数卡编译入 wiki</div></div>`
+      + `</div></div></div></div>`,
+  },
+
+  // The 技能 / 工具集 page. Both cases that were broken sit side by side: the
+  // switches (track and knob were being painted transparent by the skin's blanket
+  // aside rule) and the category tabs (the selected one had no cue but a 25%-alpha
+  // underline). Class strings copied from text-tab.tsx:15-39, tab-dropdown.tsx:115,
+  // switch.tsx:8-34 — including the data-[state=checked]:translate-x-4 variant,
+  // which is what actually moves the knob — and master-detail.tsx:156/465-512.
+  capabilities: {
+    shot: '#shot',
+    htmlClass: 'dark',
+    viewport: { width: 760, height: 340 },
+    body: `<div id="shot" style="width:720px">`
+      + `<div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 justify-center" style="padding:10px">`
+      + `<button data-active="true" data-tour="tab-skills" class="group/text-tab inline-flex h-7 items-center gap-1 bg-transparent px-1 font-medium text-foreground" type="button"><span class="underline-offset-4 decoration-current/25 underline">技能</span><span class="text-[0.72em] font-normal text-(--ui-text-tertiary)">46</span></button>`
+      + `<button data-active="false" data-tour="tab-toolsets" class="group/text-tab inline-flex h-7 items-center gap-1 bg-transparent px-1 font-medium text-(--ui-text-tertiary)" type="button"><span class="underline-offset-4 decoration-current/25">工具集</span><span class="text-[0.72em] font-normal text-(--ui-text-tertiary)">25</span></button>`
+      + `<button data-active="false" data-tour="tab-connectors" class="group/text-tab inline-flex h-7 items-center gap-1 bg-transparent px-1 font-medium text-(--ui-text-tertiary)" type="button"><span class="underline-offset-4 decoration-current/25">Connectors</span></button>`
+      + `</div>`
+      + `<aside class="flex min-h-0 flex-col p-2">`
+      + `<div class="group/row row-hover flex w-full shrink-0 items-center rounded-md h-11 bg-(--ui-row-active-background) text-foreground"><button class="flex h-full min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md pl-2 pr-1.5 text-left" type="button"><span class="min-w-0 flex-1"><span class="block truncate text-[0.78rem] font-medium text-foreground/85">Terminal &amp; Processes</span><span class="flex min-w-0 items-center gap-1 text-[0.62rem] text-muted-foreground/50"><span>terminal, process</span></span></span><span class="shrink-0 rounded bg-(--ui-bg-quinary) px-1 py-px text-[0.6rem] tabular-nums">×6.8k</span></button>`
+      + `<button data-slot="switch" role="switch" aria-checked="true" data-state="checked" class="peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border transition-colors bg-primary border-transparent" type="button"><span data-slot="switch-thumb" data-state="checked" class="pointer-events-none block size-4 rounded-full bg-background shadow-[0_0.0625rem_0.1875rem_color-mix(in_srgb,var(--dt-background)_50%,transparent)] ring-0 transition-transform data-[state=unchecked]:translate-x-0 data-[state=checked]:translate-x-4 data-[state=checked]:bg-background"></span></button></div>`
+      + `<div class="group/row row-hover flex w-full shrink-0 items-center rounded-md h-11 text-(--ui-text-secondary)"><button class="flex h-full min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md pl-2 pr-1.5 text-left" type="button"><span class="min-w-0 flex-1"><span class="block truncate text-[0.78rem] font-normal text-muted-foreground/60">Kanban</span><span class="flex min-w-0 items-center gap-1 text-[0.62rem] text-muted-foreground/50"><span>opt-in task board tools</span></span></span><span class="shrink-0 rounded bg-(--ui-bg-quinary) px-1 py-px text-[0.6rem] tabular-nums">×128</span></button>`
+      + `<button data-slot="switch" role="switch" aria-checked="false" data-state="unchecked" class="peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border opacity-60 transition-colors" type="button"><span data-slot="switch-thumb" data-state="unchecked" class="pointer-events-none block size-4 rounded-full bg-foreground shadow-[0_0.0625rem_0.1875rem_color-mix(in_srgb,var(--dt-background)_50%,transparent)] ring-0 transition-transform data-[state=unchecked]:translate-x-0 data-[state=checked]:translate-x-4 data-[state=checked]:bg-background"></span></button></div>`
+      + `</aside></div>`,
+  },
 }
 
 // ---------------------------------------------------------------------------
@@ -212,7 +266,7 @@ for (const n of names) {
   for (const name of names) {
     const s = SURFACES[name]
     const file = path.join(dir, `${name}.html`)
-    fs.writeFileSync(file, pageHtml(sheets, s.body))
+    fs.writeFileSync(file, pageHtml(sheets, s.body, { htmlClass: s.htmlClass || '' }))
     const page = await browser.newPage({
       viewport: { width: widthOverride || s.viewport.width, height: s.viewport.height },
       deviceScaleFactor: scale, colorScheme: 'dark',
@@ -226,4 +280,6 @@ for (const n of names) {
   }
   await browser.close()
   console.log('note: codicon glyphs may not resolve offline — judge geometry/colour/type, not icons.')
+  console.log('note: surfaces that lean on --ui-bg-* / --ui-text-* read lighter here than live,')
+  console.log('      because ThemeProvider writes those tokens inline on <html> at runtime.')
 })()

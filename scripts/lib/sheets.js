@@ -146,9 +146,15 @@ async function launchChromium() {
   return null
 }
 
-/** A full HTML document stacking the three sheets in live order. */
-function pageHtml(sheets, body, { zoom = 1 } = {}) {
-  return `<!doctype html><html data-bubbles-skin='true' data-hermes-mode='dark'><head><meta charset="utf-8">
+/** A full HTML document stacking the three sheets in live order.
+ *
+ *  `htmlClass` defaults to empty, i.e. exactly what every existing caller renders.
+ *  Pass 'dark' for a surface that leans on the app's own --ui-bg-* tokens: the live
+ *  app puts `.dark` on <html> (themes/context.tsx, see hooks/use-theme-epoch.ts:3),
+ *  and without it a kanban card resolves to the LIGHT --ui-bg-elevated, which makes
+ *  the preview show a white card on a blue page and invites a wrong judgement. */
+function pageHtml(sheets, body, { zoom = 1, htmlClass = '' } = {}) {
+  return `<!doctype html><html${htmlClass ? ` class="${htmlClass}"` : ''} data-bubbles-skin='true' data-hermes-mode='dark'><head><meta charset="utf-8">
 <style>html{zoom:${zoom}}</style>
 <link rel="stylesheet" href="${pathToFileUrl(sheets.built)}">
 <style id="hermes-desktop-custom-css">${sheets.skinCss}</style>

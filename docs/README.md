@@ -40,10 +40,14 @@
 
 [`previews/`](previews) 由 `node scripts/render-preview.js` 生成——用真实三层样式表
 （构建 CSS + live customCSS + PLUGIN_CSS）离线渲染，可在不重启 Hermes 的情况下判断
-几何、颜色与排版。注意 codicon 字形离线不一定解析，看几何别看图标。
+几何、颜色与排版。注意 codicon 字形离线不一定解析，看几何别看图标；依赖
+`--ui-bg-*` / `--ui-text-*` 的界面离线会比真机浅，因为那两个变量是宿主运行时写在
+`<html>` 内联样式上的。
 
 | 图 | 对应界面 |
 | --- | --- |
 | `previews/task-panel.png` | Composer 的 Tasks 进度面板 |
 | `previews/composer.png` | 双行输入区 |
 | `previews/transcript-rows.png` | 扁平化后的思考/工具行与保留的代码/diff 框 |
+| `previews/kanban.png` | 看板页（判页面背景是否已并入主题，卡片色离线偏浅） |
+| `previews/capabilities.png` | 技能/工具集页（开关两态 + 分类标签选中态并排） |
