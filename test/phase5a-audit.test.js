@@ -13,6 +13,7 @@
 const assert = require('assert')
 const fs = require('fs')
 const path = require('path')
+const { pluginCss } = require('../scripts/lib/sheets')
 
 class MockClassList {
   constructor(el) {
@@ -379,7 +380,10 @@ console.log(`\n=== Phase 5A History & Session Visual Layer Audit Suite (Build ${
   assert(!PLUGIN_CSS.includes('border-left: 3px solid #60a5fa'), 'Accent must not be a border-left (causes per-row reflow)')
   assert(PLUGIN_CSS.includes('data-bubbles-session-row'), 'CSS targets data-bubbles-session-row')
   assert(PLUGIN_CSS.includes('data-bubbles-session-active'), 'CSS targets data-bubbles-session-active')
-  assert(PLUGIN_CSS.includes('.group\\/workspace'), 'CSS formats group/workspace date divider')
+  /* Checked against the CSS the browser actually receives, not the source text: a
+     template literal must write `.group\\/workspace` for the runtime to hold
+     `.group\/workspace`, and test/css-escapes-survive.test.js owns that rule. */
+  assert(pluginCss().includes('.group\\/workspace'), 'CSS formats group/workspace date divider')
 
   // Reduced motion
   const reducedMotionIdx = PLUGIN_CSS.indexOf('prefers-reduced-motion: reduce')

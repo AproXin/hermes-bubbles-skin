@@ -1,7 +1,7 @@
 /**
  * DO NOT EDIT DIRECTLY.
  * Generated from src/plugin.js via `node scripts/sync.js`.
- * Build f9b963d+d2e09f59
+ * Build 90f8a78+72b31d44
  */
 
 /**
@@ -187,7 +187,7 @@ html[data-bubbles-skin='true'] [data-context-menu-skip] > :is(div, button, [clas
 }
 
 html[data-bubbles-skin='true'] [data-context-menu-skip]:hover > :is(div, button, [class*='absolute']):not(.composer-human-message):not([data-slot='aui_edit']):not(.bubbles-user-expand-btn),
-html[data-bubbles-skin='true'] .group\/user-message:hover [data-context-menu-skip] > :is(div, button, [class*='absolute']):not(.composer-human-message):not([data-slot='aui_edit']):not(.bubbles-user-expand-btn) {
+html[data-bubbles-skin='true'] .group\\/user-message:hover [data-context-menu-skip] > :is(div, button, [class*='absolute']):not(.composer-human-message):not([data-slot='aui_edit']):not(.bubbles-user-expand-btn) {
   opacity: 1 !important;
 }
 
@@ -826,8 +826,8 @@ html[data-bubbles-skin='true'] [data-bubbles-tool-flat='true'][data-bubbles-in-g
 /* Flatten child disclosure / header inside grouped tools to eliminate duplicate nested cards */
 html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-in-group='true'] :is(
   header,
-  .group\/disclosure-row,
-  button.group\/disclosure-row
+  .group\\/disclosure-row,
+  button.group\\/disclosure-row
 ) {
   background: transparent !important;
   border: none !important;
@@ -838,8 +838,8 @@ html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-in-group='t
    Hide the duplicate native disclosure header inside the single tool block to prevent repetitive titles. */
 html[data-bubbles-skin='true'] .bubbles-tool-group[data-tool-count='1'] + [data-slot='tool-block'] > :is(
   header,
-  .group\/disclosure-row,
-  button.group\/disclosure-row
+  .group\\/disclosure-row,
+  button.group\\/disclosure-row
 ),
 html[data-bubbles-skin='true'] [data-bubbles-duplicate-header='true'] {
   display: none !important;
@@ -869,8 +869,8 @@ html[data-bubbles-skin='true'] [data-bubbles-tool-state='running'] .glyph-spinne
 
 html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-tool-state='running'] :is(
   header,
-  .group\/disclosure-row,
-  button.group\/disclosure-row
+  .group\\/disclosure-row,
+  button.group\\/disclosure-row
 ) {
   background: transparent !important;
   border: none !important;
@@ -930,8 +930,8 @@ html[data-bubbles-skin='true'] [data-bubbles-tool-state='failed'] span[class*='s
 /* Eliminate child red borders and child red backgrounds inside failed tool */
 html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-tool-state='failed'] :is(
   header,
-  .group\/disclosure-row,
-  button.group\/disclosure-row,
+  .group\\/disclosure-row,
+  button.group\\/disclosure-row,
   div[class*='border-destructive'],
   div[class*='bg-destructive'],
   div[class*='bg-red'],
@@ -1537,7 +1537,6 @@ html[data-bubbles-skin='true'] form[data-clarify-choices] button[variant='text']
    rectangular seam through the Sessions column. Keep only the sapphire seam. */
 html[data-bubbles-skin='true'] [data-slot='sidebar'],
 html[data-bubbles-skin='true'] aside[data-slot='sidebar'],
-html[data-bubbles-skin='true'] .group\/sidebar,
 html[data-bubbles-skin='true'] [data-slot='sidebar-container'] {
   background: transparent !important;
   backdrop-filter: none !important;
@@ -1551,13 +1550,13 @@ html[data-bubbles-skin='true'] [data-slot='sidebar-inner'] {
 }
 
 /* Date Dividers & Group Headers */
-html[data-bubbles-skin='true'] .group\/workspace,
+html[data-bubbles-skin='true'] .group\\/workspace,
 html[data-bubbles-skin='true'] [data-bubbles-session-divider='true'] {
   padding-top: 10px !important;
   padding-bottom: 4px !important;
 }
 
-html[data-bubbles-skin='true'] .group\/workspace span.text-\[0\.64rem\],
+html[data-bubbles-skin='true'] .group\\/workspace span.text-\\[0\\.64rem\\],
 html[data-bubbles-skin='true'] [data-bubbles-session-divider='true'] span:first-child {
   color: #93c5fd !important;
   font-size: 10.5px !important;
@@ -1567,7 +1566,7 @@ html[data-bubbles-skin='true'] [data-bubbles-session-divider='true'] span:first-
   opacity: 0.90 !important;
 }
 
-html[data-bubbles-skin='true'] .group\/workspace span.h-px,
+html[data-bubbles-skin='true'] .group\\/workspace span.h-px,
 html[data-bubbles-skin='true'] [data-bubbles-session-divider='true'] span[aria-hidden='true'] {
   background: linear-gradient(90deg, rgba(96, 165, 250, 0.30), rgba(147, 197, 253, 0.05)) !important;
   height: 1px !important;
@@ -1608,7 +1607,7 @@ html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover:hover .hover-mar
 
 /* Active / Selected Session */
 html[data-bubbles-skin='true'] [data-bubbles-session-active='true'],
-html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover.bg-\(--ui-row-active-background\),
+html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover.bg-\\(--ui-row-active-background\\),
 html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover[data-selected='true'],
 html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover[aria-selected='true'],
 html[data-bubbles-skin='true'] [data-slot='sidebar'] [data-sidebar='menu-button'][data-active='true'] {
@@ -1625,7 +1624,7 @@ html[data-bubbles-skin='true'] [data-slot='sidebar'] [data-sidebar='menu-button'
 }
 
 html[data-bubbles-skin='true'] [data-bubbles-session-row='true'][data-bubbles-session-active='true'] .hover-marquee,
-html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover.bg-\(--ui-row-active-background\) .hover-marquee {
+html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover.bg-\\(--ui-row-active-background\\) .hover-marquee {
   color: #ffffff !important;
   font-weight: 500 !important;
 }
@@ -3698,4 +3697,4 @@ export default {
   }
 }
 
-globalThis.__bubblesBuild = "f9b963d+d2e09f59"
+globalThis.__bubblesBuild = "90f8a78+72b31d44"

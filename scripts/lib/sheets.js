@@ -62,19 +62,53 @@ function skinYamlPath() {
 }
 
 /**
- * The PLUGIN_CSS template literal, verbatim.
+ * The PLUGIN_CSS template literal **as the runtime receives it**.
  *
- * The terminator is searched as newline + backtick because the real literal ends
- * that way; note this cannot see a MID-LINE stray backtick cutting the string
- * short (it has happened twice). test/plugin-source-parses.test.js owns that case.
+ * Two things happen between this file and the renderer: `${}` interpolations are
+ * evaluated (left verbatim here — they only appear in values, never in selectors, so a
+ * rule stays parseable), and JS escape sequences are RESOLVED.
+ *
+ * The second is the trap this function exists for. A CSS class escape needs a
+ * backslash (`.group\/row` for class `group/row`), but inside a template literal `\/`
+ * is itself an escape sequence that evaluates to `/`. The browser then receives the
+ * invalid selector `.group/row`, and because one invalid selector voids a whole comma
+ * list, the entire rule is dropped — silently, with no console error. Reading the raw
+ * source text hid that completely: fixtures passed on a stylesheet the app never
+ * installed. So fixtures get this text, and the guard lives in
+ * test/css-escapes-survive.test.js. Write `\\/` in PLUGIN_CSS when a CSS escape is
+ * meant.
+ *
+ * Extraction itself searches for newline + backtick as the terminator, so it cannot see
+ * a MID-LINE stray backtick cutting the string short (that has happened twice);
+ * test/plugin-source-parses.test.js owns that case against the raw source.
  */
 function pluginCss(source = null) {
+  const raw = pluginCssSource(source)
+  return raw === null ? null : resolveJsEscapes(raw)
+}
+
+/** The literal's characters exactly as written in src/plugin.js. */
+function pluginCssSource(source = null) {
   const src = source ?? fs.readFileSync(path.join(REPO, 'src', 'plugin.js'), 'utf8')
   const at = src.indexOf('const PLUGIN_CSS = `')
   if (at === -1) return null
   const body = src.indexOf('`', at) + 1
   const end = src.indexOf('\n`', body)
   return end === -1 ? null : src.slice(body, end)
+}
+
+/** Resolve the escape sequences a JS template literal processes. */
+function resolveJsEscapes(text) {
+  const named = { n: '\n', r: '\r', t: '\t', b: '\b', f: '\f', v: '\v' }
+  return text.replace(
+    /\\u\{([0-9a-fA-F]+)\}|\\u([0-9a-fA-F]{4})|\\x([0-9a-fA-F]{2})|\\(.)/g,
+    (all, uBrace, u4, hex2, ch) => {
+      if (uBrace !== undefined) return String.fromCodePoint(parseInt(uBrace, 16))
+      if (u4 !== undefined) return String.fromCharCode(parseInt(u4, 16))
+      if (hex2 !== undefined) return String.fromCharCode(parseInt(hex2, 16))
+      if (ch === '\n') return ''
+      return named[ch] !== undefined ? named[ch] : ch
+    })
 }
 
 /** The cap the gateway slices customCSS at, read from the engine that applies it.
@@ -149,7 +183,7 @@ function pluginScriptForPage(source = null) {
 
 module.exports = {
   HOME, HERMES_HOME, REPO, DESKTOP,
-  builtCssPath, blockScalar, skinYamlPath, pluginCss, loadSheets,
-  customCssCap,
+  builtCssPath, blockScalar, skinYamlPath, pluginCss, pluginCssSource, resolveJsEscapes,
+  loadSheets, customCssCap,
   launchChromium, pageHtml, pathToFileUrl, pluginScriptForPage,
 }
