@@ -167,9 +167,12 @@ rsync -a --delete ~/.hermes/backups/desktop-dist-pre-theme-epoch-20261001-233346
 codesign --force --options runtime --sign - "$APP"
 ```
 
-**未验证的一项**：运行时效果（需要 Cmd+Q 重启后由你看）。本地无法先验证的原因是
-`node_modules/electron` 未安装、`~/Library/Caches/electron` 为空，任何 `electron .` /
+**运行时已确认**：他重启后回报「不黑了」——恢复出来的终端不再先蓝后黑，`useThemeEpoch` 这条依赖确实覆盖了 customCSS 落地的时机。
+
+本地无法预先跑起来的原因：`node_modules/electron` 未安装、`~/Library/Caches/electron` 为空，任何 `electron .` /
 `npm run dev` 都要先联网下载 Electron 40.10.2。
+
+**注意时效**：Hermes 自动更新会重装 `release/mac-arm64/Hermes.app`，届时这个补丁和被替换的 dist 都会被覆盖。要长期保住，就把上面的 diff 提给上游合并；否则更新后按本节重放一次。
 
 ### 热部署 Hermes 渲染层的可复用配方
 
