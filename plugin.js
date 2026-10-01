@@ -1,7 +1,7 @@
 /**
  * DO NOT EDIT DIRECTLY.
  * Generated from src/plugin.js via `node scripts/sync.js`.
- * Build dcaa4da+db35a4ac
+ * Build db35a4acd7
  */
 
 /**
@@ -3766,4 +3766,4 @@ export default {
   }
 }
 
-globalThis.__bubblesBuild = "dcaa4da+db35a4ac"
+globalThis.__bubblesBuild = "db35a4acd7"

@@ -74,11 +74,13 @@ try {
   die(`src/plugin.js does not parse:\n${(e.stderr || '').toString().trim().split('\n').slice(0, 6).join('\n')}`)
 }
 
-/* "I deployed it and the window didn't change" is the most common report, and it
-   used to be unanswerable from the inside: both the plugin JS and the skin's
-   customCSS are read once per renderer document. Stamp the deploy identity into the
-   generated file so the running window can name the build it loaded (see the
-   data-bubbles-build attribute in installStyles). */
+/* The deploy identity. Deliberately derived from the source alone: an earlier version
+   embedded `git rev-parse HEAD`, which made the generated plugin.js impossible to
+   commit without immediately going stale (committing it moves HEAD). A content hash
+   answers the same question — "which deploy is this window painting" — and keeps sync
+   idempotent, which test/sync-deploys-skin.test.js now asserts. The git sha is still
+   printed, just not baked into the file. */
+const buildTag = sha256(sourceContent).slice(0, 10)
 const headSha = (() => {
   try {
     return execFileSync('git', ['rev-parse', '--short=7', 'HEAD'], { cwd: ROOT_DIR, stdio: 'pipe' }).toString().trim()
@@ -86,7 +88,6 @@ const headSha = (() => {
     return 'nogit'
   }
 })()
-const buildTag = `${headSha}+${sha256(sourceContent).slice(0, 8)}`
 
 const generatedBanner = `/**\n * DO NOT EDIT DIRECTLY.\n * Generated from src/plugin.js via \`node scripts/sync.js\`.\n * Build ${buildTag}\n */\n\n`
 const outputContent = `${generatedBanner}${sourceContent}\nglobalThis.__bubblesBuild = ${JSON.stringify(buildTag)}\n`
@@ -181,7 +182,7 @@ function deploySkin() {
 deploySkin()
 
 console.log('[sync] Synchronization completed successfully.')
-console.log(`[sync] Build ${buildTag}`)
+console.log(`[sync] Build ${buildTag} (source hash; HEAD ${headSha})`)
 console.log('[sync] Restart Hermes with Cmd+Q (not just close the window) — the plugin\n'
   + '       JS and the skin customCSS are both loaded once per renderer document.\n'
   + '       To confirm which build a window is painting, run in its DevTools console:\n'

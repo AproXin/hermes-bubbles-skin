@@ -117,6 +117,21 @@ r = run(['--no-skin'])
 step('--no-skin skips the deploy', r.code === 0 && /keep me/.test(fs.readFileSync(LIVE, 'utf8')))
 step('--no-skin still syncs the plugin', /Deployed to local Hermes runtime/.test(r.out))
 
+// 7. The generated plugin must be a pure function of src/plugin.js. An earlier
+//    version embedded `git rev-parse HEAD` in the build tag, which made the generated
+//    file stale the moment it was committed (committing moves HEAD) and left the tree
+//    permanently dirty after every sync.
+const PLUGIN_LIVE = path.join(HERMES, 'desktop-plugins', 'hermes-bubbles-skin', 'plugin.js')
+const generated = fs.readFileSync(PLUGIN_LIVE)
+// --force-skin, not a bare run(): case 6 left a foreign live skin behind, and a
+// refused deploy would pass the byte comparison by writing nothing at all.
+r = run(['--force-skin'])
+step('a repeat sync rewrites the plugin byte for byte',
+  r.code === 0 && fs.readFileSync(PLUGIN_LIVE).equals(generated), `exit=${r.code}`)
+step('and the embedded build tag is the source hash, not the git head',
+  generated.includes(`globalThis.__bubblesBuild = ${JSON.stringify(sha(fs.readFileSync(path.join(REPO, 'src', 'plugin.js'))).slice(0, 10))}`),
+  (generated.toString().match(/__bubblesBuild = .*/) || [''])[0])
+
 // The script must never edit its own source.
 step('repo bubbles.yaml untouched throughout', sha(fs.readFileSync(SKIN_SOURCE)) === repoSha)
 
