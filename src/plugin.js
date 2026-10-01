@@ -715,6 +715,21 @@ html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-group]:has([da
   padding: 6px 10px !important;
 }
 
+/* One box per visual layer. A row opened INSIDE an expanded run already sits in the
+   run's frame, so a second hairline around it read as a card in a card — it steps
+   down to the same 2px rail the collapsed grouped rows use, which keeps the "this
+   detail belongs to that line" cue without competing edges. (0,6,2) beats the frame
+   rule's (0,4,2), and it also has to come after it for the ties elsewhere. */
+html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-group] [data-slot='tool-block'][data-tool-open][data-tool-row] > :not(:first-child) {
+  background: transparent !important;
+  border: none !important;
+  border-left: 2px solid rgba(96, 165, 250, 0.45) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 2px 0 2px 2px !important;
+  padding: 2px 0 2px 8px !important;
+}
+
 /* Inside that frame, a <pre> must not paint its own card. The assistant-bubble
    code-block rule (line ~335) gives every pre a dark fill, a hairline and an 8px
    radius, so an opened tool call rendered as two nested boxes — the exact
@@ -3496,9 +3511,17 @@ function installStyles() {
     document.head.appendChild(styleEl)
   }
   document.documentElement.setAttribute('data-bubbles-skin', 'true')
+  /* Which deploy this window is actually painting. The plugin JS and the skin's
+     customCSS are both read once per renderer document, so "I changed it and nothing
+     moved" is usually "this window predates the deploy" — which used to be unprovable
+     from inside the app. sync.js writes the value; one line in DevTools reads it back:
+     console.log(document.documentElement.getAttribute('data-bubbles-build')) */
+  const build = typeof globalThis === 'undefined' ? null : globalThis.__bubblesBuild
+  if (build) document.documentElement.setAttribute('data-bubbles-build', String(build))
   return () => {
     styleEl?.remove()
     document.documentElement.removeAttribute('data-bubbles-skin')
+    document.documentElement.removeAttribute('data-bubbles-build')
   }
 }
 

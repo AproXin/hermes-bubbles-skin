@@ -68,8 +68,13 @@ const TARGETS = {
   'thinking detail': '#t-open [data-slot="aui_thinking-body"]',
   'tool detail': '#b-open [data-tool-row] > :not(:first-child)',
   'pill-grouped tool detail': '#b-pill [data-tool-row] > :not(:first-child)',
-  'grouped tool detail': '#b-nested [data-tool-group] > div:last-child > [data-tool-open] > :not(:first-child)',
   'tool run members': '#b-nested [data-tool-group] > [data-tool-summary] + div',
+}
+/* A detail opened INSIDE an already-framed run steps down to a left rail — one
+   box per visual layer, so a nested row reads as content of the run rather than
+   as a second card. */
+const RAILED = {
+  'grouped tool detail': '#b-nested [data-tool-group] > div:last-child > [data-tool-open] > :not(:first-child)',
 }
 const TITLES = {
   'thinking detail': '#t-open [data-slot="aui_thinking-disclosure"] > div:first-child',
@@ -108,6 +113,7 @@ const TITLES = {
         width: cs.borderTopWidth,
         style: cs.borderTopStyle,
         color: cs.borderTopColor,
+        leftWidth: cs.borderLeftWidth,
         radius: cs.borderTopLeftRadius,
         fillAlpha: alpha(cs.backgroundColor),
         inBubble: Boolean(el.closest('[data-slot="aui_assistant-message-content"]')),
@@ -137,6 +143,13 @@ const TITLES = {
       check(`${name} sits inside the bubble`, !f.missing && f.inBubble)
     }
 
+    console.log('\n[a detail nested inside a framed run steps down to a left rail]')
+    for (const [name, sel] of Object.entries(RAILED)) {
+      const f = await readFrame(sel)
+      const railed = !f.missing && parseFloat(f.leftWidth) >= 2 && parseFloat(f.width) === 0 && f.fillAlpha === 0
+      check(`${name} is a rail, not a second box`, railed, JSON.stringify(f))
+    }
+
     console.log('\n[the title line stays outside every frame]')
     for (const [name, titleSel] of Object.entries(TITLES)) {
       const t = await isBare(titleSel)
@@ -145,7 +158,7 @@ const TITLES = {
         const f = document.querySelector(frame)
         const h = document.querySelector(title)
         return !f || !h ? null : f.contains(h)
-      }, [TARGETS[name], titleSel])
+      }, [TARGETS[name] || RAILED[name], titleSel])
       check(`${name}: the frame does not wrap the title`, wrapped === false, `frame contains title: ${wrapped}`)
     }
 
@@ -173,12 +186,16 @@ const TITLES = {
     }
     for (const [key, title] of [['tool detail', '#b-open [data-tool-row] > div:first-child'],
       ['thinking detail', '#t-open [data-slot="aui_thinking-disclosure"] > div:first-child'],
-      ['tool run members', '#b-nested [data-tool-summary]'],
-      ['grouped tool detail', '#b-nested [data-tool-group] [data-tool-open] > div:first-child']]) {
+      ['tool run members', '#b-nested [data-tool-summary]']]) {
       await pointAt(title)
       const f = await readFrame(TARGETS[key])
       check(`${key} keeps its frame while the pointer is on its title`, framed(f), JSON.stringify(f))
     }
+    await pointAt('#b-nested [data-tool-group] [data-tool-open] > div:first-child')
+    const hoveredRail = await readFrame(RAILED['grouped tool detail'])
+    check('a nested detail keeps its rail while the pointer is on its title',
+      parseFloat(hoveredRail.leftWidth) >= 2 && parseFloat(hoveredRail.width) === 0,
+      JSON.stringify(hoveredRail))
     await pointAt('#b-closed [data-tool-row] > div:first-child')
     const hoveredClosed = await isBare('#b-closed [data-tool-row]')
     check('a collapsed row under the pointer still has no frame', bare(hoveredClosed), JSON.stringify(hoveredClosed))

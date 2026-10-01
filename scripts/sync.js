@@ -74,8 +74,22 @@ try {
   die(`src/plugin.js does not parse:\n${(e.stderr || '').toString().trim().split('\n').slice(0, 6).join('\n')}`)
 }
 
-const generatedBanner = `/**\n * DO NOT EDIT DIRECTLY.\n * Generated from src/plugin.js via \`node scripts/sync.js\`.\n */\n\n`
-const outputContent = generatedBanner + sourceContent
+/* "I deployed it and the window didn't change" is the most common report, and it
+   used to be unanswerable from the inside: both the plugin JS and the skin's
+   customCSS are read once per renderer document. Stamp the deploy identity into the
+   generated file so the running window can name the build it loaded (see the
+   data-bubbles-build attribute in installStyles). */
+const headSha = (() => {
+  try {
+    return execFileSync('git', ['rev-parse', '--short=7', 'HEAD'], { cwd: ROOT_DIR, stdio: 'pipe' }).toString().trim()
+  } catch {
+    return 'nogit'
+  }
+})()
+const buildTag = `${headSha}+${sha256(sourceContent).slice(0, 8)}`
+
+const generatedBanner = `/**\n * DO NOT EDIT DIRECTLY.\n * Generated from src/plugin.js via \`node scripts/sync.js\`.\n * Build ${buildTag}\n */\n\n`
+const outputContent = `${generatedBanner}${sourceContent}\nglobalThis.__bubblesBuild = ${JSON.stringify(buildTag)}\n`
 
 // 1. Write root plugin.js
 fs.writeFileSync(TARGET_ROOT_FILE, outputContent, 'utf8')
@@ -167,5 +181,8 @@ function deploySkin() {
 deploySkin()
 
 console.log('[sync] Synchronization completed successfully.')
+console.log(`[sync] Build ${buildTag}`)
 console.log('[sync] Restart Hermes with Cmd+Q (not just close the window) — the plugin\n'
-  + '       JS and the skin customCSS are both loaded once at startup.')
+  + '       JS and the skin customCSS are both loaded once per renderer document.\n'
+  + '       To confirm which build a window is painting, run in its DevTools console:\n'
+  + `       console.log(document.documentElement.getAttribute('data-bubbles-build'))  # ${buildTag}`)
