@@ -144,6 +144,44 @@ ThemeProvider 应用皮肤时正是重写这些内联自定义属性 → 皮肤�
 2. 每个 ANSI 色对背景的对比度**普遍腰斩**（红 13.2→6.9、绿 12.1→5.9），终端里 diff、
    报错、进度条全靠这些色区分；`black` 还会变成蓝灰，与背景几乎并轨。
 
+## 已执行（2026-10-01）
+
+补丁已应用到 `~/.hermes/hermes-agent`（未提交，`git restore` 可撤销），并按 **B 方案**热部署到正在使用的 app：
+
+| 步骤 | 结果 |
+| --- | --- |
+| `npx tsc --build tsconfig.json` | exit 0，零输出 |
+| `npm run build` | 新代 `dist/assets/index-D8qLiO6g.js`，`postbuild` 断言通过 |
+| 备份 | `~/.hermes/backups/desktop-dist-pre-theme-epoch-20261001-233346`（48M） |
+| 复制到 `app.asar.unpacked/dist` | 与 src 树只差一个旧代 chunk（无害残留） |
+| 引用完整性 | `index.html` 点名的 138 个 asset 全部存在 |
+| 复制后签名校验 | **失败**：`a sealed resource is missing or invalid` → 确认 unpacked 资源在 seal 范围内 |
+| `codesign --force --options runtime --entitlements <原样> --sign -` | 成功；`--verify --strict` 与 `--verify --deep --strict` 均 exit 0；entitlements 逐字节一致；flags 仍是 `adhoc,runtime` |
+
+回滚（一条命令）：
+
+```bash
+APP=~/.hermes/hermes-agent/apps/desktop/release/mac-arm64/Hermes.app
+rsync -a --delete ~/.hermes/backups/desktop-dist-pre-theme-epoch-20261001-233346/ \
+  "$APP/Contents/Resources/app.asar.unpacked/dist/"
+codesign --force --options runtime --sign - "$APP"
+```
+
+**未验证的一项**：运行时效果（需要 Cmd+Q 重启后由你看）。本地无法先验证的原因是
+`node_modules/electron` 未安装、`~/Library/Caches/electron` 为空，任何 `electron .` /
+`npm run dev` 都要先联网下载 Electron 40.10.2。
+
+### 热部署 Hermes 渲染层的可复用配方
+
+1. 打包版优先加载 `app.asar.unpacked/dist`（`electron/main.ts:4566-4576` 明写"unpacked 才是
+   repair 重写的那一份"），所以改 `dist/**` 就能生效，不必重跑 electron-builder。
+2. 但 unpacked 资源**在代码签名 seal 之内**：复制完 `codesign --verify --strict` 会报
+   `a sealed resource is missing or invalid`。必须重签外层：
+   `codesign --force --options runtime --entitlements <先 dump 出来的原 entitlements> --sign - "$APP"`。
+   不要用 `--deep`——那会重签嵌套 helper 并可能丢掉它们的 entitlements。
+3. 启动期没有 contentHash 校验（`desktop-build-stamp.json` 只被 `gui_uninstall.py` 读），
+   所以替换不会被自愈回滚。
+
 ## 附：顺带确认的两个事实（与上面独立，已在皮肤侧修掉）
 
 - `.xterm-scrollable-element` 比 `.xterm-screen` 宽出滚动条那一段，且带 xterm 自己的内联
