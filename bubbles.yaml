@@ -73,7 +73,7 @@ customCSS: |
 
   /* 2b. 终端面板：平涂应用自己的 surface token，不铺光斑渐变（xterm 的 WebGL
      画布无法合成渐变，terminal/selection.ts:82 把 token 解析成具体颜色）。 */
-  .xterm, .xterm-viewport, .xterm-screen,
+  .xterm, .xterm-viewport, .xterm-screen, .xterm-scrollable-element,
   [class*='bg-(--ui-terminal-surface-background)']:not([class*='group/rail']) {
     background: var(--ui-terminal-surface-background) !important;
     border-radius: 0 !important;

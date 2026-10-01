@@ -85,6 +85,20 @@ const PLUGIN_CSS = `
    Scoped under html[data-bubbles-skin='true']
    ========================================================================== */
 
+/* The terminal's surface token, declared here as well as in the skin's customCSS —
+   and the duplication is the point. xterm resolves --ui-terminal-surface-background
+   ONCE, when the terminal is created (use-terminal-session.ts:546 → selection.ts:88
+   resolveSurfaceColor), and bakes the result into its WebGL canvas. customCSS reaches
+   the document later, from ThemeProvider's runtime <style> tag, so a terminal restored
+   at boot resolves the app's own dark chrome and paints black forever, whatever CSS
+   says afterwards — the panel reads "blue for a moment, then black". This sheet is
+   installed by the plugin, before the right sidebar mounts, so the token already holds
+   the skin's value at the moment of the bake. test/terminal-surface.test.js pins the
+   two copies to the same hex. */
+html[data-bubbles-skin='true'] {
+  --ui-terminal-surface-background: #113c6a !important;
+}
+
 /* --------------------------------------------------------------------------
    1. Conversation Spacing & Assistant Bubble Deepening
    -------------------------------------------------------------------------- */

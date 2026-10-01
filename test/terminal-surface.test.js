@@ -29,10 +29,15 @@ const BODY = `<div style="padding:0;width:680px;height:420px"><div data-slot="si
   + `<div id="rail" class="group/rail relative z-40 flex h-full w-9 shrink-0 flex-col items-center border-l border-(--ui-stroke-quaternary) bg-(--ui-terminal-surface-background)"></div>`
   + `<div id="panel" class="relative flex h-full min-h-0 flex-col overflow-hidden bg-(--ui-terminal-surface-background)">`
   + `<div id="instance" class="absolute inset-0 flex flex-col bg-(--ui-terminal-surface-background) px-2 pb-2 pt-0">`
-  + `<div id="xterm" class="terminal xterm"><div id="viewport" class="xterm-viewport"><div id="screen" class="xterm-screen"></div></div></div>`
+  + `<div id="xterm" class="terminal xterm"><div id="viewport" class="xterm-viewport"><div id="screen" class="xterm-screen"></div></div>`
+  /* xterm's own Viewport element. It carries an inline background from the resolved
+     theme, and it is WIDER than .xterm-screen by the scrollbar gutter — which is the
+     dark strip down the right edge of an otherwise correct panel. The host only pins
+     .xterm-screen and .xterm-viewport (instance.tsx:21), so this one needs the skin. */
+  + `<div id="scrollable" class="xterm-scrollable-element mac" style="background-color: rgb(11, 31, 51)"><div class="xterm-helper-textarea"></div></div>`
   + `</div></div></div></div>`
 
-const SURFACES = ['panel', 'instance', 'xterm', 'viewport', 'screen']
+const SURFACES = ['panel', 'instance', 'xterm', 'viewport', 'screen', 'scrollable']
 
 ;(async () => {
   const browser = await launchChromium()
@@ -95,6 +100,36 @@ const SURFACES = ['panel', 'instance', 'xterm', 'viewport', 'screen']
        had been deleted. */
     check('control: the terminal rail keeps the ambient constellation',
       /radial-gradient/.test(at.rail.image), at.rail.image)
+
+    /* The bake-time path. xterm resolves the token once when the terminal is created
+       and not again unless the theme changes, and customCSS reaches the document later
+       than that from ThemeProvider's runtime <style> — which is what makes a restored
+       panel read "blue for a moment, then black". PLUGIN_CSS is installed by the plugin
+       before the right sidebar mounts, so it has to carry the token itself. Load ONLY
+       the built sheet plus PLUGIN_CSS and read what the app's probe would see at boot. */
+    const earlyFile = path.join(dir, 'early.html')
+    fs.writeFileSync(earlyFile, `<!doctype html><html data-bubbles-skin='true' data-hermes-mode='dark'><head><meta charset="utf-8">
+<link rel="stylesheet" href="${pathToFileUrl(sheets.built)}">
+<style>${sheets.pluginCss}</style></head><body></body></html>`)
+    const earlyPage = await browser.newPage()
+    await earlyPage.goto(pathToFileUrl(earlyFile))
+    const early = await earlyPage.evaluate(() => {
+      const probe = document.createElement('span')
+      probe.style.cssText = 'position:absolute;visibility:hidden;background-color:var(--ui-terminal-surface-background)'
+      document.body.append(probe)
+      const v = getComputedStyle(probe).backgroundColor
+      probe.remove()
+      return v
+    })
+    await earlyPage.close()
+    check('PLUGIN_CSS alone resolves the token (the pre-customCSS boot window)',
+      early === at.token, `${early} vs ${at.token}`)
+
+    /* Two copies of one decision must not drift apart. */
+    const hex = t => ((t || '').match(/--ui-terminal-surface-background:\s*(#[0-9a-f]{6})/i) || [])[1] || ''
+    check('customCSS and PLUGIN_CSS agree on the terminal hex',
+      !!hex(sheets.skinCss) && hex(sheets.skinCss).toLowerCase() === hex(sheets.pluginCss).toLowerCase(),
+      `customCSS ${hex(sheets.skinCss) || '—'} / PLUGIN_CSS ${hex(sheets.pluginCss) || '—'}`)
   } finally {
     await browser.close()
   }
