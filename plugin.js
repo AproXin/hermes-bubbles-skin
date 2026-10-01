@@ -1,7 +1,7 @@
 /**
  * DO NOT EDIT DIRECTLY.
  * Generated from src/plugin.js via `node scripts/sync.js`.
- * Build 90f8a78+72b31d44
+ * Build 40878f9+6ec2470d
  */
 
 /**
@@ -1795,10 +1795,18 @@ html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area
   min-width: 0 !important;
 }
 
-/* Row 2 reads: ＋ / model / reasoning from the left edge, voice + send pinned
-   right by an auto margin on the first element of the right cluster. Every hook
-   here is structural (data-slot / data-testid / data-tour) — never aria-label
-   text, which the reference skin keys on and i18n silently breaks. */
+/* Row 2 is one flex container of six controls in DOM order: 附件 / 模型 / 推理 /
+   听写 / 对话 / 引擎 (confirmed from the live window). The agreed reading is the model
+   cluster first, then attach, with the voice cluster flush right.
+     - the two pills carry real hooks, so order:-1 leads the group without touching DOM;
+     - the row's first child takes an auto right margin, which makes it the LAST item of
+       the left group and carries everything after it to the right edge. That survives
+       hideModelPill (the margin lands on whatever is first) and foldedVoice (where the
+       mic is no longer a fan-menu-anchor, which is what the previous blanket
+       fan-menu-anchor auto margin depended on — it is gone because two auto
+       margins split the free space and park the voice cluster mid-row).
+   Every hook here is structural (data-slot / data-testid / data-tour) — never
+   aria-label text, which the reference skin keys on and i18n silently breaks. */
 html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area:controls'] {
   justify-content: flex-start !important;
 }
@@ -1807,8 +1815,46 @@ html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area
   flex: 1 1 auto !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='composer-surface'] [data-slot='fan-menu-anchor'] {
+html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area:controls'] > div > :is([data-tour='model-pill'], [data-testid='reasoning-pill']) {
+  order: -1 !important;
+}
+
+/* The split lives on the voice cluster's own anchor, not on "the last left item":
+   an auto margin on the row's first child drove a wedge between the model pill and the
+   reasoning pill (composer-codex-layout caught it), and two auto margins split the
+   free space. The mic is a FanMenu hub (voice-fan.tsx:105 → fan-menu.tsx:248), so its
+   anchor is the first element of the right group; scoped to the controls row it can no
+   longer reach the ＋ fan in the menu area. */
+html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area:controls'] > div > [data-slot='fan-menu-anchor'] {
   margin-left: auto !important;
+}
+
+/* The prompt text and the toolbar row are two different jobs; one hairline says so.
+   Inset 12px on both sides so it reads as a rule under the text, not as the box's own
+   edge, and low contrast enough to disappear at a glance. */
+html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area:input'] {
+  position: relative !important;
+  padding-bottom: 7px !important;
+}
+
+html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area:input']::after {
+  content: '' !important;
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 3px;
+  height: 1px;
+  background: rgba(147, 197, 253, 0.09);
+  pointer-events: none;
+}
+
+/* The ＋ sits in the menu area, which the host drops to the row's top with a 3px
+   nudge for the single-row layout. On a two-row grid that nudge puts it one hairline
+   off the toolbar it belongs to. */
+html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area:menu'] {
+  align-items: center !important;
+  align-self: center !important;
+  translate: none !important;
 }
 
 html[data-bubbles-skin='true'] [data-slot='composer-surface'] :is([data-tour='model-pill'], [data-testid='reasoning-pill']) {
@@ -3697,4 +3743,4 @@ export default {
   }
 }
 
-globalThis.__bubblesBuild = "90f8a78+72b31d44"
+globalThis.__bubblesBuild = "40878f9+6ec2470d"
