@@ -3634,6 +3634,15 @@ function installStyles() {
      console.log(document.documentElement.getAttribute('data-bubbles-build')) */
   const build = typeof globalThis === 'undefined' ? null : globalThis.__bubblesBuild
   if (build) document.documentElement.setAttribute('data-bubbles-build', String(build))
+  /* When did this sheet actually land? Everything the skin paints through CSS is live
+     from here on, but anything the app READS once and caches (xterm resolves the
+     terminal surface into a WebGL clear color at terminal creation,
+     use-terminal-session.ts:546) only sees the skin if it runs after this moment. The
+     restored terminal is black for exactly that reason, and this number is the only
+     evidence of the ordering that survives to a bug report. */
+  try {
+    console.log(`[bubbles] styles installed at ${Math.round(performance.now())}ms (build ${build ?? 'unknown'})`)
+  } catch { /* no console or no performance; the attribute above still stands */ }
   return () => {
     styleEl?.remove()
     document.documentElement.removeAttribute('data-bubbles-skin')
