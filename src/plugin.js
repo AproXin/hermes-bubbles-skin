@@ -715,12 +715,17 @@ html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-group]:has([da
   padding: 6px 10px !important;
 }
 
-/* One box per visual layer. A row opened INSIDE an expanded run already sits in the
-   run's frame, so a second hairline around it read as a card in a card — it steps
+/* One box per visual layer. A row opened INSIDE an already-framed run already sits in
+   the run's frame, so a second hairline around it read as a card in a card — it steps
    down to the same 2px rail the collapsed grouped rows use, which keeps the "this
-   detail belongs to that line" cue without competing edges. (0,6,2) beats the frame
-   rule's (0,4,2), and it also has to come after it for the ties elsewhere. */
-html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-group] [data-slot='tool-block'][data-tool-open][data-tool-row] > :not(:first-child) {
+   detail belongs to that line" cue without competing edges.
+   The :has([data-tool-summary] …) guard is what makes that rule mean something: a run
+   of ONE tool renders no summary at all (fallback.tsx:1014 gates on count > 1) and is
+   always expanded, so its wrapper paints no frame and its only row must take the full
+   frame like any standalone row. Without the guard, 已运行 sed showed a rail while the
+   bubbles.yaml edit beside it showed a frame — two identical-looking rows, treated
+   differently by an invisible wrapper. */
+html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-group]:has([data-tool-summary] button[aria-expanded='true']) [data-slot='tool-block'][data-tool-open][data-tool-row] > :not(:first-child) {
   background: transparent !important;
   border: none !important;
   border-left: 2px solid rgba(96, 165, 250, 0.45) !important;
@@ -1877,6 +1882,31 @@ html[data-bubbles-skin='true'] [data-slot='composer-surface']:focus-within {
 html[data-bubbles-skin='true'] [data-slot='composer-surface'] > [aria-hidden] {
   background: transparent !important;
   background-image: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   10. Shared Page Tab Row (技能 / 工具集 / Connectors / 插件)
+   -------------------------------------------------------------------------- */
+/* One selected-state treatment for every page that renders the shared tab row
+   (tab-dropdown.tsx:115-128). The host marks the winner with data-active and gives it
+   text-foreground plus a 25%-alpha underline (text-tab.tsx:17-32) — on the ambient
+   field that reads as no selection at all. Anchored on data-tour ("tab-<id>",
+   tab-dropdown.tsx:121) because it is structural and locale-free; the label text is
+   i18n and would be dead in every other language. */
+html[data-bubbles-skin='true'] button[data-tour^='tab-'][data-active='true'] {
+  background: rgba(59, 130, 246, 0.22) !important;
+  border: 1px solid rgba(147, 197, 253, 0.42) !important;
+  border-radius: 9px !important;
+  color: #ffffff !important;
+  padding-inline: 10px !important;
+  box-shadow: inset 0 0 14px rgba(96, 165, 250, 0.22) !important;
+}
+
+/* The host's own underline is the weaker version of the same signal; keeping both
+   would double the cue and the count badge would inherit the white. */
+html[data-bubbles-skin='true'] button[data-tour^='tab-'][data-active='true'] > span:first-child {
+  text-decoration: none !important;
+  color: #ffffff !important;
 }
 
 /* --------------------------------------------------------------------------

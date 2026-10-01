@@ -156,15 +156,17 @@ customCSS: |
   [data-overlay-surface] :is([data-slot='select-trigger'], [data-slot='input']):hover {
     border-color: rgba(147, 197, 253, 0.65) !important;
   }
-  [data-slot='switch'] {
+  /* 重复一次属性选择器把特异度抬到 (0,2,0)，压过上面 aside :is(… span, button …) 的
+     (0,1,1)——工具集列表本身就渲染在 <aside> 里（master-detail.tsx:156）。 */
+  [data-slot='switch'][data-slot='switch'] {
     border: 1px solid rgba(255, 255, 255, 0.25) !important;
     background: rgba(16, 40, 72, 0.85) !important;
   }
-  [data-slot='switch'][data-state='checked'] {
+  [data-slot='switch'][data-slot='switch'][data-state='checked'] {
     background: #3b82f6 !important;
-    border-color: #60a5fa !important;
+    border-color: transparent !important;
   }
-  [data-slot='switch-thumb'] {
+  [data-slot='switch-thumb'][data-slot='switch-thumb'] {
     background: #ffffff !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
   }

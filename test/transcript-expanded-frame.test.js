@@ -45,6 +45,13 @@ const TOOL = (open, label = '已运行 npm test', state = 'completed', extra = '
 const GROUP = (open, members) =>
   `<div data-slot="tool-block" data-tool-group="" data-conversation-scaffold="" class="grid min-w-0 max-w-full gap-(--tool-row-gap) overflow-hidden"><div data-conversation-scaffold="" data-tool-summary="">${HEADER('已运行 2 个命令', open)}</div>${open ? `<div class="grid min-w-0 max-w-full gap-(--tool-row-gap)">${members}</div>` : `<div class="relative overflow-hidden"><div class="absolute inset-0">${members}</div></div>`}</div>`
 
+/** A run of ONE tool: fallback.tsx:1014 renders no summary at all (count > 1 is the
+    gate) and :994 keeps it expanded, so the row is nested in a [data-tool-group]
+    wrapper that paints nothing. It must read exactly like a standalone row — full
+    frame, not the rail a member of a framed run gets. */
+const GROUP_NO_SUMMARY = members =>
+  `<div data-slot="tool-block" data-tool-group="" data-conversation-scaffold="" class="grid min-w-0 max-w-full gap-(--tool-row-gap) overflow-hidden"><div class="grid min-w-0 max-w-full gap-(--tool-row-gap)">${members}</div></div>`
+
 const THINKING = open =>
   `<div data-slot="aui_thinking-disclosure" data-conversation-scaffold="" class="text-[length:var(--conversation-tool-font-size)] text-(--ui-text-tertiary)">${HEADER('已思考', open)}${open ? '<div data-slot="aui_thinking-body" class="mt-0.5 w-full min-w-0 max-w-full overflow-auto wrap-anywhere pb-1"><div>先确认宿主在展开时渲染哪个节点。</div></div>' : ''}</div>`
 
@@ -59,6 +66,11 @@ const BODY = `<div style="padding:24px;width:680px"><div data-slot="aui_assistan
   /* The live shape that had no frame: an open ToolEntry nested inside a ToolRun. */
   + `<div id="b-nested">${GROUP(true, TOOL(true, 'Unnamed call', 'failed') + TOOL(false, 'Process Manage poll'))}</div>`
   + `<div id="b-group-closed">${GROUP(false, TOOL(false, '已读取 src/a.ts') + TOOL(false, '已读取 src/b.ts'))}</div>`
+  /* A one-tool run: no summary line exists, so nothing frames the wrapper and the
+     row has to look like a standalone row. This is the case that read as "组内展开
+     不统一" live — 已运行 sed got a rail while the bubbles.yaml edit beside it got a
+     frame, purely because of an invisible wrapper around one of them. */
+  + `<div id="b-no-summary">${GROUP_NO_SUMMARY(TOOL(true, '已运行 sed -n 240,250p'))}</div>`
   + `<div data-slot="code-card" class="group/code relative min-w-0 max-w-full overflow-hidden rounded-[0.625rem] bg-(--ui-bg-editor)"><pre class="code-card-body font-mono text-[0.7rem]">const x = 1</pre></div>`
   + `</div></div></div>`
 
@@ -69,6 +81,7 @@ const TARGETS = {
   'tool detail': '#b-open [data-tool-row] > :not(:first-child)',
   'pill-grouped tool detail': '#b-pill [data-tool-row] > :not(:first-child)',
   'tool run members': '#b-nested [data-tool-group] > [data-tool-summary] + div',
+  'single-tool run detail': '#b-no-summary [data-tool-open] > :not(:first-child)',
 }
 /* A detail opened INSIDE an already-framed run steps down to a left rail — one
    box per visual layer, so a nested row reads as content of the run rather than
@@ -82,6 +95,7 @@ const TITLES = {
   'pill-grouped tool detail': '#b-pill [data-tool-row] > div:first-child',
   'grouped tool detail': '#b-nested [data-tool-group] [data-tool-open] > div:first-child',
   'tool run members': '#b-nested [data-tool-summary]',
+  'single-tool run detail': '#b-no-summary [data-tool-open] > div:first-child',
 }
 
 ;(async () => {
