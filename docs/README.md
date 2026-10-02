@@ -36,7 +36,7 @@
 | --- | --- |
 | [hermes-tasks-panel-lifetime-feedback.md](hermes-tasks-panel-lifetime-feedback.md) | 任务面板在轮次结束即被 Hermes 卸载（`todos.ts:146-154`），皮肤层无解；含源码行号、复现步骤与三档建议 |
 | [hermes-terminal-surface-boot-reresolve.md](hermes-terminal-surface-boot-reresolve.md) | 恢复的终端永久黑：宿主在终端创建时一次性把 surface token 烘进 WebGL 清屏色，且终端没接 `useThemeEpoch`；含探针原始输出、补丁与热部署配方 |
-| [upstream-pr-terminal-surface-theme-epoch.md](upstream-pr-terminal-surface-theme-epoch.md) | 上一条的上游提交包：本地 commit、可粘贴的 PR 标题与正文、`git format-patch` 产物、推送前待确认事项 |
+| [hermes-terminal-surface-host-patch.md](hermes-terminal-surface-host-patch.md) | 上一条的宿主补丁说明：3 行补丁怎么应用、实测过哪些验证（含 71 项既有终端测试）、以及为何**没有**向 NousResearch 提 PR/issue；`patches/` 下是 `.patch` 与备用 PR 正文 |
 
 ## 预览图
 
