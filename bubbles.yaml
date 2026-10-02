@@ -315,13 +315,23 @@ customCSS: |
   }
 
   [data-slot='aui_user-message-root']::before {
-    content: '';
+    content: '我';
     position: absolute;
     right: 20px; top: 0;
     width: 38px; height: 38px;
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.25);
-    background: url("data:image/jpeg;base64,") center/cover no-repeat;
+    background:
+      radial-gradient(24px 14px at 50% 0%, rgba(255, 255, 255, 0.30), transparent 70%),
+      linear-gradient(170deg, rgba(241, 89, 75, 0.55) 0%, rgba(236, 143, 50, 0.55) 20%, rgba(212, 178, 54, 0.55) 40%, rgba(143, 182, 111, 0.55) 60%, rgba(78, 168, 176, 0.55) 80%, rgba(57, 141, 246, 0.55) 100%),
+      rgba(147, 197, 253, 0.62);
+    color: #0a2440;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 36px;
+    text-align: center;
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
     z-index: 41;
   }
   [data-slot='aui_user-message-root']::after {

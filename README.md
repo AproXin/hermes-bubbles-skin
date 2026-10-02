@@ -115,7 +115,7 @@ document.documentElement.dataset.bubblesBuild   // 部署构建号；teardown �
 | `src/plugin.js` | 运行时插件：DOM 打标 + `PLUGIN_CSS`（**无体积上限**） | `~/.hermes/desktop-plugins/hermes-bubbles-skin/plugin.js` |
 | `bubbles.yaml` | 皮肤本体：`customCSS: \|`（网关截断到 32 KiB） | `~/.hermes/skins/bubbles.yaml` |
 
-当前实测体积：`customCSS` **31,944 / 32,768** 字符（余量 824），`PLUGIN_CSS` 运行时 **~80.8 KB**。放不进 32 KiB 的组件样式一律走插件自带样式表。
+当前实测体积：`customCSS` **29,926 / 32,768** 字符（余量 2,842），`PLUGIN_CSS` 运行时 **~80.8 KB**。放不进 32 KiB 的组件样式一律走插件自带样式表。
 
 改完跑一条命令同时部署两者：
 
