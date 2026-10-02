@@ -155,6 +155,8 @@ node scripts/run-tests.js              # 全部套件
 node scripts/run-tests.js sidebar task # 只跑文件名包含这些字样的
 ```
 
+根目录的 `package.json` 只是把上面三条命令登记成 `npm test` / `npm run sync` / `npm run preview`，**不需要 `npm install`**：套件用的 `playwright-core` 从你本机的 Hermes 检出解析（`scripts/lib/sheets.js` 里那条回落路径），装一份到本仓库反而可能引入版本不匹配。它刻意**不写 `"type"` 字段**——`src/plugin.js` 是 ES 模块，一旦声明 `commonjs`，Node 就不再自动识别语法，`sync` 的解析门会拒绝部署（这条已由 `test/plugin-source-parses.test.js` 实测守住）。
+
 **52 个套件**，三类互补：**26 个**会在无头浏览器里装配「构建 CSS + live customCSS + PLUGIN_CSS」三层真实样式表，断言**实测计算样式与像素**（而不是比对 CSS 文本）；**15 个**用 mock DOM 或沙箱执行跑插件 JS 的行为（打标、折叠、状态判定、生命周期与 cleanup、`runStage` 阶段隔离、存储回收）；**11 个**不碰 DOM，守仓库与构建本身——源码可解析、宿主选择器漂移、`customCSS` 体积预算、两张表之间的规则重复、CSS 作用域纪律、断言普查、sync 的部署、参数校验与「当前激活的不是本皮肤」提示。这三类数字与套件总数由断言普查套件钉住，手抄错会直接报红。
 
 缺少 Hermes 检出或浏览器时，浏览器套件会 SKIP 而不是假绿；关键套件把 SKIP 判为失败。

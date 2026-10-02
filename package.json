@@ -1,0 +1,17 @@
+{
+  "name": "hermes-bubbles-skin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Frosted-glass chat bubbles, collapsed tool runs and a scrollable task panel injected into the Hermes Agent desktop app — a skin (customCSS) plus its desktop plugin.",
+  "scripts": {
+    "test": "node scripts/run-tests.js",
+    "sync": "node scripts/sync.js",
+    "preview": "node scripts/render-preview.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.62.1"
+  }
+}
