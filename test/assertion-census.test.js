@@ -77,6 +77,27 @@ if (total < BASELINE) {
 const probe = classify('const x = pluginSource.includes("a") && srcCode.includes("b")')
 check('the counter actually counts', probe.strings === 2, `probe found ${probe.strings}`)
 
+/* The suite inventory is hand-copied into README.md and it has gone stale twice — 26
+   against a directory of 25 before D5, 47 against 51 after it. Pin the documented
+   total to the directory and require the three category numbers to add up to it.
+
+   This deliberately does not check HOW each suite is categorised. "Does this file
+   measure pixels" is a judgement about what it asserts, and a marker heuristic would
+   have been wrong on the first suite that does both (menu-phantom-and-focus-ring
+   launches a browser and evals a function out of the plugin). The cheap half is
+   catching "I added a suite and told nobody"; that half used to be the whole incident. */
+const readme = fs.readFileSync(path.join(REPO, 'README.md'), 'utf8')
+const inventory = fs.readdirSync(TEST_DIR).filter(f => f.endsWith('.test.js')).length
+const claimed = (readme.match(/\*\*(\d+) 个套件\*\*/) || [])[1]
+const categories = [...readme.matchAll(/\*\*(\d+) 个\*\*/g)].map(m => Number(m[1]))
+const categorySum = categories.reduce((s, n) => s + n, 0)
+
+check('the README suite count matches the directory', claimed === String(inventory),
+  `README says ${claimed ?? 'nothing'}, test/ holds ${inventory} suites`)
+check('and its three category numbers add up to it',
+  categories.length === 3 && categorySum === inventory,
+  `${categories.join(' + ')} = ${categorySum}, directory holds ${inventory}`)
+
 const failed = failures.length
-console.log(`\n${failed ? 'FAIL' : 'OK'} — ${2 - failed}/2 assertions`)
+console.log(`\n${failed ? 'FAIL' : 'OK'} — ${4 - failed}/4 assertions`)
 process.exit(failed ? 1 : 0)
