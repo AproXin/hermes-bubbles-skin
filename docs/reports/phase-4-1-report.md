@@ -125,7 +125,7 @@ if (!nextExpanded && typeof document !== 'undefined' && document.activeElement) 
 在 Node.js 运行时执行包含最新专项审计在内的全部 6 大测试套件：
 
 ```bash
-cd /Users/yuanxxx/.gemini/antigravity/scratch/hermes-bubbles-skin && node test/phase4-1-audit.test.js && node test/phase4-audit.test.js && node test/phase3-1-audit.test.js && node test/phase3-audit.test.js && node test/phase2-audit.test.js && node test/phase1-audit.test.js
+cd <项目根目录> && node test/phase4-1-audit.test.js && node test/phase4-audit.test.js && node test/phase3-1-audit.test.js && node test/phase3-audit.test.js && node test/phase2-audit.test.js && node test/phase1-audit.test.js
 ```
 
 ### 断言通过明细：

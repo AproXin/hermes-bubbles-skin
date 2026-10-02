@@ -57,12 +57,12 @@ Conversation         Tasks           Approval
 
 | 文件路径 | 变更类型 | 核心职责说明 |
 | :--- | :--- | :--- |
-| [`docs/implementation-analysis.md`](file:///Users/yuanxxx/.gemini/antigravity/scratch/hermes-bubbles-skin/docs/implementation-analysis.md) | **新增** | 技术分析与 DOM 选择器规范文档，包含 Hermes 真实 DOM 树、Codex 选择器比对与兼容性风险矩阵。 |
-| [`plugin.js`](file:///Users/yuanxxx/.gemini/antigravity/scratch/hermes-bubbles-skin/plugin.js) | **新增** | 核心桌面插件运行时代码（ESM 标准模块），包含 Conversation 增强、长消息折叠、Task 状态检测与防抖 MutationObserver。 |
-| [`desktop/plugin.js`](file:///Users/yuanxxx/.gemini/antigravity/scratch/hermes-bubbles-skin/desktop/plugin.js) | **新增** | 遵循 Hermes 统一扩展包规范的双重入口镜像，保证多目录结构自适配。 |
-| [`plugin.yaml`](file:///Users/yuanxxx/.gemini/antigravity/scratch/hermes-bubbles-skin/plugin.yaml) | **新增** | 桌面插件元数据清单（ID: `hermes-bubbles-skin`，Version: `0.1.0`）。 |
-| [`README.md`](file:///Users/yuanxxx/.gemini/antigravity/scratch/hermes-bubbles-skin/README.md) | **修改** | 补充桌面端动态增强插件特性与一键安装 / 启用文档。 |
-| [`docs/phase-1-report.md`](file:///Users/yuanxxx/.gemini/antigravity/scratch/hermes-bubbles-skin/docs/phase-1-report.md) | **新增** | 本第一阶段落地验收与实现总结报告。 |
+| [`docs/implementation-analysis.md`](../../docs/reports/implementation-analysis.md) | **新增** | 技术分析与 DOM 选择器规范文档，包含 Hermes 真实 DOM 树、Codex 选择器比对与兼容性风险矩阵。 |
+| [`plugin.js`](../../plugin.js) | **新增** | 核心桌面插件运行时代码（ESM 标准模块），包含 Conversation 增强、长消息折叠、Task 状态检测与防抖 MutationObserver。 |
+| `desktop/plugin.js` | **新增** | 遵循 Hermes 统一扩展包规范的双重入口镜像，保证多目录结构自适配。 |
+| [`plugin.yaml`](../../plugin.yaml) | **新增** | 桌面插件元数据清单（ID: `hermes-bubbles-skin`，Version: `0.1.0`）。 |
+| [`README.md`](../../README.md) | **修改** | 补充桌面端动态增强插件特性与一键安装 / 启用文档。 |
+| [`docs/phase-1-report.md`](../../docs/reports/phase-1-report.md) | **新增** | 本第一阶段落地验收与实现总结报告。 |
 
 ---
 

@@ -77,7 +77,7 @@ for (const h of document.querySelectorAll('.bubbles-tool-group')) {
 
 ## 三、测试场景与断言验证 (`test/phase5a-1-audit.test.js`)
 
-新建专项审计脚本 [`test/phase5a-1-audit.test.js`](file:///Users/yuanxxx/.gemini/antigravity/scratch/hermes-bubbles-skin/test/phase5a-1-audit.test.js)，设计了 6 组端到端断言：
+新建专项审计脚本 [`test/phase5a-1-audit.test.js`](../../test/phase5a-1-audit.test.js)，设计了 6 组端到端断言：
 
 ### [Test 1] Session A 初始交互
 - 建立 Session A，包含 3 个连续完成的 Tool（聚合为 `3 tools completed`）；

@@ -161,10 +161,10 @@ node test/phase5b-audit.test.js
 
 ## 六、交付物与产物同步
 
-1. **核心逻辑源文件**: [`src/plugin.js`](file:///Users/yuanxxx/.gemini/antigravity/scratch/hermes-bubbles-skin/src/plugin.js)（`BUILD_ID = '5.1.0'`）
+1. **核心逻辑源文件**: [`src/plugin.js`](../../src/plugin.js)（`BUILD_ID = '5.1.0'`）
 2. **分发打包目标**:
-   - [`plugin.js`](file:///Users/yuanxxx/.gemini/antigravity/scratch/hermes-bubbles-skin/plugin.js)
-   - [`desktop/plugin.js`](file:///Users/yuanxxx/.gemini/antigravity/scratch/hermes-bubbles-skin/desktop/plugin.js)
+   - [`plugin.js`](../../plugin.js)
+   - `desktop/plugin.js`
    - 用户本机 Hermes Desktop 运行时目录：`~/.hermes/desktop-plugins/hermes-bubbles-skin/`
-3. **专属测试套件**: [`test/phase5b-audit.test.js`](file:///Users/yuanxxx/.gemini/antigravity/scratch/hermes-bubbles-skin/test/phase5b-audit.test.js)
-4. **同步工具**: [`scripts/sync.js`](file:///Users/yuanxxx/.gemini/antigravity/scratch/hermes-bubbles-skin/scripts/sync.js)
+3. **专属测试套件**: [`test/phase5b-audit.test.js`](../../test/phase5b-audit.test.js)
+4. **同步工具**: [`scripts/sync.js`](../../scripts/sync.js)

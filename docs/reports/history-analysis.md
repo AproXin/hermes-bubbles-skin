@@ -13,7 +13,7 @@ In strict adherence to the project's core design tenets:
 
 ## 1. Native Component Hierarchy & DOM Structure
 
-An exhaustive audit of `/Users/yuanxxx/.hermes/hermes-agent/apps/desktop/src` reveals the following key components and rendered DOM elements:
+An exhaustive audit of `~/.hermes/hermes-agent/apps/desktop/src` reveals the following key components and rendered DOM elements:
 
 ### 1.1. Sidebar Roots & Content Containers
 - **Provider Wrapper**: `<div data-slot="sidebar-wrapper" class="group/sidebar-wrapper ...">`

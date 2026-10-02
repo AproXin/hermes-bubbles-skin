@@ -34,15 +34,17 @@
 | [history-analysis.md](reports/history-analysis.md) | Hermes 原生历史/会话组件结构分析（改侧栏前的摸底） |
 | [implementation-analysis.md](reports/implementation-analysis.md) | 第一阶段技术实现分析 |
 | [phase1-task-spec.md](reports/phase1-task-spec.md) | 第一阶段任务书 |
-| [prompt-tool-nesting-fix.md](reports/prompt-tool-nesting-fix.md) | 工具卡片嵌套状态修复的提示词记录 |
 
 ## 给宿主的反馈
 
 | 文档 | 内容 |
 | --- | --- |
 | [hermes-tasks-panel-lifetime-feedback.md](hermes-tasks-panel-lifetime-feedback.md) | 任务面板在轮次结束即被 Hermes 卸载（`todos.ts:146-154`），皮肤层无解；含源码行号、复现步骤与三档建议 |
-| [hermes-terminal-surface-boot-reresolve.md](hermes-terminal-surface-boot-reresolve.md) | 恢复的终端永久黑：宿主在终端创建时一次性把 surface token 烘进 WebGL 清屏色，且终端没接 `useThemeEpoch`；含探针原始输出、补丁与热部署配方 |
-| [hermes-terminal-surface-host-patch.md](hermes-terminal-surface-host-patch.md) | 上一条的宿主补丁说明：3 行补丁怎么应用、实测过哪些验证（含 71 项既有终端测试）、以及为何**没有**向 NousResearch 提 PR/issue；`patches/` 下是 `.patch` 与备用 PR 正文 |
+
+> 终端那张「恢复出来的标签为什么是黑的」的定位记录原本也在这里，因为它逐行摘录了未发布的宿主源码、
+> 并含改签名应用的操作步骤，公开发布前整体撤下（`docs/patches/` 一并撤下）。结论与变通方法保留在根
+> README 的「已知限制」一节；需要完整过程的话，它还在 git 历史里——`git log --diff-filter=D --name-only -- docs/`
+> 能定位到删除前的那个版本，`git show <该提交>^:docs/hermes-terminal-surface-boot-reresolve.md` 可以取回。
 
 ## 预览图
 

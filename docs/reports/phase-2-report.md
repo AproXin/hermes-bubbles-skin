@@ -126,7 +126,7 @@ html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-sectio
 - 依然遵循 `register(ctx)` 插件生命周期契约。
 
 ### 2. 自动化回归测试
-- 编写并执行了 [`test/phase2-audit.test.js`](file:///Users/yuanxxx/.gemini/antigravity/scratch/hermes-bubbles-skin/test/phase2-audit.test.js) 与 [`test/phase1-audit.test.js`](file:///Users/yuanxxx/.gemini/antigravity/scratch/hermes-bubbles-skin/test/phase1-audit.test.js)。
+- 编写并执行了 [`test/phase2-audit.test.js`](../../test/phase2-audit.test.js) 与 [`test/phase1-audit.test.js`](../../test/phase1-audit.test.js)。
 - **测试通过项目**：
   1. Failed 优先于 Running 与 Completed 的判定。
   2. Tool 执行中（`animate-spin`）、失败（`text-destructive`）及完成状态的正确捕获。

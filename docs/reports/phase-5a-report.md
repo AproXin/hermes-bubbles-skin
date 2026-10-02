@@ -33,7 +33,7 @@ Bubbles CSS    = 磨砂玻璃、蓝宝石光效与视觉动效
 
 ## 二、Hermes Desktop 原生组件架构深度审计
 
-对 `/Users/yuanxxx/.hermes/hermes-agent/apps/desktop/src` 源码完成端到端剖析，确认以下真实 DOM 结构与插槽：
+对 `~/.hermes/hermes-agent/apps/desktop/src` 源码完成端到端剖析，确认以下真实 DOM 结构与插槽：
 
 ### 1. 侧边栏容器层级 (`components/ui/sidebar.tsx` & `chrome.tsx`)
 - `[data-slot="sidebar-wrapper"]`: 顶层包裹容器，声明 `--sidebar-width` (14.8125rem ~ 16rem) 与 `--sidebar-width-icon`；

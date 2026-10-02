@@ -58,7 +58,7 @@
 
 ## 三、修复的问题
 
-针对上述发现的问题，在 [`src/plugin.js`](file:///Users/yuanxxx/.gemini/antigravity/scratch/hermes-bubbles-skin/src/plugin.js) 中实施了最小、最高内聚的修正：
+针对上述发现的问题，在 [`src/plugin.js`](../../src/plugin.js) 中实施了最小、最高内聚的修正：
 
 ### 1. 强化 `detectTaskState()` 的双向容器匹配
 在所有状态（Failed、Running、Waiting、Completed、Cancelled、Pending）的匹配条件中，同步补充 `iconContainer?.matches?.(...)`，使其能够同时命中：
@@ -85,7 +85,7 @@ const titleEl = rowEl.querySelector('.hover-marquee-inner') ||
   rowEl.querySelector('.hover-marquee')
 ```
 
-通过 [`scripts/sync.js`](file:///Users/yuanxxx/.gemini/antigravity/scratch/hermes-bubbles-skin/scripts/sync.js) 重新同步生成了 `plugin.js`、`desktop/plugin.js` 并即时热更新部署至本机运行时环境。
+通过 [`scripts/sync.js`](../../scripts/sync.js) 重新同步生成了 `plugin.js`、`desktop/plugin.js` 并即时热更新部署至本机运行时环境。
 
 ---
 

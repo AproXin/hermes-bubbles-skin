@@ -136,7 +136,7 @@ document.documentElement.dataset.bubblesBuild   // 部署构建号；teardown �
 | `src/plugin.js` | 运行时插件：DOM 打标 + `PLUGIN_CSS`（**无体积上限**） | `~/.hermes/desktop-plugins/hermes-bubbles-skin/plugin.js` |
 | `bubbles.yaml` | 皮肤本体：`customCSS: \|`（网关截断到 32 KiB） | `~/.hermes/skins/bubbles.yaml` |
 
-当前实测体积：`customCSS` **18,496 / 32,768** 字符（余量 14,272），`PLUGIN_CSS` 运行时 **~86 KB**。放不进 32 KiB 的组件样式一律走插件自带样式表；`test/sheet-duplication.test.js` 会拦住「同一条规则两张表各写一份」——那等于替 32 KiB 预算重复付费。
+体积：**活数字看命令输出，别看这里**（这个数字抄进文档后错过一次）。权威读法是 `node scripts/sync.js`（每次部署都打印 `customCSS <当前>/<上限> 字符`）和 `node test/skin-css-budget.test.js`（打印余量并把超限判为失败）。写下来供参考：上限 **32,768** 由网关源码决定，`customCSS` 从 29,926 压到 **18,204** 字符（余量 14,564），`PLUGIN_CSS` 运行时 **~88 KB** 且**没有上限**。放不进 32 KiB 的组件样式一律走插件自带样式表；`test/sheet-duplication.test.js` 会拦住「同一条规则两张表各写一份」——那等于替 32 KiB 预算重复付费。
 
 改完跑一条命令同时部署两者：
 
@@ -173,21 +173,10 @@ node scripts/render-preview.js --scale 3    # 也支持 --out / --width
 
 ## ⚠️ 已知限制 (Known Limitations)
 
-- **启动时恢复出来的终端标签底色不跟随皮肤（宿主侧）**。xterm 在终端创建时把 `--ui-terminal-surface-background` 解析成一个具体颜色并烘进 WebGL 画布清屏色（`allowTransparency: false`），而皮肤的 `customCSS` 是运行时注入的 `<style>`，晚于这次解析；重解析 effect 只依赖 `[activeTheme, themeName]`，皮肤落地不改这两个值，之后任何 CSS 都改不动那张位图。**变通**：关掉恢复出来的标签、点 `+` 新建一个（新建路径本来就正确）。完整定位、探针原始输出见 [`docs/hermes-terminal-surface-boot-reresolve.md`](./docs/hermes-terminal-surface-boot-reresolve.md)，自建桌面端要用的 3 行补丁与 `patch` 文件在 [`docs/hermes-terminal-surface-host-patch.md`](./docs/hermes-terminal-surface-host-patch.md)。
+- **启动时恢复出来的终端标签底色不跟随皮肤（宿主侧）**。xterm 在终端创建时把 `--ui-terminal-surface-background` 解析成一个具体颜色并烘进 WebGL 画布清屏色（`allowTransparency: false`），而皮肤的 `customCSS` 是运行时注入的 `<style>`，晚于这次解析；宿主的重量解析 effect 只依赖主题名与主题对象，皮肤落地不改这两个值，之后任何 CSS 都改不动那张位图。**变通**：关掉恢复出来的标签、点 `+` 新建一个（新建路径本来就正确）。这是宿主行为，皮肤侧改不了——曾试过用混合模式把清屏色「洗」掉，实测会让整块终端偏色，已否决。
 - **`customCSS` 有 32 KiB 硬上限**，超限部分静默截断。`sync` 会拒绝部署，`test/skin-css-budget.test.js` 会盯余量。
 - **`PLUGIN_CSS` 写在 JS 模板字符串里**，所以 CSS 转义（`\/`、`\[`、`\.`）会被 JS 先吃掉一层，导致整条逗号规则被静默丢弃；注释里出现反引号会**截断整张样式表**。有 `test/css-escapes-survive.test.js` 按运行时文本守卫。
-- **样式作用域**：`customCSS` 由「皮肤是否激活」控制，**不做属性作用域**——79 个顶层块里只有 2 块带 `html[data-bubbles-skin='true']` 前缀。`PLUGIN_CSS` 相反，绝大多数块都带这个 stamp，少数不带的只匹配插件自己造的 `.bubbles-*` / `[data-bubbles-*]` 选择器，皮肤不激活时那些节点根本不存在。两层共同的硬约束是：**不删任何 DOM 节点**，只改样式与加监听。
-
----
-
-## 🎨 VS Code Color Theme (配套主题)
-
-- 位于 [`vscode/`](./vscode)
-- 安装包：[`hermes-bubbles-theme-0.0.1.vsix`](./vscode/hermes-bubbles-theme-0.0.1.vsix)
-
-```bash
-code --install-extension vscode/hermes-bubbles-theme-0.0.1.vsix
-```
+- **样式作用域**：`customCSS` 由「皮肤是否激活」控制，**不做属性作用域**——顶层块里只有 2 块带 `html[data-bubbles-skin='true']` 前缀。`PLUGIN_CSS` 相反，绝大多数块都带这个 stamp，少数不带的只匹配插件自己造的 `.bubbles-*` / `[data-bubbles-*]` 选择器，皮肤不激活时那些节点根本不存在。两层共同的硬约束是：**不删任何 DOM 节点**，只改样式与加监听。
 
 ---
 
