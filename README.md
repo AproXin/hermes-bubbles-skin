@@ -8,34 +8,55 @@ A full-window blue glassmorphism **skin** for [Hermes Agent](https://github.com/
 This repo is the canonical source of both halves. `scripts/sync.js` deploys them to a local Hermes install.
 
 <p align="center">
-  <img src="assets/home-preview.png" alt="Hermes Bubbles Skin Preview" width="100%" />
+  <img src="docs/previews/bubbles.png" alt="Hermes Bubbles Skin Preview" width="100%" />
 </p>
 
 ---
 
-## 📸 Screenshots (界面预览)
+## 📸 Gallery (界面预览)
 
-真机窗口截图，但来自较早的一版：用户气泡的暖冷光谱、composer 的工具栏行与看板配色都是其后才落的，那几处请看「离线预览」一节。
+下面每一张都由 `scripts/render-preview.js` 用**真实三层样式表**（构建 CSS + live customCSS + PLUGIN_CSS）离线合成，界面里出现的文字全是夹具占位符。两点失真见[离线预览](#离线预览)一节：codicon 字形离线不一定解析，`--ui-bg-*` / `--ui-text-*` 由宿主运行时写进 `<html>` 内联样式，所以离线卡片色比真机浅。
 
-### 1. 全局氛围与主页 (Home View & Ambient Lighting)
-深邃黑曜石蓝玻璃底板搭配 6 重环境光斑微光漫反射，呈现沉浸式通透与层次感。
+### 1. 气泡与氛围底板 (Frosted Glass Bubbles & Ambient Lighting)
+深邃黑曜石蓝玻璃 + 6 重环境光斑；白雾霜玻 AI 气泡，用户气泡穿暖→冷光谱，头像同样是 CSS 画的。
 
 <p align="center">
-  <img src="assets/home-preview.png" alt="Home View" width="95%" />
+  <img src="docs/previews/bubbles.png" alt="Bubbles" width="92%" />
 </p>
 
-### 2. 拟态气泡与会话 (Chat View & Frosted Glass Bubbles)
-白雾霜玻 AI 气泡 + 暖冷光谱用户气泡；复原/中断按键外置左侧居中，气泡内部不再拥挤。
+### 2. 转录行 (Bare-Text Rows & One Frame Rule)
+收起时是裸文本，展开才有一个发丝线框，标题永远落在框外。
 
 <p align="center">
-  <img src="assets/chat-preview.png" alt="Chat View" width="95%" />
+  <img src="docs/previews/transcript-rows.png" alt="Transcript rows" width="80%" />
 </p>
 
-### 3. 外观与窗口设置 (Window & Appearance Settings)
-兼容 Hermes 原生窗口透明度、色调、模糊及阴影控制面板。
+### 3. Composer
+输入主体在上，1px 低对比分隔线在下，下方一行工具栏。
 
 <p align="center">
-  <img src="assets/settings-preview.png" alt="Settings View" width="95%" />
+  <img src="docs/previews/composer.png" alt="Composer" width="80%" />
+</p>
+
+### 4. 任务进度卡 (Tasks)
+一张圆角卡、编号行、标题分隔线上跑进度条、正文独立滚动。
+
+<p align="center">
+  <img src="docs/previews/task-panel.png" alt="Task panel" width="72%" />
+</p>
+
+### 5. 技能 / 工具集页 (Capabilities)
+开关两态可读，分类标签选中态加强。
+
+<p align="center">
+  <img src="docs/previews/capabilities.png" alt="Capabilities" width="76%" />
+</p>
+
+### 6. 看板 (Kanban)
+页面背景走主题变量，环境光透出来。
+
+<p align="center">
+  <img src="docs/previews/kanban.png" alt="Kanban" width="86%" />
 </p>
 
 ---
@@ -146,15 +167,7 @@ node scripts/render-preview.js kanban       # 只渲染某几个（界面名是�
 node scripts/render-preview.js --scale 3    # 也支持 --out / --width
 ```
 
-六个界面：`bubbles` `task-panel` `composer` `transcript-rows` `kanban` `capabilities`。它们用真实三层样式表离线合成，可在不重启 Hermes 的前提下判断几何、颜色与排版；**注意两点失真**：codicon 字形离线不一定解析（看几何别看图标），且 `--ui-bg-*` / `--ui-text-*` 由宿主运行时写在 `<html>` 内联样式上，所以离线卡片色会比真机浅。
-
-| 组件夹具 | 说明 |
-| --- | --- |
-| <img src="docs/previews/composer.png" width="420" alt="Composer"> | 分隔线 + 工具栏行 |
-| <img src="docs/previews/task-panel.png" width="420" alt="Task panel"> | 单卡任务进度 |
-| <img src="docs/previews/transcript-rows.png" width="420" alt="Transcript rows"> | 扁平行 + 展开框 |
-| <img src="docs/previews/capabilities.png" width="420" alt="Capabilities"> | 开关两态 + 标签选中态 |
-| <img src="docs/previews/kanban.png" width="420" alt="Kanban"> | 看板并入主题 |
+六个界面：`bubbles` `task-panel` `composer` `transcript-rows` `kanban` `capabilities`，产物就是顶部 Gallery 那几张。改完皮肤不必重启 Hermes，重跑这条就能用眼睛判断几何、颜色与排版。**两处失真**：codicon 字形离线不一定解析（看几何别看图标）；`--ui-bg-*` / `--ui-text-*` 由宿主运行时写在 `<html>` 内联样式上，所以离线卡片色比真机浅。
 
 ---
 
