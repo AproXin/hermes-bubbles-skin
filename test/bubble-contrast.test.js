@@ -4,8 +4,8 @@
  * The user bubble has been re-skinned twice on the same two demands, so both are
  * now measured instead of argued:
  *
- *   1. 「和 hermes 的输出气泡颜色要做明显的区别」 — it must not sit in the assistant
- *      bubble's colour family.
+ *   1. The user bubble must not sit in the assistant bubble's colour family — the
+ *      two are meant to be told apart at a glance, not by reading a legend.
  *   2. It has to stay readable. The bubble is now the icon's warm→cool spectrum at
  *      0.55 alpha over sapphire, which means the background under the text is not
  *      one colour any more, so the binding number is the WORST patch, not the mean.

@@ -29,7 +29,6 @@ const skip = reason => {
 /* Sheet resolution lives in scripts/lib/sheets.js — one copy of these paths. */
 const { blockScalar, launchChromium } = require('../scripts/lib/sheets')
 
-async function launch() { return launchChromium() }
 
 const skinSource = skinSourcePath()
 const css = blockScalar(fs.readFileSync(skinSource, 'utf8'), 'customCSS')
@@ -58,7 +57,7 @@ const code = css.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '))
 const expectedTopLevel = (code.match(/\n\s*[^{}\s][^{}]*\{/g) || []).length
 
 ;(async () => {
-  const browser = await launch()
+  const browser = await launchChromium()
   if (!browser) skip('playwright-core found but no Chromium/Edge/Chrome to launch')
 
   const page = await browser.newPage()

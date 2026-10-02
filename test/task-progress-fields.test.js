@@ -128,7 +128,6 @@ const MEASURE = () => {
   }
 }
 
-async function launch() { return launchChromium() }
 
 const grab = re => { const x = pluginSource.match(re); assert(x, `could not extract ${re} from src/plugin.js`); return x[0] }
 
@@ -137,7 +136,7 @@ const idxAllRendered = idx => Array.isArray(idx) && idx.length === 4
   && idx.every(p => p && p.content !== 'none' && /bubbles-task|^"\d/.test(p.content) && p.w >= 8)
 
 ;(async () => {
-  const browser = await launch()
+  const browser = await launchChromium()
   if (!browser) skip('playwright-core found but no Chromium/Edge/Chrome to launch')
   const read = async name => {
     const pg = await browser.newPage({ viewport: { width: 420, height: 520 }, colorScheme: 'dark' })

@@ -176,7 +176,6 @@ const MEASURE = () => {
   }
 }
 
-async function launch() { return launchChromium() }
 
 // 6. The row-shell picker, run against mocks. plugin.js used to end that
 //    expression with `|| r`, so anything matching [data-row-actions] or
@@ -211,7 +210,7 @@ async function launch() { return launchChromium() }
 }
 
 ;(async () => {
-  const browser = await launch()
+  const browser = await launchChromium()
   if (!browser) skip('playwright-core found but no Chromium/Edge/Chrome to launch')
   const pg = await browser.newPage({ viewport: { width: 520, height: 400 }, colorScheme: 'dark' })
   await pg.goto(pathToFileURL(path.join(dir, 'page.html')).href)

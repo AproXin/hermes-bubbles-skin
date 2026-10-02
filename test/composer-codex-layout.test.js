@@ -124,10 +124,9 @@ const MEASURE = () => {
   }
 }
 
-async function launch() { return launchChromium() }
 
 ;(async () => {
-  const browser = await launch()
+  const browser = await launchChromium()
   if (!browser) skip('playwright-core found but no Chromium/Edge/Chrome to launch')
   const pg = await browser.newPage({ viewport: { width: 900, height: 520 }, colorScheme: 'dark' })
   await pg.goto(pathToFileURL(path.join(dir, 'page.html')).href)
@@ -216,7 +215,7 @@ async function launch() { return launchChromium() }
       notPill: alignComposerPillMenu(document.querySelector('[data-probe="voice"]')),
     }
   })()`
-  const b2 = await launch()
+  const b2 = await launchChromium()
   const pg2 = await b2.newPage({ viewport: { width: 900, height: 520 }, colorScheme: 'dark' })
   await pg2.goto(pathToFileURL(path.join(dir, 'page.html')).href)
   const v = await pg2.evaluate(driver)

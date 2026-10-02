@@ -137,10 +137,9 @@ const SCAN = () => {
   }
 }
 
-async function launch() { return launchChromium() }
 
 ;(async () => {
-  const browser = await launch()
+  const browser = await launchChromium()
   if (!browser) skip('playwright-core found but no Chromium/Edge/Chrome to launch')
 
   const results = {}

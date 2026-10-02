@@ -167,10 +167,9 @@ async function inkOutsideCard(pg, [x, y, w, h]) {
   return delta
 }
 
-async function launch() { return launchChromium() }
 
 ;(async () => {
-  const browser = await launch()
+  const browser = await launchChromium()
   if (!browser) skip('playwright-core found but no Chromium/Edge/Chrome to launch')
   const pg = await browser.newPage({ viewport: { width: 820, height: 460 }, colorScheme: 'dark' })
   await pg.goto(pathToFileURL(path.join(os.tmpdir(), 'bubbles-layers.html')).href)
