@@ -235,18 +235,22 @@ function extractFn(name) {
 const isElement = (node) => Boolean(node && node.nodeType === 1)
 globalThis.isElement = isElement
 const CLAMP_LINE_THRESHOLD_PX = 110
-const STORAGE_PREFIX = 'hermes-bubbles-skin:user-expand:'
 globalThis.mockLocalStorage = mockLocalStorage
-globalThis.STORAGE_PREFIX = STORAGE_PREFIX
+/* getMessageStorageKey now returns a complete key, so the namespace it uses has to exist
+   in this sandbox. Pinned against src/plugin.js by test/tool-group-id-stability.test.js. */
+globalThis.USER_EXPAND_NS = 'hermes-bubbles-skin:user-expand:'
+/* These three are injected into the sandbox by source, so they must mirror the shipped
+   helpers exactly: since D3 the key arrives complete (namespaced by the caller) and the
+   helper stores it unchanged. Prefixing here again would reproduce the very bug. */
 const safeGetStorage = (key, fallback) => {
-  const val = globalThis.mockLocalStorage.getItem(`${globalThis.STORAGE_PREFIX}${key}`)
+  const val = globalThis.mockLocalStorage.getItem(key)
   return val !== null ? JSON.parse(val) : fallback
 }
 const safeSetStorage = (key, val) => {
-  globalThis.mockLocalStorage.setItem(`${globalThis.STORAGE_PREFIX}${key}`, JSON.stringify(val))
+  globalThis.mockLocalStorage.setItem(key, JSON.stringify(val))
 }
 const safeRemoveStorage = (key) => {
-  globalThis.mockLocalStorage.removeItem(`${globalThis.STORAGE_PREFIX}${key}`)
+  globalThis.mockLocalStorage.removeItem(key)
 }
 
 const getMessageStorageKey = new Function('userRoot', extractFn('getMessageStorageKey'))
@@ -288,29 +292,19 @@ assert(
   'plugin.js must completely clear ::after gradient and shadow pseudo-element on expanded state'
 )
 
-// B. CSS in bubbles.yaml clears mask and ::after
-assert(
-  yamlSource.includes("[data-slot='aui_user-message-root'][data-bubbles-user-expanded='true'] .sticky-human-clamp"),
-  'bubbles.yaml must include selector for expanded user clamp'
-)
+// B. The skin still clears the mask. The clamp selectors themselves are no longer
+//    pinned here: D1 left exactly one copy of each duplicated rule, in PLUGIN_CSS, and
+//    group A above asserts it. Re-pinning them to bubbles.yaml would only re-register
+//    the duplication this migration removes.
 assert(
   yamlSource.includes("mask-image: none !important") && yamlSource.includes("-webkit-mask-image: none !important"),
   'bubbles.yaml must clear mask-image and -webkit-mask-image'
-)
-assert(
-  yamlSource.includes("[data-slot='aui_user-message-root'][data-bubbles-user-expanded='true'] .sticky-human-clamp::after") &&
-  yamlSource.includes("display: none !important"),
-  'bubbles.yaml must hide ::after on expanded user clamp'
 )
 
 // C. Universal elimination of ::after shadow in all states (collapsed and expanded)
 assert(
   pluginSource.includes(".sticky-human-clamp::after") && pluginSource.includes("display: none !important"),
   'plugin.js must eliminate ::after shadow pseudo-element universally'
-)
-assert(
-  yamlSource.includes(".sticky-human-clamp::after") && yamlSource.includes("display: none !important"),
-  'bubbles.yaml must eliminate ::after shadow pseudo-element universally'
 )
 
 console.log('  ✓ Passed: Mask, gradient, and bottom shadow completely cleared in both collapsed and expanded states')
@@ -357,23 +351,13 @@ assert(
   'plugin.js must keep rich input editor left-aligned'
 )
 
-assert(
-  yamlSource.includes("[data-slot='aui_edit-composer-root'] [data-slot='composer-rich-input']") &&
-  yamlSource.includes("text-align: left !important") &&
-  yamlSource.includes("direction: ltr !important"),
-  'bubbles.yaml must keep rich input editor left-aligned'
-)
-
 // D. No duplicate avatar or double-padding on edit root
+//    (The bubbles.yaml twins for this and for the left-alignment above were dropped by
+//    D1: those rules had a byte-identical copy in PLUGIN_CSS, which is what ships.)
 assert(
   pluginSource.includes("[data-slot='aui_edit-composer-root']::before") &&
   pluginSource.includes("display: none !important"),
   'plugin.js must suppress duplicate avatar on [data-slot="aui_edit-composer-root"]'
-)
-assert(
-  yamlSource.includes("[data-slot='aui_edit-composer-root']::before") &&
-  yamlSource.includes("display: none !important"),
-  'bubbles.yaml must suppress duplicate avatar on [data-slot="aui_edit-composer-root"]'
 )
 
 // E. Checkpoint and Context Action Button Snug Right-Alignment
@@ -616,11 +600,13 @@ assert(
   'Both sources must set .sticky-human-clamp to visibility: visible !important'
 )
 
-// C. User message text slots explicitly styled with display block and visibility visible
+// C. User message text slots explicitly styled with display block and visibility
+//    visible. PLUGIN_CSS is the sole owner since D1 deleted the byte-identical
+//    bubbles.yaml copies, so "both sources" is no longer the contract — "the sheet
+//    that ships" is.
 assert(
-  yamlSource.includes("[data-slot='aui_user-message-text']") && yamlSource.includes("[data-slot='aui_user-inline-text']") &&
   pluginSource.includes("[data-slot='aui_user-message-text']") && pluginSource.includes("[data-slot='aui_user-inline-text']"),
-  'Both sources must explicitly style [data-slot="aui_user-message-text"] and [data-slot="aui_user-inline-text"]'
+  'plugin.js must explicitly style [data-slot="aui_user-message-text"] and [data-slot="aui_user-inline-text"]'
 )
 
 console.log('  ✓ Passed: User message text guaranteed visible across Show more and Show less states')

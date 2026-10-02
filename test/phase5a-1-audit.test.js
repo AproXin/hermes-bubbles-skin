@@ -323,6 +323,13 @@ function extractFunction(name) {
 const detectToolState = extractFunction('detectToolState')
 const getToolAnchorId = extractFunction('getToolAnchorId')
 const getToolTitle = extractFunction('getToolTitle')
+/* D3 gave the shipped helpers free names the sandbox must supply: the storage
+   namespaces (a caller now passes a complete key) and getToolTitle, which
+   getToolAnchorId derives its deterministic anchor from. Values are pinned against
+   src/plugin.js by test/tool-group-id-stability.test.js. */
+globalThis.USER_EXPAND_NS = 'hermes-bubbles-skin:user-expand:'
+globalThis.TOOL_GROUP_NS = 'hermes-bubbles-skin:tool-group:'
+globalThis.getToolTitle = getToolTitle
 const getToolGroupId = extractFunction('getToolGroupId')
 const processParentTools = extractFunction('processParentTools')
 const groupCompletedTools = extractFunction('groupCompletedTools')

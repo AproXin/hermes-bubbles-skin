@@ -27,10 +27,16 @@ const TEST_DIR = path.join(REPO, 'test')
    - tool-flatten-layers replaced tool-flattening Tests 2-5, which asserted the
      flattening by matching "border: none !important" out of both sheets
      (69 → 27; total 200 → 159)
-   final-ui-polish (78) is now over half of what remains, then tool-flattening (27)
+   2026-10-02, D1: not a conversion but a de-duplication. 16 customCSS rules were
+   byte-identical copies of PLUGIN_CSS rules, and eight assertions pinned them to
+   BOTH sheets ("bubbles.yaml must …" alongside "plugin.js must …"). The copies are
+   gone, so the location pins went with them (final-ui-polish 78 → 66,
+   tool-flattening 27 → 24; total 159 → 144). The guarantees did not move: each had
+   a surviving plugin-side twin, and the 25 browser suites measure the merged sheet.
+   final-ui-polish (66) is still nearly half of what remains, then tool-flattening (24)
    and phase5b-1-audit (13). Lower this number in the same commit that converts a
    suite — a ceiling nobody moves is just a comment. */
-const BASELINE = 159
+const BASELINE = 144
 
 const SOURCE_TEXT = /\b(?:pluginSource|srcCode|src|yamlSource|cssText|pluginCode|code|text)\s*\.includes\s*\(/g
 const SOURCE_REGEX = /\b(?:pluginSource|srcCode|yamlSource|pluginCode|cssText)\s*\.match\s*\(|\/[^/]*\/[a-z]*\.test\s*\(\s*(?:pluginSource|srcCode|yamlSource|pluginCode)/g

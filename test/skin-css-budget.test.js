@@ -30,24 +30,22 @@ const skip = reason => {
 
 /** The cap and the YAML reader live in scripts/lib/sheets.js, so the deploy gate
  *  and this test cannot drift apart. */
-const { customCssCap: readCap, blockScalar } = require('../scripts/lib/sheets')
+const { customCssCap: readCap, blockScalar, skinYamlPath } = require('../scripts/lib/sheets')
 
 const cap = readCap()
 if (!cap) skip('no customCSS slice found in hermes_cli/skin_engine.py')
 
-// Hermes reads the skin through `skin:` in config.yaml; that file, not the repo
-// copy, is what the engine slices.
-const configFile = path.join(HERMES_HOME, 'config.yaml')
-const skinName = fs.existsSync(configFile)
-  ? ((fs.readFileSync(configFile, 'utf8').match(/^\s*skin:\s*['"]?([\w-]+)/m) || [])[1] ?? 'bubbles')
-  : 'bubbles'
-const liveSkin = path.join(HERMES_HOME, 'skins', `${skinName}.yaml`)
-const skinSource = fs.existsSync(liveSkin) ? liveSkin : path.join(REPO, 'bubbles.yaml')
+/* Which skin Hermes actually loads is resolved in one place now (sheets.js, which the
+   browser suites use too). This file used to carry its own copy of that resolution, and
+   reading the wrong file would make the budget check pass against a sheet that is not
+   the one the engine slices. */
+const REPO_SKIN = path.join(REPO, 'bubbles.yaml')
+const skinSource = skinYamlPath()
 
 const css = blockScalar(fs.readFileSync(skinSource, 'utf8'), 'customCSS')
 assert(css, `no customCSS block scalar found in ${skinSource}`)
 
-console.log(`=== Skin CSS Budget Suite (${skinSource === liveSkin ? 'live skin' : 'repo skin'}) ===`)
+console.log(`=== Skin CSS Budget Suite (${skinSource === REPO_SKIN ? 'repo skin' : 'live skin'}) ===`)
 console.log(`engine cap: ${cap} chars | customCSS: ${css.length} chars`)
 
 /* Headroom, not just overflow. The engine truncates silently, so the file has to

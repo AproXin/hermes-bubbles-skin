@@ -285,6 +285,15 @@ const getToolTitle = new Function('toolBlock', extractFn('getToolTitle'))
 const getToolAnchorId = new Function('toolBlock', extractFn('getToolAnchorId'))
 const getToolGroupId = new Function('run', 'parent', 'getToolAnchorId', extractFn('getToolGroupId'))
 
+/* D3 left the shipped helpers with three free names this sandbox must supply: the two
+   storage namespaces (a caller now passes a complete key) and getToolTitle, from which
+   getToolAnchorId derives its deterministic anchor. new Function bodies resolve free
+   names on the global object, so declaring them here is enough. Their values are pinned
+   against src/plugin.js by test/tool-group-id-stability.test.js. */
+globalThis.USER_EXPAND_NS = 'hermes-bubbles-skin:user-expand:'
+globalThis.TOOL_GROUP_NS = 'hermes-bubbles-skin:tool-group:'
+globalThis.getToolTitle = getToolTitle
+
 const processParentTools = new Function(
   'parent', 'tools', 'detectToolState', 'getToolGroupId', 'getToolTitle', 'safeGetStorage', 'safeSetStorage', 'safeRemoveStorage', 'ID', 'stats', 'document',
   extractFn('processParentTools')

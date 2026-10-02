@@ -53,7 +53,7 @@ const skip = reason => {
 /** Newest built stylesheet: dist/ first, then the packaged app copy. */
 /* Sheet resolution lives in scripts/lib/sheets.js — one copy of these paths, so a
    test cannot drift from what the renderer actually loads. */
-const { builtCssPath: findBuiltCss, blockScalar, pluginCss: pluginCssFrom, launchChromium } = require('../scripts/lib/sheets')
+const { builtCssPath: findBuiltCss, blockScalar, pluginCss: pluginCssFrom, launchChromium, skinYamlPath } = require('../scripts/lib/sheets')
 
 const builtCssPath = findBuiltCss()
 if (!builtCssPath) skip(`no built renderer CSS under ${DESKTOP}/dist or the packaged app`)
@@ -62,12 +62,8 @@ const pluginCss = pluginCssFrom(fs.readFileSync(path.join(REPO, 'src', 'plugin.j
 assert(pluginCss, 'PLUGIN_CSS could not be extracted from src/plugin.js')
 
 // The live skin wins over the repo copy: that is the sheet the renderer loads.
-const configFile = path.join(HERMES_HOME, 'config.yaml')
-const skinName = fs.existsSync(configFile)
-  ? ((fs.readFileSync(configFile, 'utf8').match(/^\s*skin:\s*['"]?([\w-]+)/m) || [])[1] ?? 'bubbles')
-  : 'bubbles'
-const liveSkin = path.join(HERMES_HOME, 'skins', `${skinName}.yaml`)
-const skinSource = fs.existsSync(liveSkin) ? liveSkin : path.join(REPO, 'bubbles.yaml')
+// Resolved by sheets.js so the five copies this file used to duplicate cannot drift.
+const skinSource = skinYamlPath()
 const skinCss = blockScalar(fs.readFileSync(skinSource, 'utf8'), 'customCSS')
 assert(skinCss && skinCss.includes('aui_assistant-message'), `no usable customCSS in ${skinSource}`)
 

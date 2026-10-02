@@ -51,13 +51,28 @@ function blockScalar(text, key) {
   return out.join('\n')
 }
 
-/** The skin Hermes actually loads (config.yaml `skin:`), falling back to the repo copy. */
-function skinYamlPath() {
+/** The skin name config.yaml selects, or null when nothing selects one. sync.js needs
+ *  that distinction: warning "config activates a different skin" is only true when a
+ *  config actually exists. */
+function activeSkinNameOrNull() {
   const configFile = path.join(HERMES_HOME, 'config.yaml')
-  const name = fs.existsSync(configFile)
-    ? ((fs.readFileSync(configFile, 'utf8').match(/^\s*skin:\s*['"]?([\w-]+)/m) || [])[1] ?? 'bubbles')
-    : 'bubbles'
-  const live = path.join(HERMES_HOME, 'skins', `${name}.yaml`)
+  if (!fs.existsSync(configFile)) return null
+  return (fs.readFileSync(configFile, 'utf8').match(/^\s*skin:\s*['"]?([\w-]+)/m) || [])[1] || null
+}
+
+/** The skin name Hermes selected, via `skin:` in config.yaml. */
+function activeSkinName() {
+  return activeSkinNameOrNull() ?? 'bubbles'
+}
+
+/** The skin Hermes actually loads (config.yaml `skin:`), falling back to the repo copy.
+ *  This is the only resolver. test/skin-source.js and test/skin-css-budget.test.js each
+ *  carried their own copy of these lines, so "how is the active skin found" had to be
+ *  remembered in three places — and reading the wrong file is precisely the failure this
+ *  resolver exists to prevent: source assertions would pass against a file that is not
+ *  the one producing pixels. */
+function skinYamlPath() {
+  const live = path.join(HERMES_HOME, 'skins', `${activeSkinName()}.yaml`)
   return fs.existsSync(live) ? live : path.join(REPO, 'bubbles.yaml')
 }
 
@@ -189,7 +204,7 @@ function pluginScriptForPage(source = null) {
 
 module.exports = {
   HOME, HERMES_HOME, REPO, DESKTOP,
-  builtCssPath, blockScalar, skinYamlPath, pluginCss, pluginCssSource, resolveJsEscapes,
+  builtCssPath, blockScalar, skinYamlPath, activeSkinName, activeSkinNameOrNull, pluginCss, pluginCssSource, resolveJsEscapes,
   loadSheets, customCssCap,
   launchChromium, pageHtml, pathToFileUrl, pluginScriptForPage,
 }

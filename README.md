@@ -136,7 +136,7 @@ document.documentElement.dataset.bubblesBuild   // 部署构建号；teardown �
 | `src/plugin.js` | 运行时插件：DOM 打标 + `PLUGIN_CSS`（**无体积上限**） | `~/.hermes/desktop-plugins/hermes-bubbles-skin/plugin.js` |
 | `bubbles.yaml` | 皮肤本体：`customCSS: \|`（网关截断到 32 KiB） | `~/.hermes/skins/bubbles.yaml` |
 
-当前实测体积：`customCSS` **29,926 / 32,768** 字符（余量 2,842），`PLUGIN_CSS` 运行时 **~80.8 KB**。放不进 32 KiB 的组件样式一律走插件自带样式表。
+当前实测体积：`customCSS` **18,496 / 32,768** 字符（余量 14,272），`PLUGIN_CSS` 运行时 **~86 KB**。放不进 32 KiB 的组件样式一律走插件自带样式表；`test/sheet-duplication.test.js` 会拦住「同一条规则两张表各写一份」——那等于替 32 KiB 预算重复付费。
 
 改完跑一条命令同时部署两者：
 
@@ -155,7 +155,7 @@ node scripts/run-tests.js              # 全部套件
 node scripts/run-tests.js sidebar task # 只跑文件名包含这些字样的
 ```
 
-**47 个套件**，三类互补：**25 个**会在无头浏览器里装配「构建 CSS + live customCSS + PLUGIN_CSS」三层真实样式表，断言**实测计算样式与像素**（而不是比对 CSS 文本）；**13 个**用 mock DOM 跑插件 JS 的行为（打标、折叠、状态判定、生命周期与 cleanup）；**9 个**不碰 DOM，守仓库与构建本身——源码可解析、宿主选择器漂移、`customCSS` 体积预算、CSS 作用域纪律、断言普查、sync 的部署与参数校验。
+**51 个套件**，三类互补：**26 个**会在无头浏览器里装配「构建 CSS + live customCSS + PLUGIN_CSS」三层真实样式表，断言**实测计算样式与像素**（而不是比对 CSS 文本）；**15 个**用 mock DOM 或沙箱执行跑插件 JS 的行为（打标、折叠、状态判定、生命周期与 cleanup、`runStage` 阶段隔离、存储回收）；**10 个**不碰 DOM，守仓库与构建本身——源码可解析、宿主选择器漂移、`customCSS` 体积预算、两张表之间的规则重复、CSS 作用域纪律、断言普查、sync 的部署与参数校验。
 
 缺少 Hermes 检出或浏览器时，浏览器套件会 SKIP 而不是假绿；关键套件把 SKIP 判为失败。
 
@@ -176,7 +176,7 @@ node scripts/render-preview.js --scale 3    # 也支持 --out / --width
 - **启动时恢复出来的终端标签底色不跟随皮肤（宿主侧）**。xterm 在终端创建时把 `--ui-terminal-surface-background` 解析成一个具体颜色并烘进 WebGL 画布清屏色（`allowTransparency: false`），而皮肤的 `customCSS` 是运行时注入的 `<style>`，晚于这次解析；重解析 effect 只依赖 `[activeTheme, themeName]`，皮肤落地不改这两个值，之后任何 CSS 都改不动那张位图。**变通**：关掉恢复出来的标签、点 `+` 新建一个（新建路径本来就正确）。完整定位、探针原始输出见 [`docs/hermes-terminal-surface-boot-reresolve.md`](./docs/hermes-terminal-surface-boot-reresolve.md)，自建桌面端要用的 3 行补丁与 `patch` 文件在 [`docs/hermes-terminal-surface-host-patch.md`](./docs/hermes-terminal-surface-host-patch.md)。
 - **`customCSS` 有 32 KiB 硬上限**，超限部分静默截断。`sync` 会拒绝部署，`test/skin-css-budget.test.js` 会盯余量。
 - **`PLUGIN_CSS` 写在 JS 模板字符串里**，所以 CSS 转义（`\/`、`\[`、`\.`）会被 JS 先吃掉一层，导致整条逗号规则被静默丢弃；注释里出现反引号会**截断整张样式表**。有 `test/css-escapes-survive.test.js` 按运行时文本守卫。
-- 皮肤 CSS 全部 scoped 在 `html[data-bubbles-skin='true']` 下，不删任何 DOM 节点，只改样式与加监听。
+- **样式作用域**：`customCSS` 由「皮肤是否激活」控制，**不做属性作用域**——79 个顶层块里只有 2 块带 `html[data-bubbles-skin='true']` 前缀。`PLUGIN_CSS` 相反，绝大多数块都带这个 stamp，少数不带的只匹配插件自己造的 `.bubbles-*` / `[data-bubbles-*]` 选择器，皮肤不激活时那些节点根本不存在。两层共同的硬约束是：**不删任何 DOM 节点**，只改样式与加监听。
 
 ---
 

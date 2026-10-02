@@ -69,6 +69,25 @@ const step = (label, ok, detail = '') => {
   assert(ok, `${label}${detail ? ` — ${detail}` : ''}`)
 }
 
+// 0. The distribution artifact must already be current, and this is the only place
+//    that can say so: sync writes the REPO root plugin.js (TARGET_ROOT_FILE derives
+//    from the script's own location, not from HOME), so every case below refreshes it
+//    as a side effect. A staleness check after the first run() can never fail.
+//    The README's install command curls exactly this file, so "edited src/plugin.js,
+//    forgot node scripts/sync.js" ships a stale plugin with a green suite.
+const SRC_FILE = path.join(REPO, 'src', 'plugin.js')
+const DIST_FILE = path.join(REPO, 'plugin.js')
+const srcText = fs.readFileSync(SRC_FILE, 'utf8')
+const distTag = sha(srcText).slice(0, 10)
+// A deliberate second copy of sync.js's formula rather than an import: requiring
+// sync.js would execute it, and the contract being checked is "the shipped bytes are
+// what sync is specified to produce". Change the banner there and this fails on
+// purpose — update both, in the same commit.
+const distExpected = `/**\n * DO NOT EDIT DIRECTLY.\n * Generated from src/plugin.js via \`node scripts/sync.js\`.\n * Build ${distTag}\n */\n\n${srcText}\nglobalThis.__bubblesBuild = ${JSON.stringify(distTag)}\n`
+step('the committed plugin.js equals what sync would write',
+  fs.existsSync(DIST_FILE) && fs.readFileSync(DIST_FILE, 'utf8') === distExpected,
+  `build ${distTag}`)
+
 setCap(32768)
 
 // 1. First deploy: nothing live yet, so the repo copy lands in the skins dir.

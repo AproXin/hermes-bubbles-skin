@@ -229,16 +229,6 @@ customCSS: |
     border: none !important;
     background: transparent !important;
   }
-  [data-slot='aui_assistant-message-root']::before {
-    content: '';
-    position: absolute;
-    left: 4px; top: 0;
-    width: 38px; height: 38px;
-    flex-shrink: 0;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEwAAABMCAMAAADwSaEZAAADAFBMVEUAAAD///8AAAB4eHgCAgIBAQEDAwMKCgoHBwcICAgNDQ35+fkGBgYFBQUJCQkMDAwEBARwcHA6Ojr+/v4kJCQREREYGBh/f38PDw8AAAChoaH9/f3z8/P19fX4+PgQEBAtLS3Z2dm1tbWnp6dHR0cmJiYqKirs7OwnJycaGhr39/f09PQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCQkJmZma2trZcXFwSEhI7Ozs0NDQ5OTlSUlITExMdHR0jIyMwMDDU1NQWFhaOjo78/PzPz8+4uLgvLy/q6upGRkZTU1Pb29txcXG+vr4pKSkXFxcgICAsLCxaWloeHh6qqqqfn58UFBR1dXXo6OgAAAAAAAAAAAA4ODhISEi/v79UVFSPj4+oqKienp5WVlYiIiKmpqbX19cbGxurq6s9PT3p6ekVFRUzMzN6enqJiYn7+/s+Pj4hISHi4uIuLi4AAABNTU3T09N0dHTv7+/h4eHu7u60tLSioqLn5+ff39+dnZ3k5ORBQUF+fn55eXmbm5uAgIA/Pz8xMTE2NjbS0tIlJSVMTEwODg5ycnIfHx8oKCjc3NwcHBwAAAAAAAAAAAAAAAAAAAAZGRlbW1sAAAAAAAAAAAAAAADm5uZtbW1DQ0Pj4+PDw8NQUFCxsbEAAAC3t7ft7e2Li4sAAABnZ2cAAAArKyvIyMjCwsLR0dG6urpZWVlERETFxcWzs7PW1tapqallZWX6+vre3t5jY2OcnJxKSkpiYmK7u7uWlpbMzMzw8PD29vbAwMDKysrl5eWQkJDa2tp8fHxAQEBXV1eurq5gYGBqampdXV08PDxRUVGMjIzOzs5YWFi8vLxOTk7g4ODy8vJkZGSamppsbGx9fX03NzesrKx7e3uCgoKUlJSRkZGKiooAAACysrIAAADV1dUAAABvb2/d3d2FhYW5ubkAAAAAAABFRUWVlZULCwt3d3eTk5NhYWHQ0NDExMS9vb2tra2Dg4NVVVWkpKQyMjI1NTWlpaXLy8tPT08Yd5qFAAAA7nRSTlP//wD/////////////////////////////Nf///////////////////////w1Y/fH1i/Iowf/////////////////////////////////////////////////RyqX///////////////////////////////+G//////////////////////////////////////8tATaJEP//1CfTEf////////8C////iv8s/////////////////////////////////////////////////////////////////////////6b/NP/L/////4TSrVk+ZAAACRNJREFUeNqtmHdYFNcWwM+E7SxlgaUsUqUIaGIJvRfp0qtK79KkiICiKIiFqqmmiIWoIWLD3gBjV7D3Es3Ly0tI7z15d2a2zczufprP+WPvzi2/ueWcc8858ILyM/mVKQtmvwhP9bw4e8GUVyZThoPi76uvvT7nJXim56U5r7/2qiqY2dyp8C+eqXPNGLA3pk3Hm97MWC/SespHtD7DGB8zfdobVNiMl1GtMFNio409w6NtI8kUooEvz1CGzXgLVRnYmmPP/JjbGqChb81QwN5+B4BrMgH7V88EEy7AO2/LYO+iNQomahowU1vbUH3rRAFa6btS2DQ0LzUsQ+0NWU96s+1cN9a55WSNqKOhuU0jYWZIuExUdjq5aeHm3I/rtxiRUqBr79bXoLKjCRI5Mxz23n/Q3qvar8ateXl9oYvQv21h+UKpWIVvj1C1b+gU5r6HYGZTgefObP/Qo8CTB8AryF+Mb9cn9jIpdShUQXPnwdT/Itj7AJEz6Y2n1uvKZVw/6lNUU+Qle2f1OzJPKBLg/Rdg8v+A3URrWvKZKUVliktQ5el58nfXpQxaExvmTIYPpoNxNLWhz4GugNwzqPrzSfJ377N0WLQxTP8ApgD4UHTIYpzHVGd2M2r5gku+CDkwi75SbR9AqAUAHsq1pb5UDAeRdvhl+segtllSETEoy46xpNE8AL6ErwBmKdUt+1oH7y/myGBOyyEgZ6ChJXAb+lAs6LBANy689dzmnTQY+tBsQHZVS1HlmB1uxQKIPw8sfRYB469IuGCO7ar3bkHN3wAfSVT4xdJtkkvOVJgWAGGiFTDLzxLLA43FVhXG34oDk5BUAPgn7/4Qw0L9R9vQNkWsXJUiyhhDavYdfysDBlSY+1Bl9uVU6z3fWxULWkpsm6/o7b1qMf/7ym9+EKwOQ0wsOWfDYP2P+3Yu3sLKdtEMc/xkifOy/qiqn9bsT2nedQDDYmzx6hgeX8gD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") center/cover no-repeat;
-  }
   [data-slot='aui_assistant-message-root']::after {
     content: '';
     position: absolute;
@@ -289,28 +279,6 @@ customCSS: |
     margin-bottom: 12px;
     border: none !important;
     background: transparent !important;
-    box-sizing: border-box !important;
-  }
-  [data-slot='aui_edit-composer-root'] {
-    padding-right: 0 !important;
-  }
-  [data-slot='aui_edit-composer-root']::before,
-  [data-slot='aui_edit-composer-root']::after {
-    display: none !important;
-  }
-
-  [data-slot='aui_user-message-root'] > [data-slot='aui_user-bubble-actions'],
-  [data-slot='aui_user-message-root'] .human-message-with-todos-wrapper,
-  [data-slot='aui_user-message-root'] .composer-human-message-container,
-  [data-slot='aui_edit-composer-root'] .composer-human-message-container,
-  [data-slot='aui_edit-composer-root'] .human-execution-message-top,
-  [data-slot='aui_edit-composer-root'] [data-slot='aui_user-message-root'] {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: flex-end !important;
-    justify-content: flex-end !important;
-    align-self: flex-end !important;
-    width: 100% !important;
     box-sizing: border-box !important;
   }
 
@@ -412,13 +380,6 @@ customCSS: |
     text-underline-offset: 2px !important;
   }
 
-  /* Inner rich input stays left-aligned for natural writing direction */
-  [data-slot='aui_edit-composer-root'] [data-slot='composer-rich-input'],
-  [data-slot='aui_edit-composer-root'] .ui-prompt-input-editor__input {
-    text-align: left !important;
-    direction: ltr !important;
-  }
-
   /* Long User Bubble: completely clear mask, gradient and bottom shadow in ALL states */
   .sticky-human-clamp {
     display: block !important;
@@ -437,112 +398,7 @@ customCSS: |
     max-height: 105px !important;
     overflow: hidden !important;
   }
-  [data-slot='aui_user-message-root'][data-bubbles-user-expanded='true'] .sticky-human-clamp,
-  [data-slot='aui_user-message-root'][data-bubbles-editing='true'] .sticky-human-clamp,
-  [data-slot='aui_edit-composer-root'] .sticky-human-clamp {
-    max-height: none !important;
-    overflow: visible !important;
-    -webkit-mask-image: none !important;
-    mask-image: none !important;
-    mask: none !important;
-    -webkit-mask: none !important;
-  }
-  [data-slot='aui_user-message-root'] [data-slot='aui_user-message-text'],
-  [data-slot='aui_user-message-root'] [data-slot='aui_user-inline-text'],
-  [data-slot='aui_user-message-root'] .sticky-human-clamp > div {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    color: inherit !important;
-    max-height: none !important;
-    overflow: visible !important;
-    word-break: break-word !important;
-    overflow-wrap: anywhere !important;
-    white-space: pre-wrap !important;
-  }
-  [data-slot='aui_user-message-root'][data-bubbles-user-expanded='true'] .sticky-human-clamp::after,
-  [data-slot='aui_user-message-root'][data-bubbles-long-user='true'] .sticky-human-clamp::after,
-  [data-slot='aui_user-message-root'][data-bubbles-editing='true'] .sticky-human-clamp::after,
-  [data-slot='aui_edit-composer-root'] .sticky-human-clamp::after,
-  .sticky-human-clamp::after {
-    display: none !important;
-    content: none !important;
-    background: none !important;
-    box-shadow: none !important;
-  }
 
-  /* 终止/恢复检查点选项：严密紧贴气泡左侧，垂直绝对居中 */
-  [data-context-menu-skip] {
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: flex-end !important;
-    align-items: center !important;
-    gap: 8px !important;
-    position: relative !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-  }
-  /* 气泡位于右侧，保持 fit-content 完整宽度与高度 */
-  [data-context-menu-skip] .composer-human-message {
-    margin: 0 !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    flex: 0 1 auto !important;
-    width: fit-content !important;
-    max-width: min(82%, calc(100% - 90px)) !important;
-    height: auto !important;
-    min-height: 30px !important;
-    padding: 6px 14px !important;
-    order: 2 !important;
-    box-sizing: border-box !important;
-    display: flex !important;
-    flex-direction: column !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-  }
-  /* 操作按钮容器：设为 order: 1 紧贴气泡左侧，常态清晰可见（非全隐） */
-  [data-context-menu-skip] > :is(div, button, [class*='absolute']):not(.composer-human-message):not([data-slot='aui_edit']):not(.bubbles-user-expand-btn) {
-    position: static !important;
-    inset: auto !important;
-    flex: 0 0 auto !important;
-    order: 1 !important;
-    margin: 0 !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    opacity: 0.85 !important;
-    pointer-events: auto !important;
-    z-index: 40 !important;
-    transition: opacity 0.2s ease, background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease !important;
-  }
-  [data-context-menu-skip]:hover > :is(div, button, [class*='absolute']):not(.composer-human-message):not([data-slot='aui_edit']):not(.bubbles-user-expand-btn),
-  .group\/user-message:hover [data-context-menu-skip] > :is(div, button, [class*='absolute']):not(.composer-human-message):not([data-slot='aui_edit']):not(.bubbles-user-expand-btn) {
-    opacity: 1 !important;
-  }
-  [data-context-menu-skip] button:not(.composer-human-message):not(.bubbles-user-expand-btn) {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 24px !important;
-    height: 24px !important;
-    padding: 0 !important;
-    background: rgba(13, 42, 77, 0.70) !important;
-    border: 1px solid rgba(147, 197, 253, 0.35) !important;
-    border-radius: 6px !important;
-    color: #93c5fd !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
-    backdrop-filter: blur(8px) !important;
-    -webkit-backdrop-filter: blur(8px) !important;
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease !important;
-  }
-  [data-context-menu-skip] button:not(.composer-human-message):not(.bubbles-user-expand-btn):hover {
-    background: rgba(30, 64, 175, 0.80) !important;
-    color: #ffffff !important;
-    border-color: rgba(147, 197, 253, 0.75) !important;
-    transform: scale(1.08);
-  }
   [data-context-menu-skip] button:not(.composer-human-message):not(.bubbles-user-expand-btn) svg {
     width: 10px !important;
     height: 10px !important;
@@ -583,52 +439,9 @@ customCSS: |
     border: none !important;
     box-shadow: none !important;
   }
-  /* 单个工具组展开时：隐藏重复的子层原生 disclosure header，由 Bubbles 的组标题行作为唯一标题与开关 */
-  .bubbles-tool-group[data-tool-count='1'] + [data-slot='tool-block'] > :is(
-    header,
-    .group\/disclosure-row,
-    button.group\/disclosure-row
-  ),
-  [data-bubbles-duplicate-header='true'] {
-    display: none !important;
-  }
-  /* 错误状态：子层不再画红框/红底，失败只由外层文字变红 + ✗ 字形表示 */
-  [data-slot='tool-block'][data-bubbles-tool-state='failed'] :is(
-    header,
-    .group\/disclosure-row,
-    button.group\/disclosure-row,
-    div[class*='border-destructive'],
-    div[class*='bg-destructive'],
-  ) {
-    background: transparent !important;
-    border-color: transparent !important;
-    border-width: 0 !important;
-    box-shadow: none !important;
-  }
-  /* 运行态工具：子层保持透明，运行由外层文字变蓝 + App 自带转圈表示 */
-  [data-slot='tool-block'][data-bubbles-tool-state='running'] :is(
-    header,
-    .group\/disclosure-row,
-    button.group\/disclosure-row
-  ) {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-  }
-  /* 内层 ToolEntry 扁平化（单一视觉容器架构）：外层 ToolRun（data-tool-group）
-     是唯一视觉卡片，内层 ToolEntry（data-tool-row）仅为结构包装，任何状态下
-     都剥离重复外壳（背景/边框/阴影/圆角/模糊）。高特异性且置于所有状态规则
-     之后，确保始终生效。"只扁平，不删除"。 */
-  [data-slot='tool-block'][data-tool-group] [data-slot='tool-block'][data-tool-row] {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
+
+  /* 错误状态的红框/红底消除已归 PLUGIN_CSS 单一所有者：这里曾有一份五分支的副本，
+     与那份的声明体逐字相同、选择器却少了 bg-red 与 section 变体。 */
 
   /* 7. 终端界面特定增强 */
   /* xterm 画布：0.88 透明度透出背后的固定拟态蓝光渐变，彻底消除黑块 */

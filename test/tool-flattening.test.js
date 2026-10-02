@@ -238,17 +238,12 @@ console.log('  ✓ Passed: Nested tool-blocks excluded from group processing and
 // ============================================================================
 console.log('[Test 7] Single Tool Duplicate Header Suppression')
 
-// Verify CSS rule in plugin.js and bubbles.yaml
+// Verify the rule ships. Its bubbles.yaml twin was a byte-identical copy and D1
+// deleted it, so PLUGIN_CSS is now the single owner asserted below.
 assert(
   pluginSource.includes(".bubbles-tool-group[data-tool-count='1'] + [data-slot='tool-block'] > :is(") &&
   pluginSource.includes("[data-bubbles-duplicate-header='true']"),
   'plugin.js must hide duplicate native header on single-tool groups'
-)
-
-assert(
-  yamlSource.includes(".bubbles-tool-group[data-tool-count='1'] + [data-slot='tool-block'] > :is(") &&
-  yamlSource.includes("[data-bubbles-duplicate-header='true']"),
-  'bubbles.yaml must hide duplicate native header on single-tool groups'
 )
 
 // Verify JS marks data-bubbles-duplicate-header on run.length === 1
@@ -285,10 +280,8 @@ assert(
   pluginSource.includes("box-shadow: none !important"),
   'plugin.js must strip the inner ToolEntry duplicate card shell inside a ToolRun'
 )
-assert(
-  yamlSource.includes(innerFlattenSelector),
-  'bubbles.yaml must strip the inner ToolEntry duplicate card shell inside a ToolRun'
-)
+// The bubbles.yaml twin of this assertion was a byte-identical copy of the rule above
+// and D1 deleted it, so PLUGIN_CSS is the single owner that ships the flattening.
 
 console.log('  ✓ Passed: Inner ToolEntry renders no card shell; outer ToolRun is the single container')
 

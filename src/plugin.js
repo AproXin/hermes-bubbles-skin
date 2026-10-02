@@ -23,7 +23,13 @@
 const ID = 'hermes-bubbles-skin'
 const STYLE_ID = `${ID}-runtime-styles`
 const BUILD_ID = '5.1.0'
-const STORAGE_PREFIX = `${ID}:user-expand:`
+/* Two namespaces, one per persisted thing. The caller owns the full key: the storage
+ * helpers used to prepend `user-expand` to whatever they were handed, which made tool
+ * groups land in the message-collapse namespace (and, because the host pluginStorage
+ * path never added that prefix, meant the two backends disagreed about where a value
+ * lives). A key that is complete at the call site cannot be namespaced twice. */
+const USER_EXPAND_NS = `${ID}:user-expand:`
+const TOOL_GROUP_NS = `${ID}:tool-group:`
 const CLAMP_LINE_THRESHOLD_PX = 110 // ~4-5 lines of text
 
 /* Session rows live in the chat sidebar and nowhere else. '.row-hover' is a shared
@@ -68,7 +74,8 @@ const stats = {
   clarifyRefreshes: 0,
   sessionRefreshes: 0,
   previewShows: 0,
-  lastBatchDurationMs: 0
+  lastBatchDurationMs: 0,
+  retiredStorageKeys: 0
 }
 
 if (typeof globalThis !== 'undefined') {
@@ -142,7 +149,8 @@ html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .ui-prompt-i
   box-sizing: border-box !important;
 }
 
-/* Checkpoint & Context Action Buttons Container: Snugly attached to the left of user bubble */
+/* Checkpoint & Context Action Buttons Container: Snugly attached to the left of user bubble
+   终止/恢复检查点选项：严密紧贴气泡左侧，垂直绝对居中 */
 html[data-bubbles-skin='true'] [data-context-menu-skip] {
   display: flex !important;
   flex-direction: row !important;
@@ -154,6 +162,7 @@ html[data-bubbles-skin='true'] [data-context-menu-skip] {
   box-sizing: border-box !important;
 }
 
+/* 气泡位于右侧，保持 fit-content 完整宽度与高度 */
 html[data-bubbles-skin='true'] [data-context-menu-skip] .composer-human-message {
   margin: 0 !important;
   margin-left: 0 !important;
@@ -172,7 +181,8 @@ html[data-bubbles-skin='true'] [data-context-menu-skip] .composer-human-message 
   opacity: 1 !important;
 }
 
-/* Action / Checkpoint Button Container: Snugly positioned directly to the left of the bubble */
+/* Action / Checkpoint Button Container: Snugly positioned directly to the left of the bubble
+   操作按钮容器：设为 order: 1 紧贴气泡左侧，常态清晰可见（非全隐） */
 html[data-bubbles-skin='true'] [data-context-menu-skip] > :is(div, button, [class*='absolute']):not(.composer-human-message):not([data-slot='aui_edit']):not(.bubbles-user-expand-btn) {
   position: static !important;
   inset: auto !important;
@@ -257,6 +267,22 @@ html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root']::after {
 html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-root'] {
   margin-top: 4px !important;
   margin-bottom: 14px !important;
+}
+
+/* The avatar image lives here rather than in the skin because it is 4,548 base64
+   characters: customCSS is sliced at 32,768 by the gateway and every byte of art in
+   it is a byte of rule budget lost. This sheet has no cap. Nothing else in either
+   sheet targets this pseudo-element, so the move cannot change which declaration
+   wins — only where the payload sits. */
+html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-root']::before {
+  content: '';
+  position: absolute;
+  left: 4px; top: 0;
+  width: 38px; height: 38px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEwAAABMCAMAAADwSaEZAAADAFBMVEUAAAD///8AAAB4eHgCAgIBAQEDAwMKCgoHBwcICAgNDQ35+fkGBgYFBQUJCQkMDAwEBARwcHA6Ojr+/v4kJCQREREYGBh/f38PDw8AAAChoaH9/f3z8/P19fX4+PgQEBAtLS3Z2dm1tbWnp6dHR0cmJiYqKirs7OwnJycaGhr39/f09PQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCQkJmZma2trZcXFwSEhI7Ozs0NDQ5OTlSUlITExMdHR0jIyMwMDDU1NQWFhaOjo78/PzPz8+4uLgvLy/q6upGRkZTU1Pb29txcXG+vr4pKSkXFxcgICAsLCxaWloeHh6qqqqfn58UFBR1dXXo6OgAAAAAAAAAAAA4ODhISEi/v79UVFSPj4+oqKienp5WVlYiIiKmpqbX19cbGxurq6s9PT3p6ekVFRUzMzN6enqJiYn7+/s+Pj4hISHi4uIuLi4AAABNTU3T09N0dHTv7+/h4eHu7u60tLSioqLn5+ff39+dnZ3k5ORBQUF+fn55eXmbm5uAgIA/Pz8xMTE2NjbS0tIlJSVMTEwODg5ycnIfHx8oKCjc3NwcHBwAAAAAAAAAAAAAAAAAAAAZGRlbW1sAAAAAAAAAAAAAAADm5uZtbW1DQ0Pj4+PDw8NQUFCxsbEAAAC3t7ft7e2Li4sAAABnZ2cAAAArKyvIyMjCwsLR0dG6urpZWVlERETFxcWzs7PW1tapqallZWX6+vre3t5jY2OcnJxKSkpiYmK7u7uWlpbMzMzw8PD29vbAwMDKysrl5eWQkJDa2tp8fHxAQEBXV1eurq5gYGBqampdXV08PDxRUVGMjIzOzs5YWFi8vLxOTk7g4ODy8vJkZGSamppsbGx9fX03NzesrKx7e3uCgoKUlJSRkZGKiooAAACysrIAAADV1dUAAABvb2/d3d2FhYW5ubkAAAAAAABFRUWVlZULCwt3d3eTk5NhYWHQ0NDExMS9vb2tra2Dg4NVVVWkpKQyMjI1NTWlpaXLy8tPT08Yd5qFAAAA7nRSTlP//wD/////////////////////////////Nf///////////////////////w1Y/fH1i/Iowf/////////////////////////////////////////////////RyqX///////////////////////////////+G//////////////////////////////////////8tATaJEP//1CfTEf////////8C////iv8s/////////////////////////////////////////////////////////////////////////6b/NP/L/////4TSrVk+ZAAACRNJREFUeNqtmHdYFNcWwM+E7SxlgaUsUqUIaGIJvRfp0qtK79KkiICiKIiFqqmmiIWoIWLD3gBjV7D3Es3Ly0tI7z15d2a2zczufprP+WPvzi2/ueWcc8858ILyM/mVKQtmvwhP9bw4e8GUVyZThoPi76uvvT7nJXim56U5r7/2qiqY2dyp8C+eqXPNGLA3pk3Hm97MWC/SespHtD7DGB8zfdobVNiMl1GtMFNio409w6NtI8kUooEvz1CGzXgLVRnYmmPP/JjbGqChb81QwN5+B4BrMgH7V88EEy7AO2/LYO+iNQomahowU1vbUH3rRAFa6btS2DQ0LzUsQ+0NWU96s+1cN9a55WSNqKOhuU0jYWZIuExUdjq5aeHm3I/rtxiRUqBr79bXoLKjCRI5Mxz23n/Q3qvar8ateXl9oYvQv21h+UKpWIVvj1C1b+gU5r6HYGZTgefObP/Qo8CTB8AryF+Mb9cn9jIpdShUQXPnwdT/Itj7AJEz6Y2n1uvKZVw/6lNUU+Qle2f1OzJPKBLg/Rdg8v+A3URrWvKZKUVliktQ5el58nfXpQxaExvmTIYPpoNxNLWhz4GugNwzqPrzSfJ377N0WLQxTP8ApgD4UHTIYpzHVGd2M2r5gku+CDkwi75SbR9AqAUAHsq1pb5UDAeRdvhl+segtllSETEoy46xpNE8AL6ErwBmKdUt+1oH7y/myGBOyyEgZ6ChJXAb+lAs6LBANy689dzmnTQY+tBsQHZVS1HlmB1uxQKIPw8sfRYB469IuGCO7ar3bkHN3wAfSVT4xdJtkkvOVJgWAGGiFTDLzxLLA43FVhXG34oDk5BUAPgn7/4Qw0L9R9vQNkWsXJUiyhhDavYdfysDBlSY+1Bl9uVU6z3fWxULWkpsm6/o7b1qMf/7ym9+EKwOQ0wsOWfDYP2P+3Yu3sLKdtEMc/xkifOy/qiqn9bsT2nedQDDYmzx6hgeX8gDoe98DLumOy83Scy9fjA2SfyzZtjuNUgTl/6StXvgUETWjZuVOXmFt24HnY0hBSzVBsOcDSBgOUB1VHwBpJlrgrlcT7Hd7RjzxO5me6ADx8gPWTlBtd1Gtw4+2Q9XygoksU6g7x3Ih4TDmmBhgeVG5XcSWNxOorqMZPB5nlI5EdUkV57jgxXS0uAdXODf1QQT1ZqG83gsmYRNMqKpwd4jbH6vJ7AMrEAfF6B8C/Uwl8upvCS2Ymx8HQ1m+mtg4BgqjRLI94Bd6mGHU5GkKo3lVZjSaF9P4vr+5gc8O3L2Or+rh/3Eoo3tyqe+J2XqA7vgDzasdCIrRs3VwhbLR+mRO27dp0uB6cnmbfQnWVrffgpYNWkHWUdHVfsXesfIr3GD1MJuKHarLYP8cogALzr16LRjfqSVK1ELs1Hs9+pTx7yOl9n9tSS3yjVy47078TR7WetDlvfVwpzPS98FLVnalpZ/bV+xPi25hjAmjbkCCkxcR4pQlHqhlbABjeH0S/4mxG6Xgw5wrFfMx19uxcl2gDS/HVZEuapBLczyArQ/AP2U6Nyz+FUZJPoBoLsnagD9X0t4YuBTeOJAFf7nMqn7pkXqrcY2X2j9Azx7HEJwC++inQeQs698vwL2IDPhny34CpMiyaEPNRjHk9uv2C6HR36xuLtw6PM1iR1HTYjjtwmmnoBONnFVQJoGGIal1zTD0eX38GUa1pQ0rcjbRFQP0zXLNZ4szDXBMGwcOh6tpd+xJ/RpMHvSW1hXoxnWC242jNs/j3HH1xGarHNCM2wPK4Xp5VQwVMqOFI5KjTBDV3/bJUtp6zTfwoDVkg6Jr6EmmMWqWMeB0zSPbkIsAxa3mij8HTXBSo3aXZYtpK3y02+ZlmMeYTk47ppg0cHi9Iv0E3hIs5ssLrBWkrakVRPsmi6E7dszNETxmT6iTUvoj248MfF3pbMGWBgbDlr42CWODSl5bRdImymfH78dSZoxsFCF2EYDLAV5UQt/d3cpslGEERaE+erUEsph6EDiuoGLr7RJA+xXVGFyuET5SsROJ+HdvE4oZoauVG486KLVwnGVMMJwYUfwQJHmAP9I3O0fRcvtLW8dOoROEOIXaO2ICljjMFFsxGvqaV4+semhi8pkrimHXDDHG11fgr+ZsENdhHCNED6B6TAFdhevm9cwJHWQuZ6yGZbjlknChA2uJqR+Daly/8xXhrUQitMBUt8hVX4h1Hajn14m7LHRErw4QA5gP9rk7FIaFHb0AC4gaaRBnHVMOjO59+yAW++VMxmwj3UI/zlR1u9Nh55iMbJiBy3JjmyvLOwMmya8k6xxmxbBgI3D3nQMu4h21JNPGdCGYSG4LiLzLeHQTSQO0xuWw6Suu3MIDxLcEpF11nPjUgbo/ow9xtUxbUNyN13b7fFl6vTJXXdpUDHyeLm0Q4UInbnyeiKbiNNjxekwTEc7LrVwVx5USMMd864Qa0Ic7w+KQWivvB42a891NRmSasLnCJGHO7JALDk8WWt17fHBRm+knHspQy45FwWrhhUTO3JGHojJQkRLu+Dtg8vSw8JRa/555RFHkJ5eTFXFYnPZsmWSIaI8eF2aAeLYAHx9wbmKocZjK4j4bfBPlTQiUn5I+ikoeFWE1em9pO3ULVSyhXEyo+tYScg9D/8a36nYStFFECoPq5UD/tD71dauHjeG45Q+7iu1kSNtug788itGbL0dD7xXVfWn7ZD1sEbbYCsN+CmpCJMjRaV4dOMk92bJW9Twi1VOlVebrq7rHg9ynLDosHuX792D0h5pSqkISpIk1HSdPRKngjSFTBVswLS3dpSN7j+1VksnsVGm/Gt+G+ol2juHlZIk1PSNBBeCnp33lBaas9iO47rZPOj2d9CmZEzS838h/OguSvqGmli6JQmZGJFeLEfxOXoB9oWHsGsNQ5wnFCu3P7EEafFxZ2piiZnyqpSz/Nw4otBlGDawucZzjJapGpdUCUMwC2rKi5GMW9Qjh/V7eZ1ENZsuuYQIimhX80LRqBu2lZ6Mo6cJm2X+IcfonP4+vKatHsuMYuRs7vRH1THThEoJTA+RllaAVL7jywICBKJWrdZ6v5tpplUVtASmh5NAZQLz+aZWn3PS9zmko/8PyuU15xLdpb0AAAAASUVORK5CYII=") center/cover no-repeat;
 }
 
 /* Assistant Message Frosted Glass Refinement */
@@ -875,6 +901,7 @@ html[data-bubbles-skin='true'] [data-bubbles-tool-state='running'] .glyph-spinne
   color: #60a5fa !important;
 }
 
+/* 运行态工具：子层保持透明，运行由外层文字变蓝 + App 自带转圈表示 */
 html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-tool-state='running'] :is(
   header,
   .group\\/disclosure-row,
@@ -935,7 +962,11 @@ html[data-bubbles-skin='true'] [data-bubbles-tool-state='failed'] span[class*='s
   color: #f87171;
 }
 
-/* Eliminate child red borders and child red backgrounds inside failed tool */
+/* Eliminate child red borders and child red backgrounds inside failed tool
+   错误状态：子层不再画红框/红底，失败只由外层文字变红 + ✗ 字形表示。
+   This list is the superset — the skin used to carry a five-branch copy that had drifted
+   (no bg-red, no section variants) with an identical declaration body; test/sheet-
+   duplication.test.js is what keeps a second copy from coming back. */
 html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-tool-state='failed'] :is(
   header,
   .group\\/disclosure-row,
@@ -2045,7 +2076,7 @@ function safeGetStorage(key, fallback) {
     }
   }
   try {
-    const val = localStorage.getItem(`${STORAGE_PREFIX}${key}`)
+    const val = localStorage.getItem(key)
     return val !== null ? JSON.parse(val) : fallback
   } catch {
     return fallback
@@ -2062,7 +2093,7 @@ function safeSetStorage(key, value) {
     }
   }
   try {
-    localStorage.setItem(`${STORAGE_PREFIX}${key}`, JSON.stringify(value))
+    localStorage.setItem(key, JSON.stringify(value))
   } catch {
     // Ignore quota errors
   }
@@ -2078,10 +2109,36 @@ function safeRemoveStorage(key) {
     }
   }
   try {
-    localStorage.removeItem(`${STORAGE_PREFIX}${key}`)
+    localStorage.removeItem(key)
   } catch {
     // Ignore
   }
+}
+
+/* Retire the keys the pre-D3 helper produced when it prefixed a key that already carried
+   a namespace: `hermes-bubbles-skin:user-expand:hermes-bubbles-skin:tool-group:…`. Nothing
+   reads that shape any more and nothing could, so it is pure garbage — and it only ever
+   existed in localStorage, because the host pluginStorage path never added a prefix.
+
+   Deliberately narrow. Keys whose element happens to be absent from THIS document are left
+   alone: storage spans every session while the DOM holds one transcript at a time, so "not
+   on screen" is not "gone for good", and sweeping on that rule would erase the expanded
+   state of every other session on boot. Real expiry needs a timestamp, which is a storage
+   schema change and was ruled out of this pass. */
+function sweepRetiredStorageKeys() {
+  const retiredShape = new RegExp(`^${ID}:[\\w-]+:${ID}:`)
+  const stale = []
+  try {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i)
+      if (key && retiredShape.test(key)) stale.push(key)
+    }
+    for (const key of stale) localStorage.removeItem(key)
+  } catch {
+    // A blocked or private store has nothing to reclaim either way.
+  }
+  stats.retiredStorageKeys = stale.length
+  return stale.length
 }
 
 // ============================================================================
@@ -2113,10 +2170,13 @@ function enhanceAssistantMessage(assistantRoot) {
 }
 
 function getMessageStorageKey(userRoot) {
+  /* The namespace belongs to the key, not to the storage helper: the same helper also
+     carries tool-group state, and prefixing it centrally is what put tool groups inside
+     the message-collapse namespace. */
   const messageId = userRoot.getAttribute('data-message-id') || userRoot.id
-  if (messageId) return messageId
+  if (messageId) return `${USER_EXPAND_NS}${messageId}`
   const text = userRoot.textContent?.trim() || ''
-  return text ? `hash_${text.slice(0, 48).replace(/\s+/g, '_')}` : null
+  return text ? `${USER_EXPAND_NS}hash_${text.slice(0, 48).replace(/\s+/g, '_')}` : null
 }
 
 function setupLongMessageCollapse(userRoot) {
@@ -2490,7 +2550,17 @@ function getToolAnchorId(toolBlock) {
 
   let anchorId = toolBlock.getAttribute('data-bubbles-tool-anchor-id')
   if (!anchorId) {
-    anchorId = `anchor_${Math.random().toString(36).slice(2, 9)}`
+    /* Position plus title — never a random token. A random id lives only as long as the
+       element does, so every reload minted a fresh one, the group id changed with it,
+       and the persisted expanded state could never be found again: the exact case
+       groupCompletedTools' own comment claims to survive ("including after a reload").
+       (parent, index) is already unique among tool blocks, so the title only makes the
+       key readable — an empty or duplicated title cannot collide. */
+    const parent = toolBlock.parentElement
+    const peers = parent ? [...parent.children].filter(el => el?.getAttribute?.('data-slot') === 'tool-block') : []
+    const index = peers.indexOf(toolBlock)
+    const slug = getToolTitle(toolBlock).replace(/\s+/g, '_').slice(0, 32)
+    anchorId = `anchor_${index === -1 ? 'x' : index}_${slug}`
     toolBlock.setAttribute('data-bubbles-tool-anchor-id', anchorId)
   }
   return anchorId
@@ -2626,7 +2696,7 @@ function processParentTools(parent, tools) {
   for (const run of runs) {
     const firstTool = run[0]
     const groupId = getToolGroupId(run, parent)
-    const storageKey = `${ID}:tool-group:${groupId}`
+    const storageKey = `${TOOL_GROUP_NS}${groupId}`
     const isExpanded = Boolean(safeGetStorage(storageKey, false))
 
     // Check if there is already a group header right before firstTool
@@ -3664,6 +3734,12 @@ function cleanupAll() {
   const styleEl = document.getElementById(STYLE_ID)
   if (styleEl) styleEl.remove()
   document.documentElement.removeAttribute('data-bubbles-skin')
+  /* The build stamp goes with it. installStyles returns a teardown that also clears it,
+     but register() runs cleanupAll BEFORE installStyles, so an instance that left via
+     cleanupAll alone would keep a stamp naming the PREVIOUS build — and the attribute's
+     only job is answering "which build is this window painting", where a wrong answer is
+     worse than no answer. */
+  document.documentElement.removeAttribute('data-bubbles-build')
 
   // Remove long user buttons and attributes
   for (const el of document.querySelectorAll('[data-bubbles-long-user], [data-bubbles-user-expanded], [data-bubbles-user-message], [data-bubbles-assistant-message]')) {
@@ -3734,6 +3810,13 @@ function cleanupAll() {
   cleanupSessionPreview()
   cleanupComposerMenuAlign()
   lastScrolledTaskRow = null
+
+  /* Drop the debug handles with the rest of the surface. They are re-armed at the top of
+     register(), so this only ever clears what a live instance no longer owns — the point
+     is that a disposed plugin leaves nothing behind that could be read as still-live
+     stats from a window that stopped painting bubbles several reloads ago. */
+  delete globalThis.cleanToolTitle
+  delete globalThis.__hermesBubblesSkinStats
 }
 
 export default {
@@ -3741,9 +3824,20 @@ export default {
   name: 'Hermes Bubbles Skin',
   register(ctx) {
     pluginStorage = ctx?.storage || null
+    // Once per activation, before any pass reads storage.
+    sweepRetiredStorageKeys()
 
     // Clean up any stale artifacts before installing
     cleanupAll()
+
+    /* Re-arm the debug handles AFTER that cleanup, not before: cleanupAll deletes them,
+       and register() calls cleanupAll first — arming earlier would delete what it just
+       set. A re-register within the same module evaluation (the host re-activating the
+       plugin rather than reloading the file) would otherwise leave getToolTitle on its
+       unsanitized fallback and take the stats outlet with it, because the assignments at
+       the top of this file run once per document, not once per activation. */
+    globalThis.cleanToolTitle = cleanToolTitle
+    globalThis.__hermesBubblesSkinStats = stats
 
     const uninstallStyles = installStyles()
     setupObserver(ctx)

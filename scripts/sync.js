@@ -19,7 +19,7 @@ const fs = require('fs')
 const path = require('path')
 const crypto = require('crypto')
 const { execFileSync } = require('child_process')
-const { blockScalar, customCssCap } = require('./lib/sheets')
+const { blockScalar, customCssCap, activeSkinNameOrNull } = require('./lib/sheets')
 
 const ROOT_DIR = path.resolve(__dirname, '..')
 const SRC_FILE = path.join(ROOT_DIR, 'src', 'plugin.js')
@@ -144,10 +144,10 @@ function deploySkin() {
     return
   }
 
-  const activeFile = path.join(HERMES_DIR, 'config.yaml')
-  const active = fs.existsSync(activeFile)
-    ? ((fs.readFileSync(activeFile, 'utf8').match(/^\s*skin:\s*['"]?([\w-]+)/m) || [])[1] ?? null)
-    : null
+  /* "Which skin is active" is answered once, in sheets.js — this was its sixth copy. The
+     null case is what this call site needs: no config.yaml is not the same statement as a
+     config that happens to select bubbles. */
+  const active = activeSkinNameOrNull()
   if (active && active !== SKIN_NAME) {
     console.log(`[sync] note: config.yaml activates skin '${active}', not '${SKIN_NAME}' — `
       + `deploying to ${SKIN_TARGET_FILE} will not change what renders`)

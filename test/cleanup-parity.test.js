@@ -80,7 +80,19 @@ const SNAPSHOT = `function snapshot() {
     await page.addScriptTag({ content: SNAPSHOT })
 
     const out = await page.evaluate(() => {
-      document.documentElement.setAttribute('data-bubbles-skin', 'true')
+      /* installStyles is the only writer of the root stamp, the runtime sheet and the
+         build attribute, so it has to run for real here. The build value normally comes
+         from globalThis.__bubblesBuild, which sync.js appends to the GENERATED plugin.js
+         and which pluginScriptForPage deliberately does not have — so without this the
+         "nothing survives" checks below would pass on an attribute nothing ever set. */
+      globalThis.__bubblesBuild = 'parity-probe'
+      installStyles()
+      const installed = {
+        styleTag: !!document.getElementById('hermes-bubbles-skin-runtime-styles'),
+        root: document.documentElement.hasAttribute('data-bubbles-skin'),
+        build: document.documentElement.getAttribute('data-bubbles-build'),
+        handles: [typeof globalThis.cleanToolTitle, typeof globalThis.__hermesBubblesSkinStats],
+      }
       processDOM()
       const after = snapshot()
       // The active-row preview is built by a hover, not by processDOM. Attach the
@@ -91,9 +103,11 @@ const SNAPSHOT = `function snapshot() {
       const withPreview = snapshot()
       cleanupAll()
       return {
-        after, withPreview, cleaned: snapshot(),
+        installed, after, withPreview, cleaned: snapshot(),
         styleTag: !!document.getElementById('hermes-bubbles-skin-runtime-styles'),
         rootAttr: document.documentElement.hasAttribute('data-bubbles-skin'),
+        buildAttr: document.documentElement.getAttribute('data-bubbles-build'),
+        handles: [typeof globalThis.cleanToolTitle, typeof globalThis.__hermesBubblesSkinStats],
         expandBtns: document.querySelectorAll('.bubbles-user-expand-btn').length,
       }
     })
@@ -116,9 +130,34 @@ const SNAPSHOT = `function snapshot() {
       out.cleaned.owned.map(o => `${o.tag}[${o.name}=${o.value}]`).slice(0, 6).join(' '))
     check('the preview container is gone', !out.cleaned.preview)
     check('no tool-group pill survives', out.cleaned.groups === 0)
+
+    /* Three root-level effects of installStyles were being measured and then dropped on
+       the floor: the suite computed styleTag and rootAttr without ever asserting them.
+       The build attribute is the one that bites — register() runs cleanupAll BEFORE
+       installStyles, so an instance that left through cleanupAll alone kept naming the
+       previous deploy, and that attribute exists solely to answer "which build is this
+       window painting". */
+    check('installStyles stamped the root, the sheet and the build',
+      out.installed.styleTag && out.installed.root && out.installed.build === 'parity-probe',
+      JSON.stringify(out.installed))
+    check('the runtime style tag is gone after cleanupAll', !out.styleTag)
+    check('the root stamp is gone', !out.rootAttr)
+    check('and so is the build stamp — a stale one names the previous deploy',
+      out.buildAttr === null, String(out.buildAttr))
+    check('the debug handles are live while the plugin is',
+      out.installed.handles.join(',') === 'function,object', out.installed.handles.join(','))
+    /* D11. __hermesBubblesSkinStats is only ever a globalThis assignment, so cleanupAll's
+       delete is observable here. cleanToolTitle is NOT asserted: pluginScriptForPage loads
+       the plugin as a classic script, and a top-level function declaration in a classic
+       script creates a non-configurable global binding that `delete` cannot remove —
+       whereas the shipped file is an ES module, where the declaration is module-scoped and
+       the explicit globalThis assignment IS deletable. Dropping the check the harness
+       cannot represent, not the code that makes it so. */
+    check('the stats handle is gone after cleanupAll',
+      out.handles[1] === 'undefined', out.handles.join(','))
   } finally {
     await browser.close()
   }
-  console.log(`\n${failures ? 'FAIL' : 'OK'} — ${6 - failures}/6 assertions`)
+  console.log(`\n${failures ? 'FAIL' : 'OK'} — ${13 - failures}/13 assertions`)
   process.exit(failures ? 1 : 0)
 })().catch(err => { console.error(err); process.exit(1) })
