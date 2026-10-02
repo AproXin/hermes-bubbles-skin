@@ -1,0 +1,65 @@
+From e999f9d5db958c427fb2b7736d66aff48929f286 Mon Sep 17 00:00:00 2001
+From: AproXin <81232165+AproXin@users.noreply.github.com>
+Date: Fri, 2 Oct 2026 11:37:55 +0800
+Subject: [PATCH] fix(desktop): re-resolve the terminal surface color after a
+ skin repaint
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+xterm resolves --ui-terminal-surface-background once when the terminal is
+created and bakes it into the WebGL canvas clear color, because the
+renderer is created with allowTransparency: false. A custom skin paints
+that token from a <style> element ThemeProvider injects later, so a tab
+restored at boot keeps the pre-skin color for its whole life even though
+every DOM layer around it reads the skin's value — the restored tab looks
+black next to a tab opened afterwards, which renders the same tint. The
+re-resolve effect only depended on [activeTheme, themeName], and landing
+a skin changes neither, so nothing ever re-ran.
+
+The app already has the mechanism for "rasterize a computed token, then
+re-read it after the paint": hooks/use-theme-epoch.ts, which the starmap,
+embeds and image-placeholder all subscribe to. The terminal was the one
+canvas consumer that never did. Subscribe useTerminalSession to
+useThemeEpoch() and add the epoch to that dependency array.
+---
+ .../app/right-sidebar/terminal/use-terminal-session.ts   | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/apps/desktop/src/app/right-sidebar/terminal/use-terminal-session.ts b/apps/desktop/src/app/right-sidebar/terminal/use-terminal-session.ts
+index efa82cd232d..d2651b67e01 100644
+--- a/apps/desktop/src/app/right-sidebar/terminal/use-terminal-session.ts
++++ b/apps/desktop/src/app/right-sidebar/terminal/use-terminal-session.ts
+@@ -8,6 +8,7 @@ import type { CSSProperties } from 'react'
+ 
+ import { writeClipboardText } from '@/components/ui/copy-button'
+ import { markRightPanePerf } from '@/debug/right-pane-events'
++import { useThemeEpoch } from '@/hooks/use-theme-epoch'
+ import { triggerHaptic } from '@/lib/haptics'
+ import { isComposerChord } from '@/lib/keybinds/chords'
+ import { $previewTarget } from '@/store/preview'
+@@ -393,6 +394,12 @@ export function useTerminalSession({
+   // must match the surface or the ANSI palette inverts against it. themeName
+   // re-resolves the canvas surface on skin switches (same mode, new tint).
+   const { renderedMode, theme, themeName } = useTheme()
++  // A custom skin paints --ui-terminal-surface-background from a <style> tag that
++  // ThemeProvider injects after this hook's first run, so the one-shot resolve at
++  // creation bakes the pre-skin chrome color into the WebGL clear color — and a
++  // terminal restored at boot stays black for its whole life, because nothing re-runs
++  // with the skin's value. The epoch ticks on exactly that repaint.
++  const themeEpoch = useThemeEpoch()
+   // Adopt the skin's ANSI palette when it ships one (imported VS Code themes do),
+   // matched to the painted variant; built-in skins carry none, so the terminal
+   // keeps its VS Code defaults. withSurface still owns the background, so this
+@@ -995,7 +1002,7 @@ export function useTerminalSession({
+     })
+ 
+     return () => cancelAnimationFrame(raf)
+-  }, [activeTheme, themeName])
++  }, [activeTheme, themeName, themeEpoch])
+ 
+   // Expose this terminal's buffer to the agent's `read_terminal` tool, keyed by
+   // id. The tab selection (setActiveTerminalId) decides which one it reads, so
+-- 
+2.55.0
+
