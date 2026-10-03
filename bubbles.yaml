@@ -136,7 +136,7 @@ customCSS: |
     padding-right: 52px !important;
   }
 
-  /* 6. 设置页面：实体不透明蓝色拟态玻璃风 */
+  /* 5. 设置页面：实体不透明蓝色拟态玻璃风 */
   [data-overlay-surface] [data-glass-raised],
   [data-overlay-surface] {
     background:
@@ -186,7 +186,7 @@ customCSS: |
     z-index: 99999 !important;
   }
 
-  /* 5. 底部输入框：玻璃质感归 PLUGIN_CSS 单管（见 plugin.js 第 9 节）。
+  /* 6. 底部输入框：玻璃质感归 PLUGIN_CSS 单管（见 plugin.js 第 9 节）。
      这里原先有两条 !important 的 composer-surface 规则，和插件那套谁赢取决于
      两张 <style> 的插入顺序 —— 已删，顺带回收到 32 KiB 预算。 */
   :is(textarea, input:not([type='checkbox']):not([type='radio'])) {
@@ -417,7 +417,7 @@ customCSS: |
     justify-content: flex-end !important;
   }
 
-  /* 6.5 Tool UI 扁平化（工具行是气泡上的裸文本；卡片一律不画，状态靠字形与文字着色）
+  /* 8. Tool UI 扁平化（工具行是气泡上的裸文本；卡片一律不画，状态靠字形与文字着色）
      注意：.bubbles-tool-group-toggle 的外观唯一由 PLUGIN_CSS 负责，这里不再重复声明。 */
   .bubbles-tool-group {
     background: transparent !important;
@@ -446,7 +446,7 @@ customCSS: |
   /* 错误状态的红框/红底消除已归 PLUGIN_CSS 单一所有者：这里曾有一份五分支的副本，
      与那份的声明体逐字相同、选择器却少了 bg-red 与 section 变体。 */
 
-  /* 7. 终端界面特定增强 */
+  /* 9. 终端界面特定增强 */
   /* xterm 画布：0.88 透明度透出背后的固定拟态蓝光渐变，彻底消除黑块 */
   .xterm canvas,
   .xterm-screen canvas {
@@ -469,7 +469,7 @@ customCSS: |
     color: #ffffff !important;
   }
 
-  /* 8. 文件交付界面：统一为 Hermes 对话气泡风格 */
+  /* 10. 文件交付界面：统一为 Hermes 对话气泡风格 */
   :is([data-slot='aui_changed-files'], [data-slot='aui_listing-card'], [data-slot*='artifact']) {
     background:
       radial-gradient(350px 120px at 15% 0%, rgba(255, 255, 255, 0.22), transparent 70%),
@@ -487,7 +487,7 @@ customCSS: |
   [data-slot='aui_changed-files'] .row-hover { border-radius: 6px !important; }
   [data-slot='aui_changed-files'] .row-hover:hover { background: rgba(255, 255, 255, 0.12) !important; }
 
-  /* 8. 全局玻璃拟态胶囊滚动条 */
+  /* 11. 全局玻璃拟态胶囊滚动条 */
   ::-webkit-scrollbar { width: 6px !important; height: 6px !important; }
   ::-webkit-scrollbar-track { background: transparent !important; }
   ::-webkit-scrollbar-thumb {
