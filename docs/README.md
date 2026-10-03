@@ -1,39 +1,17 @@
 # 文档索引
 
-`reports/` 里的都是**某一时刻的过程记录**（阶段实现、验收审计、当时的源码分析），
-不随代码更新——它们解释「当初为什么这样做」，不代表现在的行为。当前行为看
-[`../README.md`](../README.md) 的「开发与部署」段，可执行的定义看 `test/`：
-26 个套件跑的是实测计算样式与像素，比这些文档更可信。
+这个目录只放两类东西：**给宿主的反馈**，和**界面预览图**。
 
-## 阶段实现报告
+阶段性实现与审计的过程记录（15 份，`reports/`）已删除：它们不随代码更新，自己声明「不代表现在的行为」，
+也没有任何代码或测试引用它们——当前行为看 [`../README.md`](../README.md) 的「开发与部署」段，
+可执行的定义看 `test/`（54 个套件跑的是实测计算样式与像素，比任何文档都可信）。
 
-| 文档 | 内容 |
-| --- | --- |
-| [phase-1-report.md](reports/phase-1-report.md) | 第一阶段落地：气泡与基础玻璃层 |
-| [phase-2-report.md](reports/phase-2-report.md) | 第二阶段：交互与紧凑度 |
-| [phase-3-report.md](reports/phase-3-report.md) | 第三阶段执行报告 |
-| [phase-3-1-report.md](reports/phase-3-1-report.md) | 3.1：六大 UI Surface 集成 |
-| [phase-4-report.md](reports/phase-4-report.md) | 第四阶段：Clean Transcript 与工具折叠 |
-| [phase-4-1-report.md](reports/phase-4-1-report.md) | 4.1：工具折叠专项审计 |
-| [phase-5a-report.md](reports/phase-5a-report.md) | 5A：侧栏会话行与日期分组 |
-| [phase-5a-1-report.md](reports/phase-5a-1-report.md) | 5A.1 审计报告 |
-| [phase-5b-report.md](reports/phase-5b-report.md) | 5B 审计报告（历史/会话预览） |
-| [phase-5b-1-report.md](reports/phase-5b-1-report.md) | 5B.1：真实 UI 工具转录打磨 |
+需要那些过程记录时，它们都在 git 历史里：
 
-## 评审与修复
-
-| 文档 | 内容 |
-| --- | --- |
-| [fix-log-2026-10-02.md](reports/fix-log-2026-10-02.md) | 对 2026-10-02 外部评审 13 项的逐条处理记录：每项根因 / 改动 / 验证 / **反向验证**，含 3 处对评审判断的纠正、2 处明确拒绝的做法（及理由）、5 项待决策 |
-
-## 审计与分析
-
-| 文档 | 内容 |
-| --- | --- |
-| [final-ux-audit.md](reports/final-ux-audit.md) | 全链路 UX 终检报告 |
-| [history-analysis.md](reports/history-analysis.md) | Hermes 原生历史/会话组件结构分析（改侧栏前的摸底） |
-| [implementation-analysis.md](reports/implementation-analysis.md) | 第一阶段技术实现分析 |
-| [phase1-task-spec.md](reports/phase1-task-spec.md) | 第一阶段任务书 |
+```bash
+git log --diff-filter=D --name-only -- docs/reports   # 找到删除它们的那个提交
+git show <该提交>^:docs/reports/phase-5b-report.md    # 取回其中任意一份
+```
 
 ## 给宿主的反馈
 
@@ -43,21 +21,21 @@
 
 > 终端那张「恢复出来的标签为什么是黑的」的定位记录原本也在这里，因为它逐行摘录了未发布的宿主源码、
 > 并含改签名应用的操作步骤，公开发布前整体撤下（`docs/patches/` 一并撤下）。结论与变通方法保留在根
-> README 的「已知限制」一节；需要完整过程的话，它还在 git 历史里——`git log --diff-filter=D --name-only -- docs/`
-> 能定位到删除前的那个版本，`git show <该提交>^:docs/hermes-terminal-surface-boot-reresolve.md` 可以取回。
+> README 的「已知限制」一节。
 
 ## 预览图
 
-[`previews/`](previews) 由 `node scripts/render-preview.js` 生成——用真实三层样式表
-（构建 CSS + live customCSS + PLUGIN_CSS）离线渲染，可在不重启 Hermes 的情况下判断
-几何、颜色与排版。注意 codicon 字形离线不一定解析，看几何别看图标；依赖
-`--ui-bg-*` / `--ui-text-*` 的界面离线会比真机浅，因为那两个变量是宿主运行时写在
-`<html>` 内联样式上的。
+[`previews/`](previews) 由 `node scripts/render-preview.js` 生成——整窗、无边框，用真实三层样式表
+（构建 CSS + live customCSS + PLUGIN_CSS）离线渲染，可在不重启 Hermes 的情况下判断几何、颜色与排版。
+脚本会补上 ThemeProvider 运行时才写进 `<html>` 的**主题种子变量**，所以配色与真机一致；
+唯一剩下的失真是 codicon 字形离线不一定解析，看图别看图标。
 
 | 图 | 对应界面 |
 | --- | --- |
-| `previews/task-panel.png` | Composer 的 Tasks 进度面板 |
-| `previews/composer.png` | 双行输入区 |
+| `previews/bubbles.png` | 整窗主视觉：气泡、氛围底板与输入区 |
 | `previews/transcript-rows.png` | 扁平化后的思考/工具行与保留的代码/diff 框 |
-| `previews/kanban.png` | 看板页（判页面背景是否已并入主题，卡片色离线偏浅） |
-| `previews/capabilities.png` | 技能/工具集页（开关两态 + 分类标签选中态并排） |
+| `previews/composer.png` | 双行输入区 |
+| `previews/task-panel.png` | Composer 上方的 Tasks 进度面板 |
+| `previews/capabilities.png` | 技能/工具集页（开关两态 + 分类标签选中态） |
+| `previews/kanban.png` | 看板页（三列，背景并入主题） |
+| `previews/social-preview.png` | 1280×640 分享卡，即 `og:image` 指向的那张 |

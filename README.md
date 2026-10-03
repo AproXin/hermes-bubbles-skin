@@ -181,7 +181,7 @@ node scripts/render-preview.js --scale 3    # 也支持 --out / --width
 
 ## 📚 文档
 
-索引见 [`docs/README.md`](./docs/README.md)。`docs/reports/` 下是各阶段实现与审计记录，属于当时快照；`docs/hermes-*.md` 是给宿主的反馈类文档。
+索引见 [`docs/README.md`](./docs/README.md)：`docs/hermes-*.md` 是给宿主的反馈类文档，`docs/previews/` 是上面那组整窗预览图。阶段性的过程记录不放仓库——它们在 git 历史里，取法见该索引。
 
 ---
 
