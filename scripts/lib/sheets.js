@@ -148,10 +148,17 @@ function loadSheets() {
   return { built, skinPath: skinYamlPath(), skinCss, pluginCss: css }
 }
 
-/** playwright-core from the Hermes checkout, launched with the only browser present. */
+/** playwright-core from the Hermes checkout, launched with the only browser present.
+ *
+ *  The checkout's copy is tried FIRST, and that order is the intent rather than an
+ *  accident: the suites should drive the browser library the host itself pins, so a
+ *  skew cannot make a fixture pass on a sheet the app would not load. A copy under
+ *  this repo's own node_modules is only the fallback for a machine that has no
+ *  checkout — package.json declares it so a fresh clone can still run the browser
+ *  suites, not because installing it is part of using the skin. */
 async function launchChromium() {
   let chromium = null
-  for (const id of ['playwright-core', path.join(HERMES_HOME, 'hermes-agent', 'node_modules', 'playwright-core')]) {
+  for (const id of [path.join(HERMES_HOME, 'hermes-agent', 'node_modules', 'playwright-core'), 'playwright-core']) {
     try { chromium = require(id).chromium; break } catch { /* next */ }
   }
   if (!chromium) return null
