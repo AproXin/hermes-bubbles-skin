@@ -11,58 +11,45 @@ This repo is the canonical source of both halves. `scripts/sync.js` deploys them
   <meta property="og:image" content="https://raw.githubusercontent.com/AproXin/hermes-bubbles-skin/main/docs/previews/social-preview.png">
   <meta property="og:title" content="Hermes Bubbles — Blue Glass Skin for Hermes Agent Desktop">
   <meta property="og:description" content="A full-window blue glassmorphism skin for Hermes Agent Desktop, paired with a desktop plugin that restructures the transcript, composer and task surfaces.">
-  <img src="docs/previews/bubbles.png" alt="Hermes Bubbles Skin Preview" width="100%" />
 </p>
+
+![Hermes Bubbles Skin — the whole window, bubbles and composer](docs/previews/bubbles.png)
 
 ---
 
 ## 📸 Gallery (界面预览)
 
-下面每一张都由 `scripts/render-preview.js` 用**真实三层样式表**（构建 CSS + live customCSS + PLUGIN_CSS）离线合成，界面里出现的文字全是夹具占位符。两点失真见[离线预览](#离线预览)一节：codicon 字形离线不一定解析，`--ui-bg-*` / `--ui-text-*` 由宿主运行时写进 `<html>` 内联样式，所以离线卡片色比真机浅。
-
-原始渲染落在 `docs/previews/source/`，`docs/previews/` 里的是套了统一规格的成品卡：同一标题条（编号 + 中英小标题）、同一外框与圆角、同一背景色温，宽度一律 1440。裁切只切在测得的空白带或内容边界上，拼接图的中缝做渐隐——因为半行文字看起来像 bug，而"接得上"不需要切点像素级完美。重出这一层：`node scripts/render-preview.js --out docs/previews/source`。
+每一张都是**整窗**，参照 [`FPSUnleashed/hermes-codex-skin`](https://github.com/FPSUnleashed/hermes-codex-skin) 的展示方式：不套边框、不加标题条、不裁成卡片，就是应用本身。窗框、标签条与会话行按宿主源码照抄（`session-row.tsx:375` 的行壳、`pane-tab.tsx` 的标签、`ui/sidebar.tsx` 的根），全部由 `scripts/render-preview.js` 用**真实三层样式表**（构建 CSS + live customCSS + PLUGIN_CSS）离线渲染，离线还补上了 ThemeProvider 运行时才写的主题种子变量，所以配色与真机一致。界面里出现的文字全是夹具占位符；唯一仍会失真的是 codicon 字形，离线不一定解析。重出：`node scripts/render-preview.js`。
 
 ### 1. 气泡与氛围底板 (Frosted Glass Bubbles & Ambient Lighting)
 深邃黑曜石蓝玻璃 + 6 重环境光斑；白雾霜玻 AI 气泡，用户气泡穿暖→冷光谱，头像同样是 CSS 画的。
 
-<p align="center">
-  <img src="docs/previews/bubbles.png" alt="Bubbles" width="92%" />
-</p>
+![Bubbles — the whole window](docs/previews/bubbles.png)
 
 ### 2. 转录行 (Bare-Text Rows & One Frame Rule)
 收起时是裸文本，展开才有一个发丝线框，标题永远落在框外。
 
-<p align="center">
-  <img src="docs/previews/transcript-rows.png" alt="Transcript rows" width="92%" />
-</p>
+![Transcript rows — bare text, one frame](docs/previews/transcript-rows.png)
 
 ### 3. Composer
 输入主体在上，1px 低对比分隔线在下，下方一行工具栏。
 
-<p align="center">
-  <img src="docs/previews/composer.png" alt="Composer" width="92%" />
-</p>
+![Composer](docs/previews/composer.png)
 
 ### 4. 任务进度卡 (Tasks)
 一张圆角卡、编号行、标题分隔线上跑进度条、正文独立滚动。
 
-<p align="center">
-  <img src="docs/previews/task-panel.png" alt="Task panel" width="92%" />
-</p>
+![Task progress card](docs/previews/task-panel.png)
 
 ### 5. 技能 / 工具集页 (Capabilities)
 开关两态可读，分类标签选中态加强。
 
-<p align="center">
-  <img src="docs/previews/capabilities.png" alt="Capabilities" width="92%" />
-</p>
+![Capabilities](docs/previews/capabilities.png)
 
 ### 6. 看板 (Kanban)
 页面背景走主题变量，环境光透出来。
 
-<p align="center">
-  <img src="docs/previews/kanban.png" alt="Kanban" width="92%" />
-</p>
+![Kanban board](docs/previews/kanban.png)
 
 ---
 
@@ -179,7 +166,7 @@ node scripts/render-preview.js kanban       # 只渲染某几个（界面名是�
 node scripts/render-preview.js --scale 3    # 也支持 --out / --width
 ```
 
-六个界面：`bubbles` `task-panel` `composer` `transcript-rows` `kanban` `capabilities`，产物就是顶部 Gallery 那几张。改完皮肤不必重启 Hermes，重跑这条就能用眼睛判断几何、颜色与排版。**两处失真**：codicon 字形离线不一定解析（看几何别看图标）；`--ui-bg-*` / `--ui-text-*` 由宿主运行时写在 `<html>` 内联样式上，所以离线卡片色比真机浅。
+六个界面：`bubbles` `task-panel` `composer` `transcript-rows` `kanban` `capabilities`，每张都是整窗，产物就是顶部 Gallery 那几张。改完皮肤不必重启 Hermes，重跑这条就能用眼睛判断几何、颜色与排版。脚本会先补上 ThemeProvider 运行时才写进 `<html>` 的主题种子变量（`--theme-foreground` / `-primary` / `-midground` / `*-seed`），所以卡片色、正文色与真机一致。**唯一剩下的失真**：codicon 字形离线不一定解析——看图别看图标。
 
 ---
 
