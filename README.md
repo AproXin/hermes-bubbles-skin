@@ -8,6 +8,9 @@ A full-window blue glassmorphism **skin** for [Hermes Agent](https://github.com/
 This repo is the canonical source of both halves. `scripts/sync.js` deploys them to a local Hermes install.
 
 <p align="center">
+  <meta property="og:image" content="https://raw.githubusercontent.com/AproXin/hermes-bubbles-skin/main/docs/previews/social-preview.png">
+  <meta property="og:title" content="Hermes Bubbles — Blue Glass Skin for Hermes Agent Desktop">
+  <meta property="og:description" content="A full-window blue glassmorphism skin for Hermes Agent Desktop, paired with a desktop plugin that restructures the transcript, composer and task surfaces.">
   <img src="docs/previews/bubbles.png" alt="Hermes Bubbles Skin Preview" width="100%" />
 </p>
 
