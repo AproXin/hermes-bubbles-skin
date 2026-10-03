@@ -2,6 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Hermes Agent](https://img.shields.io/badge/Hermes_Agent-Skin_%26_Theme-007acc.svg)](https://github.com/NousResearch/hermes-agent)
+[![verify](https://github.com/AproXin/hermes-bubbles-skin/actions/workflows/verify.yml/badge.svg?branch=main)](https://github.com/AproXin/hermes-bubbles-skin/actions/workflows/verify.yml)
 
 A full-window blue glassmorphism **skin** for [Hermes Agent](https://github.com/NousResearch/hermes-agent) Desktop, paired with a **desktop plugin** that restructures the transcript, composer and task surfaces the skin alone cannot reach.
 
@@ -165,11 +166,22 @@ node scripts/run-tests.js              # 全部套件
 node scripts/run-tests.js sidebar task # 只跑文件名包含这些字样的
 ```
 
-根目录的 `package.json` 只是把上面四条命令登记成 `npm run build` / `npm test` / `npm run sync` / `npm run preview`，不需要 `npm install`。套件用的 `playwright-core` 从你本机的 Hermes 检出解析（`scripts/lib/sheets.js` 里那条回落路径），往本仓库再装一份反而可能版本不匹配。它还刻意不写 `"type"` 字段：`src/plugin.js` 是 ES 模块，一旦声明 `commonjs`，Node 就不再自动识别语法，`sync` 的解析门会拒绝部署。这条由 `test/plugin-source-parses.test.js` 实测守住。
+根目录的 `package.json` 只是把上面四条命令登记成 `npm run build` / `npm test` / `npm run sync` / `npm run preview`，不需要 `npm install`。套件用的 `playwright-core` 先取你本机 Hermes 检出里那一份（`scripts/lib/sheets.js`：先 `~/.hermes/hermes-agent/node_modules`，再回落到本仓库的 `node_modules`）——先取宿主那份是刻意的，浏览器套件应当跑在宿主自己钉住的库版本上，才不会拿一套宿主不会加载的配置去通过；仓库里的 `devDependencies` 只是给没有检出的机器留的后路，`node_modules/` 已在 `.gitignore` 里。它还刻意不写 `"type"` 字段：`src/plugin.js` 是 ES 模块，一旦声明 `commonjs`，Node 就不再自动识别语法，`sync` 的解析门会拒绝部署。这条由 `test/plugin-source-parses.test.js` 实测守住。
 
-套件一共 **54 个套件**，分三类互补。**29 个**在无头浏览器里装配「构建 CSS + live customCSS + PLUGIN_CSS」三层真实样式表，断言实测计算样式与像素，不比 CSS 文本——`observer-trigger-scope` 用页面里真实的 MutationObserver 数回调、祖先走查和重排次数，`layout-read-batching` 数「读完尺寸立刻又写」的强制重排，`bubble-computed-style` 把长消息遮罩、编辑态右对齐和操作区贴边从「源码里有没有这行字」改成真读计算样式与几何，并带一张只叠宿主样式的对照页，防止夹具画不出来时假绿。**15 个**用 mock DOM 或沙箱执行跑插件 JS 的行为：打标、折叠、状态判定、生命周期与 cleanup、`runStage` 阶段隔离、存储回收。**10 个**不碰 DOM，守仓库与构建本身——源码可解析、装配产物与两份源文件一致、宿主选择器漂移、`customCSS` 体积预算、两张表之间的规则重复、CSS 作用域纪律、断言普查、sync 的部署、参数校验，以及「当前激活的不是本皮肤」提示。这三类数字和套件总数由断言普查套件钉住，手抄错会直接报红。
+套件一共 **55 个套件**，分三类互补。**29 个**在无头浏览器里装配「构建 CSS + live customCSS + PLUGIN_CSS」三层真实样式表，断言实测计算样式与像素，不比 CSS 文本——`observer-trigger-scope` 用页面里真实的 MutationObserver 数回调、祖先走查和重排次数，`layout-read-batching` 数「读完尺寸立刻又写」的强制重排，`bubble-computed-style` 把长消息遮罩、编辑态右对齐和操作区贴边从「源码里有没有这行字」改成真读计算样式与几何，并带一张只叠宿主样式的对照页，防止夹具画不出来时假绿。**15 个**用 mock DOM 或沙箱执行跑插件 JS 的行为：打标、折叠、状态判定、生命周期与 cleanup、`runStage` 阶段隔离、存储回收。**11 个**不碰 DOM，守仓库与构建本身——源码可解析、装配产物与两份源文件一致、宿主选择器漂移、`customCSS` 体积预算、两张表之间的规则重复、CSS 作用域纪律、断言普查、`!important` 密度棘轮、sync 的部署、参数校验，以及「当前激活的不是本皮肤」提示。这三类数字和套件总数由断言普查套件钉住，手抄错会直接报红。
 
 缺少 Hermes 检出或浏览器时，浏览器套件会 SKIP，不会假装通过；关键套件把 SKIP 判为失败。
+
+### 让检查自动执行
+
+`scripts/git-hooks/pre-push` 在每次推送前跑一遍全量套件：有失败就拦住，**有套件被跳过也拦**——跳过不等于通过，「看着绿其实是跳过了量像素的套件」正是这套验证最怕的失效方式。`.git/hooks/` 里的东西不进版本库，所以每台机器自己开一次：
+
+```bash
+git config core.hooksPath scripts/git-hooks   # 开启（本机一次性）
+BUBBLES_ALLOW_SKIP=1 git push                 # 明确放行一次，原因写进推送说明
+```
+
+GitHub Actions（`.github/workflows/verify.yml`）是第二层网，不是主闸：runner 上没有宿主检出，能真跑的只有 24 个仓库自足的套件（两道棘轮、解析门、产物一致性、sync 部署与参数校验等），其余 31 个必然 SKIP。所以 workflow 允许跳过，但同时打印跳过清单、要求"至少 20 个真跑过"（防止整片悄悄变成跳过），跑完后还断言仓库字节没被写脏。
 
 ### 离线预览
 
