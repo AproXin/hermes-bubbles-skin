@@ -1571,6 +1571,7 @@ function runStage(name, fn) {
   try {
     fn()
   } catch (err) {
+    console.error('[bubbles] stage failed:', name, err)
     stats.stageErrors[name] = (stats.stageErrors[name] || 0) + 1
     stats.lastStageError = `${name}: ${(err && err.message) || String(err)}`
   }

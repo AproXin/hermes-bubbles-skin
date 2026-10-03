@@ -1,7 +1,7 @@
 /**
  * DO NOT EDIT DIRECTLY.
  * Generated from src/plugin.js via `node scripts/sync.js`.
- * Build 5b3c1d2603
+ * Build 94b63bdf64
  */
 
 /**
@@ -3561,6 +3561,7 @@ function runStage(name, fn) {
   try {
     fn()
   } catch (err) {
+    console.error('[bubbles] stage failed:', name, err)
     stats.stageErrors[name] = (stats.stageErrors[name] || 0) + 1
     stats.lastStageError = `${name}: ${(err && err.message) || String(err)}`
   }
@@ -3942,4 +3943,4 @@ export default {
   }
 }
 
-globalThis.__bubblesBuild = "5b3c1d2603"
+globalThis.__bubblesBuild = "94b63bdf64"
