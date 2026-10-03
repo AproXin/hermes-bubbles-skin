@@ -186,7 +186,7 @@ customCSS: |
     z-index: 99999 !important;
   }
 
-  /* 6. 底部输入框：玻璃质感归 PLUGIN_CSS 单管（见 plugin.js 第 9 节）。
+  /* 6. 底部输入框：玻璃质感归 PLUGIN_CSS 单管（见 plugin.js 第 1 节）。
      这里原先有两条 !important 的 composer-surface 规则，和插件那套谁赢取决于
      两张 <style> 的插入顺序 —— 已删，顺带回收到 32 KiB 预算。 */
   :is(textarea, input:not([type='checkbox']):not([type='radio'])) {

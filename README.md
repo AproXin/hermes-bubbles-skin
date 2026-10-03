@@ -146,7 +146,7 @@ document.documentElement.dataset.bubblesBuild   // 部署构建号；teardown �
 
 装配结果和产物对不上时，`sync` 会先重建再部署，并把这件事打印出来。别把改动只写进 `src/plugin.js`，那等于写进一个会被覆盖的产物。
 
-体积这类数字别信文档，信命令输出——以前抄进文档就错过一次。权威读法是 `node scripts/sync.js`（每次部署都打印 `customCSS <当前>/<上限> 字符`）和 `node test/skin-css-budget.test.js`（打印余量，超限直接判失败）。下面这些只是写下来的参考：上限 **32,768** 由网关源码决定；`customCSS` 从 29,926 压到 18,380 字符；`PLUGIN_CSS` 是 1,974 行 / 约 88 KB，没有上限。放不进 32 KiB 的组件样式一律走 `src/plugin.css`。同一条规则不要在两张表里各写一份，`test/sheet-duplication.test.js` 会拦——那等于替 32 KiB 预算重复付费。
+体积这类数字别信文档，信命令输出——以前抄进文档就错过一次。权威读法是 `node scripts/sync.js`（每次部署都打印 `customCSS <当前>/<上限> 字符`）和 `node test/skin-css-budget.test.js`（打印余量，超限直接判失败）。下面这些只是写下来的参考：上限 **32,768** 由网关源码决定；`customCSS` 从 29,926 压到 18,381 字符；`PLUGIN_CSS` 是 1,986 行 / 约 88 KB，没有上限。放不进 32 KiB 的组件样式一律走 `src/plugin.css`。同一条规则不要在两张表里各写一份，`test/sheet-duplication.test.js` 会拦——那等于替 32 KiB 预算重复付费。
 
 改完跑一条命令同时部署两者：
 
