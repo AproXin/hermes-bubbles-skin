@@ -20,6 +20,8 @@ This repo is the canonical source of both halves. `scripts/sync.js` deploys them
 
 下面每一张都由 `scripts/render-preview.js` 用**真实三层样式表**（构建 CSS + live customCSS + PLUGIN_CSS）离线合成，界面里出现的文字全是夹具占位符。两点失真见[离线预览](#离线预览)一节：codicon 字形离线不一定解析，`--ui-bg-*` / `--ui-text-*` 由宿主运行时写进 `<html>` 内联样式，所以离线卡片色比真机浅。
 
+原始渲染落在 `docs/previews/source/`，`docs/previews/` 里的是套了统一规格的成品卡：同一标题条（编号 + 中英小标题）、同一外框与圆角、同一背景色温，宽度一律 1440。裁切只切在测得的空白带或内容边界上，拼接图的中缝做渐隐——因为半行文字看起来像 bug，而"接得上"不需要切点像素级完美。重出这一层：`node scripts/render-preview.js --out docs/previews/source`。
+
 ### 1. 气泡与氛围底板 (Frosted Glass Bubbles & Ambient Lighting)
 深邃黑曜石蓝玻璃 + 6 重环境光斑；白雾霜玻 AI 气泡，用户气泡穿暖→冷光谱，头像同样是 CSS 画的。
 
@@ -31,35 +33,35 @@ This repo is the canonical source of both halves. `scripts/sync.js` deploys them
 收起时是裸文本，展开才有一个发丝线框，标题永远落在框外。
 
 <p align="center">
-  <img src="docs/previews/transcript-rows.png" alt="Transcript rows" width="80%" />
+  <img src="docs/previews/transcript-rows.png" alt="Transcript rows" width="92%" />
 </p>
 
 ### 3. Composer
 输入主体在上，1px 低对比分隔线在下，下方一行工具栏。
 
 <p align="center">
-  <img src="docs/previews/composer.png" alt="Composer" width="80%" />
+  <img src="docs/previews/composer.png" alt="Composer" width="92%" />
 </p>
 
 ### 4. 任务进度卡 (Tasks)
 一张圆角卡、编号行、标题分隔线上跑进度条、正文独立滚动。
 
 <p align="center">
-  <img src="docs/previews/task-panel.png" alt="Task panel" width="72%" />
+  <img src="docs/previews/task-panel.png" alt="Task panel" width="92%" />
 </p>
 
 ### 5. 技能 / 工具集页 (Capabilities)
 开关两态可读，分类标签选中态加强。
 
 <p align="center">
-  <img src="docs/previews/capabilities.png" alt="Capabilities" width="76%" />
+  <img src="docs/previews/capabilities.png" alt="Capabilities" width="92%" />
 </p>
 
 ### 6. 看板 (Kanban)
 页面背景走主题变量，环境光透出来。
 
 <p align="center">
-  <img src="docs/previews/kanban.png" alt="Kanban" width="86%" />
+  <img src="docs/previews/kanban.png" alt="Kanban" width="92%" />
 </p>
 
 ---
