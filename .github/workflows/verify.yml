@@ -1,0 +1,51 @@
+name: verify
+
+# What this can and cannot check: 24 of the 55 suites need nothing outside the repo,
+# so they run here. The other 31 read the author's local Hermes checkout (the built
+# renderer sheet, skin_engine.py's 32 KiB slice, the host's own source) and a
+# Chromium-family browser, so they SKIP on a runner. That is why the local pre-push
+# hook (scripts/git-hooks/pre-push) is the real gate; this workflow is the safety net
+# for the guards that are repo-local — the source-text assertion ceiling, the
+# !important ceiling, the README suite inventory, the artifact-parity and parse gates,
+# and the sync deploy tests.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run the repo-local suites
+        # pipefail matters: `node … | tee` would otherwise report tee's status and a
+        # failing suite would pass CI.
+        shell: bash
+        run: set -euo pipefail; node scripts/run-tests.js --allow-skip | tee run-tests.log
+
+      - name: Fail if the run quietly became all-skips
+        shell: bash
+        run: |
+          set -euo pipefail
+          passed=$(grep -oE '[0-9]+ passed' run-tests.log | head -1 | cut -d' ' -f1)
+          echo "suites that actually ran: $passed"
+          if [ "$passed" -lt 20 ]; then
+            echo "expected at least 20 repo-local suites to run — something broke the runner assumptions" >&2
+            exit 1
+          fi
+
+      - name: Print what CI could not verify
+        shell: bash
+        run: grep -E '^  - ' run-tests.log || echo 'nothing skipped'
+
+      - name: The run must leave the repo byte-clean
+        # sync.js regenerates the tracked artifact plugin.js; byte-identical output is
+        # the deploy-idempotency guarantee, so a diff here means a real drift.
+        shell: bash
+        run: git diff --exit-code
