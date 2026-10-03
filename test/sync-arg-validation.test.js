@@ -18,7 +18,7 @@ const os = require('os')
 const path = require('path')
 const { spawnSync } = require('child_process')
 
-const REPO = path.join(__dirname, '..')
+const { REPO } = require('../scripts/lib/sheets')
 const SYNC = path.join(REPO, 'scripts', 'sync.js')
 
 const home = fs.mkdtempSync(path.join(os.tmpdir(), 'bubbles-sync-args-'))

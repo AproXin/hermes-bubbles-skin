@@ -2,8 +2,10 @@
 /**
  * scripts/sync.js
  *
- * Compiles and synchronizes the canonical source `src/plugin.js`
- * into `plugin.js` and the local Hermes desktop plugins folder.
+ * Compiles and synchronizes the plugin. The hand-edited sources are
+ * `src/plugin.source.js` (the JavaScript) and `src/plugin.css` (its stylesheet);
+ * `src/plugin.js` is what they assemble to, and it is the file this script deploys to
+ * `plugin.js` and the local Hermes desktop plugins folder.
  *
  * Also deploys the skin's own stylesheet: this repo's `bubbles.yaml` is the
  * canonical copy of `~/.hermes/skins/bubbles.yaml`, the file Hermes injects as
@@ -20,6 +22,7 @@ const path = require('path')
 const crypto = require('crypto')
 const { execFileSync } = require('child_process')
 const { blockScalar, customCssCap, activeSkinNameOrNull } = require('./lib/sheets')
+const buildPlugin = require('./build-plugin')
 
 const ROOT_DIR = path.resolve(__dirname, '..')
 const SRC_FILE = path.join(ROOT_DIR, 'src', 'plugin.js')
@@ -56,12 +59,26 @@ const die = msg => {
   process.exit(1)
 }
 
-if (!fs.existsSync(SRC_FILE)) {
-  console.error(`[sync] Error: Source file not found at ${SRC_FILE}`)
-  process.exit(1)
+/* `src/plugin.js` is the build output of `src/plugin.source.js` + `src/plugin.css`
+   (see scripts/build-plugin.js). Refresh it first so no deploy can carry a stylesheet
+   that disagrees with the JS it ships beside. A drift here is almost always a
+   hand-edit to the output, so the delta is announced instead of swallowed. */
+let assembled
+try {
+  assembled = buildPlugin.assemble()
+} catch (e) {
+  die(`cannot assemble the plugin from src/plugin.source.js + src/plugin.css — ${e.message}`)
+}
+const artifactBefore = fs.existsSync(SRC_FILE) ? fs.readFileSync(SRC_FILE, 'utf8') : null
+if (assembled !== artifactBefore) {
+  fs.writeFileSync(SRC_FILE, assembled)
+  console.log(`[sync] Rebuilt src/plugin.js from its two source files (${assembled.length} chars`
+    + (artifactBefore === null ? ', was missing' : `, was ${artifactBefore.length}`) + ')')
+  console.log('[sync] If that was a hand-edit to src/plugin.js, it is now in src/plugin.source.js'
+    + ' / src/plugin.css only if you move it there — commit the sources, not just the rebuild.')
 }
 
-const sourceContent = fs.readFileSync(SRC_FILE, 'utf8')
+const sourceContent = assembled
 
 /* Refuse to deploy something that cannot even parse. PLUGIN_CSS is one big JS
    template literal, so a stray backtick inside a CSS comment ends the string

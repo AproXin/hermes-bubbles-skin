@@ -35,160 +35,7 @@ const path = require('path')
 // ----------------------------------------------------------------------------
 // Minimal DOM Mock for Node Environment
 // ----------------------------------------------------------------------------
-class MockClassList {
-  constructor(el) {
-    this.el = el
-  }
-  contains(cls) {
-    return this.el.className.split(/\s+/).includes(cls)
-  }
-  add(cls) {
-    const classes = new Set(this.el.className.split(/\s+/).filter(Boolean))
-    classes.add(cls)
-    this.el.className = [...classes].join(' ')
-  }
-  remove(cls) {
-    const classes = this.el.className.split(/\s+/).filter(c => c && c !== cls)
-    this.el.className = classes.join(' ')
-  }
-}
-
-class MockElement {
-  constructor(tagName = 'div', className = '', attributes = {}) {
-    this.tagName = tagName.toUpperCase()
-    this.nodeType = 1
-    this.className = className
-    this.classList = new MockClassList(this)
-    this.attributes = { ...attributes }
-    this.children = []
-    this.parentElement = null
-    this.textContent = ''
-    this.eventListeners = {}
-    this.style = {
-      display: '',
-      getPropertyValue: (prop) => this.style[prop] || ''
-    }
-  }
-
-  get firstElementChild() {
-    return this.children[0] || null
-  }
-
-  getAttribute(key) {
-    return this.attributes[key] ?? null
-  }
-
-  setAttribute(key, value) {
-    this.attributes[key] = String(value)
-  }
-
-  hasAttribute(key) {
-    return key in this.attributes
-  }
-
-  removeAttribute(key) {
-    delete this.attributes[key]
-  }
-
-  appendChild(child) {
-    if (child.parentElement) {
-      const idx = child.parentElement.children.indexOf(child)
-      if (idx !== -1) child.parentElement.children.splice(idx, 1)
-    }
-    child.parentElement = this
-    this.children.push(child)
-    return child
-  }
-
-  append(...items) {
-    for (const item of items) {
-      if (typeof item === 'string') {
-        const textNode = new MockElement('span')
-        textNode.textContent = item
-        this.appendChild(textNode)
-      } else if (item) {
-        this.appendChild(item)
-      }
-    }
-  }
-
-  remove() {
-    if (this.parentElement) {
-      const idx = this.parentElement.children.indexOf(this)
-      if (idx !== -1) this.parentElement.children.splice(idx, 1)
-      this.parentElement = null
-    }
-  }
-
-  addEventListener(type, listener) {
-    if (!this.eventListeners[type]) this.eventListeners[type] = []
-    this.eventListeners[type].push(listener)
-  }
-
-  dispatchEvent(evt) {
-    const listeners = this.eventListeners[evt.type] || []
-    for (const l of listeners) l(evt)
-  }
-
-  matches(selector) {
-    if (!selector) return false
-    const selList = selector.split(',').map(s => s.trim())
-    return selList.some(sel => {
-      if (sel.startsWith('.')) return this.classList.contains(sel.slice(1))
-      if (sel.startsWith('#')) return this.id === sel.slice(1)
-      const attrMatch = sel.match(/^\[([a-zA-Z0-9_-]+)(?:=(['"]?)(.*?)\2)?\]$/)
-      if (attrMatch) {
-        const [, key, , val] = attrMatch
-        if (val === undefined) return this.hasAttribute(key)
-        return this.getAttribute(key) === val
-      }
-      return this.tagName.toLowerCase() === sel.toLowerCase()
-    })
-  }
-
-  closest(selector) {
-    let curr = this
-    while (curr) {
-      if (curr.matches(selector)) return curr
-      curr = curr.parentElement
-    }
-    return null
-  }
-
-  querySelector(selector) {
-    const results = this.querySelectorAll(selector)
-    return results[0] || null
-  }
-
-  querySelectorAll(selector) {
-    const matched = []
-    const selList = selector.split(',').map(s => s.trim())
-
-    const traverse = (node) => {
-      for (const child of node.children) {
-        const isMatch = selList.some(sel => {
-          if (sel === ':scope > .bubbles-user-expand-btn') {
-            return child.parentElement === this && child.classList.contains('bubbles-user-expand-btn')
-          }
-          if (sel.startsWith('.')) return child.classList.contains(sel.slice(1))
-          if (sel.startsWith('#')) return child.id === sel.slice(1)
-          const attrMatch = sel.match(/^\[([a-zA-Z0-9_-]+)(?:=(['"]?)(.*?)\2)?\]$/)
-          if (attrMatch) {
-            const [, key, , val] = attrMatch
-            if (val === undefined) return child.hasAttribute(key)
-            return child.getAttribute(key) === val
-          }
-          return child.tagName.toLowerCase() === sel.toLowerCase()
-        })
-
-        if (isMatch) matched.push(child)
-        traverse(child)
-      }
-    }
-    traverse(this)
-    return matched
-  }
-}
+const { MockElement } = require('./lib/mock-dom')
 
 // ----------------------------------------------------------------------------
 // Test Environment Setup
@@ -260,6 +107,10 @@ const setupLongMessageCollapse = new Function(
   `const isElement = ${isElement.toString()};
    const CLAMP_LINE_THRESHOLD_PX = ${CLAMP_LINE_THRESHOLD_PX};
    const getMessageStorageKey = ${getMessageStorageKey.toString()};
+   /* The shipped function consults the pass-ahead height batch; this suite calls it
+      outside a pass, so the batch is exactly what processDOM leaves it between passes:
+      null, meaning "measure live", which is the path these cases have always taken. */
+   let clampHeightBatch = null;
    const safeGetStorage = ${safeGetStorage.toString()};
    const safeSetStorage = ${safeSetStorage.toString()};
    const safeRemoveStorage = ${safeRemoveStorage.toString()};

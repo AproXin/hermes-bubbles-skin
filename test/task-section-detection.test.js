@@ -18,9 +18,8 @@
 const assert = require('assert')
 const fs = require('fs')
 const path = require('path')
-const { launchChromium, pageHtml, pathToFileUrl, loadSheets } = require('../scripts/lib/sheets')
+const { REPO, launchChromium, pageHtml, pathToFileUrl, loadSheets } = require('../scripts/lib/sheets')
 
-const REPO = path.join(__dirname, '..')
 const SRC = path.join(REPO, 'src', 'plugin.js')
 
 const skip = reason => {
@@ -28,6 +27,11 @@ const skip = reason => {
   process.exit(0)
 }
 if (!fs.existsSync(SRC)) skip('no src/plugin.js')
+/* loadSheets() reports a missing host artefact as `{ error }`, not as a throw, so
+   read it here: taking `.built` off a failed load hands pageHtml a null path and the
+   suite crashes into FAIL instead of standing aside like every other browser suite. */
+const sheets = loadSheets()
+if (sheets.error) skip(sheets.error)
 
 const src = fs.readFileSync(SRC, 'utf8')
 const grab = (label, re) => {
@@ -82,11 +86,13 @@ const RUN = `(function(){ ${code}
 ;(async () => {
   const browser = await launchChromium()
   if (!browser) skip('playwright-core found but no Chromium/Edge/Chrome to launch')
-  const sheets = { built: loadSheets().built, skinCss: '', pluginCss: '' }
+  // Only the built sheet is stacked: this measures findTaskSection's JS against the
+  // host's own nesting, so the skin's two layers must not be in the page.
+  const stacked = { built: sheets.built, skinCss: '', pluginCss: '' }
   const results = {}
   for (const [name, body] of Object.entries(CASES)) {
     const page = await browser.newPage()
-    await page.setContent(pageHtml(sheets, body))
+    await page.setContent(pageHtml(stacked, body))
     results[name] = await page.evaluate(RUN)
     await page.close()
   }

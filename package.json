@@ -4,6 +4,7 @@
   "private": true,
   "description": "Frosted-glass chat bubbles, collapsed tool runs and a scrollable task panel injected into the Hermes Agent desktop app — a skin (customCSS) plus its desktop plugin.",
   "scripts": {
+    "build": "node scripts/build-plugin.js",
     "test": "node scripts/run-tests.js",
     "sync": "node scripts/sync.js",
     "preview": "node scripts/render-preview.js"

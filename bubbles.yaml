@@ -27,7 +27,10 @@ colors:
   completion_menu_meta_current_bg: "#1a457a"
 
 customCSS: |
-  /* 1. CSS变量层：清除原生暗黑遮罩 */
+  /* 1. CSS变量层：清除原生暗黑遮罩
+     data-hermes-glass / data-hermes-glass-on 由宿主 store/translucency.ts:323-324 用
+     toggleAttribute 写在 html 上，只在玻璃模式开启时存在，不是幻影选择器，不要删。
+     这一组里已经有裸 :root，所以开关两种状态都命中；限定符是给人读的标记。 */
   :root, :root.dark, :root[data-hermes-glass], :root[data-hermes-glass-on], html, body {
     --sidebar: transparent !important;
     --ui-bg-sidebar: transparent !important;

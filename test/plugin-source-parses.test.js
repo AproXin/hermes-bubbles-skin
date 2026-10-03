@@ -15,13 +15,9 @@
 
 const assert = require('assert')
 const fs = require('fs')
-const os = require('os')
 const path = require('path')
 const { execFileSync } = require('child_process')
-
-const HOME = os.homedir()
-const HERMES_HOME = process.env.HERMES_HOME || path.join(HOME, '.hermes')
-const REPO = path.join(__dirname, '..')
+const { REPO, HOME, HERMES_HOME } = require('../scripts/lib/sheets')
 
 const targets = [
   path.join(REPO, 'src', 'plugin.js'),
@@ -58,6 +54,30 @@ for (const file of targets) {
     assert.fail(`${path.basename(file)} does not parse:\n${err.stderr || err.message}`)
   }
   console.log(`ok  ${path.relative(HOME, file)}  (${css.length}b CSS, parses clean)`)
+}
+
+/* 3. `src/plugin.js` is now a build output of `src/plugin.source.js` + `src/plugin.css`,
+      so the two halves cannot be edited apart. This is the guard that lets the artifact
+      stay un-bannered and byte-identical: a hand-edit to the output shows up here as a
+      mismatch instead of being silently overwritten by the next `sync`. */
+const artifactFile = path.join(REPO, 'src', 'plugin.js')
+if (fs.existsSync(artifactFile)) {
+  const { assemble, MARKER } = require('../scripts/build-plugin')
+  const built = assemble()
+  const artifact = fs.readFileSync(artifactFile, 'utf8')
+  const firstDiff = built === artifact ? -1
+    : (() => { for (let i = 0; i < Math.max(built.length, artifact.length); i += 1) if (built[i] !== artifact[i]) return i; return -1 })()
+  assert.strictEqual(firstDiff, -1,
+    `src/plugin.js is not what its two sources assemble to — first difference at offset ${firstDiff}.`
+    + `\n  source side: ${JSON.stringify(built.slice(firstDiff, firstDiff + 90))}`
+    + `\n  artifact   : ${JSON.stringify(artifact.slice(firstDiff, firstDiff + 90))}`
+    + `\n  Run \`node scripts/build-plugin.js\` after moving the edit into src/plugin.source.js or src/plugin.css.`)
+  console.log(`ok  src/plugin.js == plugin.source.js + plugin.css (${artifact.length}b, marker ${JSON.stringify(MARKER)})`)
+
+  // The marker must appear exactly once, or the sheet is pasted twice or dropped.
+  const template = fs.readFileSync(path.join(REPO, 'src', 'plugin.source.js'), 'utf8')
+  assert.strictEqual(template.split(MARKER).length - 1, 1,
+    `src/plugin.source.js must hold exactly one ${MARKER} line`)
 }
 
 console.log('\n=== Plugin Source Parses: PASS ===\n')

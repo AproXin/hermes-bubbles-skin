@@ -11,203 +11,22 @@
  */
 
 const assert = require('assert')
-const fs = require('fs')
-const path = require('path')
 const { pluginCss } = require('../scripts/lib/sheets')
 
-class MockClassList {
-  constructor(el) {
-    this.el = el
-  }
-  contains(cls) {
-    return this.el.className.split(/\s+/).includes(cls)
-  }
-  add(cls) {
-    const classes = new Set(this.el.className.split(/\s+/).filter(Boolean))
-    classes.add(cls)
-    this.el.className = [...classes].join(' ')
-  }
-  remove(cls) {
-    const classes = this.el.className.split(/\s+/).filter(c => c && c !== cls)
-    this.el.className = classes.join(' ')
-  }
-}
+const { MockElement } = require('./lib/mock-dom')
+const { extractConst, extractFunctionText, isElement } = require('./lib/plugin-sandbox')
 
-class MockElement {
-  constructor(tagName = 'div', className = '', attributes = {}) {
-    this.tagName = tagName.toUpperCase()
-    this.nodeType = 1
-    this.className = className
-    this.classList = new MockClassList(this)
-    this.attributes = { ...attributes }
-    this.children = []
-    this.parentElement = null
-    this._textContent = ''
-    this.eventListeners = {}
-  }
-
-  getAttribute(name) {
-    return Object.prototype.hasOwnProperty.call(this.attributes, name) ? this.attributes[name] : null
-  }
-
-  setAttribute(name, val) {
-    this.attributes[name] = String(val)
-  }
-
-  removeAttribute(name) {
-    delete this.attributes[name]
-  }
-
-  hasAttribute(name) {
-    return Object.prototype.hasOwnProperty.call(this.attributes, name)
-  }
-
-  get textContent() {
-    if (this.children.length === 0) return this._textContent
-    return this.children.map(c => c.textContent).join('')
-  }
-
-  set textContent(val) {
-    this.children = []
-    this._textContent = String(val)
-  }
-
-  appendChild(child) {
-    if (!child) return
-    child.parentElement = this
-    this.children.push(child)
-    return child
-  }
-
-  removeChild(child) {
-    const idx = this.children.indexOf(child)
-    if (idx !== -1) {
-      this.children.splice(idx, 1)
-      child.parentElement = null
-    }
-    return child
-  }
-
-  remove() {
-    if (this.parentElement) {
-      this.parentElement.removeChild(this)
-    }
-  }
-
-  addEventListener(event, fn) {
-    if (!this.eventListeners[event]) {
-      this.eventListeners[event] = []
-    }
-    this.eventListeners[event].push(fn)
-  }
-
-  dispatchEvent(event) {
-    const handlers = this.eventListeners[event.type] || []
-    for (const h of handlers) {
-      h(event)
-    }
-  }
-
-  click() {
-    this.dispatchEvent({ type: 'click', target: this, defaultPrevented: false, preventDefault() { this.defaultPrevented = true } })
-  }
-
-  pointerDown() {
-    this.dispatchEvent({ type: 'pointerdown', target: this, defaultPrevented: false, preventDefault() { this.defaultPrevented = true } })
-  }
-
-  matches(sel) {
-    if (sel.startsWith('.')) {
-      const cls = sel.slice(1).replace(/\\/g, '')
-      return this.classList.contains(cls)
-    }
-    if (sel.startsWith('[') && sel.endsWith(']')) {
-      const inside = sel.slice(1, -1)
-      if (inside.includes('=')) {
-        const [attr, val] = inside.split('=').map(s => s.replace(/['"]/g, '').trim())
-        return this.getAttribute(attr) === val
-      }
-      return this.hasAttribute(inside)
-    }
-    return this.tagName.toLowerCase() === sel.toLowerCase()
-  }
-
-  closest(sel) {
-    let curr = this
-    while (curr) {
-      if (curr.matches(sel)) return curr
-      curr = curr.parentElement
-    }
-    return null
-  }
-
-  querySelector(sel) {
-    for (const child of this.children) {
-      if (child.matches(sel)) return child
-      const found = child.querySelector(sel)
-      if (found) return found
-    }
-    return null
-  }
-
-  querySelectorAll(sel) {
-    let results = []
-    for (const child of this.children) {
-      if (child.matches(sel)) results.push(child)
-      results = results.concat(child.querySelectorAll(sel))
-    }
-    return results
-  }
-}
-
-// Load source file
-const pluginSrcPath = path.resolve(__dirname, '../src/plugin.js')
-const pluginCode = fs.readFileSync(pluginSrcPath, 'utf8')
+/* The eval stays in this file: an extracted function closes over the scope it is
+   evaluated in, and the shipped helpers reach for names declared right here
+   (`stats`, and the globals published below). Evaluating inside the lib would move
+   that scope and change what the suite actually runs. */
+const extractFunction = name => eval(`(${extractFunctionText(name)})`)
 
 // Extract functions & CSS
-function extractConst(name) {
-  const marker = `const ${name} = `
-  const startIdx = pluginCode.indexOf(marker)
-  if (startIdx === -1) throw new Error(`Could not find const ${name}`)
-  const afterMarker = startIdx + marker.length
-  const quoteChar = pluginCode[afterMarker]
-  if (quoteChar === '`') {
-    const endIdx = pluginCode.indexOf('`', afterMarker + 1)
-    if (endIdx === -1) throw new Error(`Could not find closing \` for ${name}`)
-    return pluginCode.slice(afterMarker + 1, endIdx)
-  }
-  const endIdx = pluginCode.indexOf('\n', afterMarker)
-  return eval(pluginCode.slice(afterMarker, endIdx).trim().replace(/;$/, ''))
-}
-
 const PLUGIN_CSS = extractConst('PLUGIN_CSS')
 const BUILD_ID = extractConst('BUILD_ID')
 
 // Extract Session & History module functions
-function extractFunction(name) {
-  const startIdx = pluginCode.indexOf(`function ${name}(`)
-  if (startIdx === -1) throw new Error(`Could not find function ${name}`)
-  let braceCount = 0
-  let inFunc = false
-  let endIdx = startIdx
-  for (let i = startIdx; i < pluginCode.length; i++) {
-    if (pluginCode[i] === '{') {
-      braceCount++
-      inFunc = true
-    } else if (pluginCode[i] === '}') {
-      braceCount--
-      if (inFunc && braceCount === 0) {
-        endIdx = i + 1
-        break
-      }
-    }
-  }
-  return eval(`(${pluginCode.slice(startIdx, endIdx)})`)
-}
-
-function isElement(node) {
-  return Boolean(node && node.nodeType === 1)
-}
 globalThis.isElement = isElement
 
 const stats = { sessionRefreshes: 0 }

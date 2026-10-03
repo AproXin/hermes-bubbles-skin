@@ -22,9 +22,8 @@ const assert = require('assert')
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
-const { launchChromium, loadSheets, pageHtml, pathToFileUrl } = require('../scripts/lib/sheets')
+const { REPO, launchChromium, loadSheets, pageHtml, pathToFileUrl } = require('../scripts/lib/sheets')
 
-const REPO = path.join(__dirname, '..')
 const SRC = path.join(REPO, 'src', 'plugin.js')
 
 const skip = reason => {

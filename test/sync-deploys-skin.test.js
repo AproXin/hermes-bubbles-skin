@@ -21,7 +21,7 @@ const path = require('path')
 const crypto = require('crypto')
 const { execFileSync } = require('child_process')
 
-const REPO = path.join(__dirname, '..')
+const { REPO } = require('../scripts/lib/sheets')
 const SYNC = path.join(REPO, 'scripts', 'sync.js')
 const SKIN_SOURCE = path.join(REPO, 'bubbles.yaml')
 

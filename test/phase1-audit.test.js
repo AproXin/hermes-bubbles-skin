@@ -5,94 +5,12 @@
  */
 
 const assert = require('assert')
-const fs = require('fs')
-const path = require('path')
 
 // Minimal DOM mock for Node testing
-class MockElement {
-  constructor(tagName = 'div', className = '', attributes = {}) {
-    this.tagName = tagName.toUpperCase()
-    this.nodeType = 1
-    this.className = className
-    this.attributes = { ...attributes }
-    this.children = []
-    this.parentElement = null
-    this.textContent = ''
-  }
+const { MockElement } = require('./lib/mock-dom')
+const { extractFn, isElement } = require('./lib/plugin-sandbox')
 
-  getAttribute(key) {
-    return this.attributes[key] ?? null
-  }
-
-  setAttribute(key, value) {
-    this.attributes[key] = String(value)
-  }
-
-  hasAttribute(key) {
-    return key in this.attributes
-  }
-
-  removeAttribute(key) {
-    delete this.attributes[key]
-  }
-
-  appendChild(child) {
-    child.parentElement = this
-    this.children.push(child)
-    return child
-  }
-
-  querySelector(selector) {
-    for (const child of this.children) {
-      if (child.matches(selector)) return child
-      const sub = child.querySelector(selector)
-      if (sub) return sub
-    }
-    return null
-  }
-
-  querySelectorAll(selector) {
-    const results = []
-    for (const child of this.children) {
-      if (child.matches(selector)) results.push(child)
-      results.push(...child.querySelectorAll(selector))
-    }
-    return results
-  }
-
-  closest(selector) {
-    if (this.matches(selector)) return this
-    return this.parentElement ? this.parentElement.closest(selector) : null
-  }
-
-  matches(selector) {
-    const parts = selector.split(',').map(s => s.trim())
-    for (const part of parts) {
-      if (part.startsWith('.') && this.className.includes(part.slice(1))) return true
-      if (part.startsWith('[') && part.endsWith(']')) {
-        const inner = part.slice(1, -1)
-        if (inner.includes('=')) {
-          const [k, v] = inner.split('=').map(s => s.replace(/['"]/g, ''))
-          if (this.attributes[k] === v) return true
-        } else if (this.hasAttribute(inner)) {
-          return true
-        }
-      }
-      if (this.tagName.toLowerCase() === part.toLowerCase()) return true
-    }
-    return false
-  }
-}
-
-// Read and extract detectTaskState from src/plugin.js
-const srcCode = fs.readFileSync(path.join(__dirname, '..', 'src', 'plugin.js'), 'utf8')
-const detectFnMatch = srcCode.match(/function detectTaskState\(row\) \{([\s\S]*?)\n\}/)
-if (!detectFnMatch) {
-  throw new Error('detectTaskState function could not be parsed from src/plugin.js')
-}
-
-const detectTaskState = new Function('row', 'isElement', `${detectFnMatch[1]}`)
-function isElement(node) { return Boolean(node && node.nodeType === 1) }
+const detectTaskState = new Function('row', 'isElement', extractFn('detectTaskState'))
 
 console.log('--- Phase 1.1 Stability Tests ---')
 

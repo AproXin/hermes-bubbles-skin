@@ -1,7 +1,7 @@
 /**
  * DO NOT EDIT DIRECTLY.
  * Generated from src/plugin.js via `node scripts/sync.js`.
- * Build 19e45288e6
+ * Build 5b3c1d2603
  */
 
 /**
@@ -68,6 +68,7 @@ let pluginStorage = null
 // Zero-overhead debugging metrics accessible via `window.__hermesBubblesSkinStats`
 const stats = {
   observerCallbacks: 0,
+  sidebarClassCallbacks: 0,
   enhancedMessages: 0,
   taskRefreshes: 0,
   toolRefreshes: 0,
@@ -1601,8 +1602,19 @@ html[data-bubbles-skin='true'] [data-bubbles-session-divider='true'] {
   padding-bottom: 4px !important;
 }
 
-html[data-bubbles-skin='true'] .group\\/workspace span.text-\\[0\\.64rem\\],
-html[data-bubbles-skin='true'] [data-bubbles-session-divider='true'] span:first-child {
+/* The divider's own caption, by the class the host puts on it
+   (chrome.tsx:134 'shrink-0 text-[0.64rem] font-semibold uppercase …').
+   There used to be a second selector here —
+   '[data-bubbles-session-divider='true'] span:first-child' — and it was wrong: the
+   plugin stamps every '.group/workspace', which is also the project header
+   (workspace-header.tsx:263) and the row cluster (chrome.tsx:294), and a descendant
+   combinator reaches a 'span:first-child' at ANY depth. LaneLabel
+   (workspace-header.tsx:35-38) splits the project name into a truncating head and a
+   pinned tail so the tail survives narrow widths — for "projects" that is "proj" +
+   "ects" — so the head alone got recoloured, upper-cased and letter-spaced while its
+   own tail stayed grey. Measured in the live app: head rgb(147,197,253)/uppercase/1.26px
+   vs tail rgba(240,246,255,.54)/none/normal, inside one word. */
+html[data-bubbles-skin='true'] .group\\/workspace span.text-\\[0\\.64rem\\] {
   color: #93c5fd !important;
   font-size: 10.5px !important;
   font-weight: 600 !important;
@@ -2230,9 +2242,13 @@ function setupLongMessageCollapse(userRoot) {
 
   const inner = clamp.firstElementChild
   const measuredHeight = Number.parseFloat(clamp.style.getPropertyValue('--human-msg-full'))
+  const batched = clampHeightBatch && clampHeightBatch.has(userRoot)
+    ? clampHeightBatch.get(userRoot)
+    : null
   const fullHeight = Number.isFinite(measuredHeight) && measuredHeight > 0
     ? measuredHeight
-    : inner?.scrollHeight || clamp.scrollHeight || 0
+    : (Number.isFinite(batched) && batched > 0 ? batched
+      : inner?.scrollHeight || clamp.scrollHeight || 0)
 
   // Check if content exceeds threshold (~4-5 lines)
   if (fullHeight <= CLAMP_LINE_THRESHOLD_PX) {
@@ -3527,6 +3543,12 @@ function cleanupSessionPreview() {
 // ============================================================================
 
 let observerInstance = null
+let sidebarClassObserver = null
+let sidebarClassEl = null
+/* Clamp heights read ahead of the stamps for the current pass (see the messages stage
+   of processDOM). Null whenever no batch is in force, so a call from anywhere else
+   measures live exactly as before. */
+let clampHeightBatch = null
 let animationFrameId = null
 let isScheduled = false
 
@@ -3550,11 +3572,34 @@ function processDOM() {
 
   // 1. Process Conversation Messages
   runStage('messages', () => {
-    for (const msg of document.querySelectorAll('[data-slot="aui_user-message-root"], [data-slot="aui_edit-composer-root"]')) {
-      enhanceUserMessage(msg)
+    const roots = [...document.querySelectorAll('[data-slot="aui_user-message-root"], [data-slot="aui_edit-composer-root"]')]
+    /* Measure every clamp height before stamping any of them. The stamps change
+       computed style — the collapsed max-height is a CSS rule keyed on
+       [data-bubbles-long-user] — so a height read that follows a stamp makes the engine
+       lay the page out again. Measured in test/layout-read-batching.test.js: read and
+       stamp per message interleaved cost one forced reflow per message (39 of them for
+       40 messages in one pass). */
+    const heights = new Map()
+    for (const root of roots) {
+      const clamp = root.querySelector?.('.sticky-human-clamp')
+      if (!clamp) continue
+      const cached = Number.parseFloat(clamp.style.getPropertyValue('--human-msg-full'))
+      if (Number.isFinite(cached) && cached > 0) continue
+      const inner = clamp.firstElementChild
+      heights.set(root, inner?.scrollHeight || clamp.scrollHeight || 0)
     }
-    for (const msg of document.querySelectorAll('[data-slot="aui_assistant-message-root"]')) {
-      enhanceAssistantMessage(msg)
+    clampHeightBatch = heights
+    try {
+      for (const msg of roots) {
+        enhanceUserMessage(msg)
+      }
+      for (const msg of document.querySelectorAll('[data-slot="aui_assistant-message-root"]')) {
+        enhanceAssistantMessage(msg)
+      }
+    } finally {
+      // A throw inside a stage is caught by runStage outside; the batch must not
+      // outlive the pass, or the next pass would clamp on stale heights.
+      clampHeightBatch = null
     }
   })
 
@@ -3589,6 +3634,9 @@ function processDOM() {
 
   // 5. Process Sidebar Sessions & Date Dividers (Phase 5A)
   runStage('sidebar', () => {
+    // The sidebar may mount after setupObserver ran, or be replaced; this pass is the
+    // first thing its mount triggers, so the scoped `class` watcher follows it here.
+    attachSidebarClassWatch()
     for (const r of document.querySelectorAll(SESSION_ROW_PROBE)) {
       // A row shell is a .row-hover element inside the sidebar, and nothing else.
       // The old fallback to r itself stamped the section-collapse caret button (91x20,
@@ -3611,80 +3659,107 @@ function scheduleProcess() {
   animationFrameId = requestAnimationFrame(processDOM)
 }
 
+/* The trigger list, hoisted out of setupObserver so both observers answer to one copy
+   of the rules and processDOM can re-attach the scoped watcher without duplicating them. */
+const RELEVANT_SELECTORS = [
+  '[data-slot="aui_user-message-root"]',
+  '[data-slot="aui_edit-composer-root"]',
+  '[data-slot="aui_assistant-message-root"]',
+  '[data-slot="aui_thinking-disclosure"]',
+  '[data-slot="tool-block"]',
+  '[data-slot="composer-status-stack"]',
+  '[data-slot="status-section"]',
+  '[data-slot="status-row"]',
+  '[data-slot="tool-approval-stack"]',
+  '[data-slot="tool-approval-card"]',
+  '[data-slot="clarify-inline"]',
+  // Trigger list only — the sidebar gate lives in sessionRowShell, which the
+  // picker applies. A stray .row-hover elsewhere costs one rAF, not a mis-stamp.
+  SESSION_ROW_PROBE,
+  '.group\\/workspace'
+].join(', ')
+
+/**
+ * One record in, one answer out. Shared by the body-wide observer and the sidebar
+ * `class` watcher, so narrowing the reach cannot quietly change the criteria: the two
+ * ignore walks run in the same order, and the session-row test is the same test.
+ */
+function mutationIsRelevant(mutation) {
+  const target = mutation.target
+  if (!isElement(target)) return false
+
+  // Ignore typing and input interactions
+  if (target.closest('[data-slot="composer-rich-input"], textarea, input')) return false
+
+  // Ignore our own expand button triggers, counter, and tool groups
+  if (target.closest('.bubbles-user-expand-btn, .bubbles-tool-group, .bubbles-tool-group-toggle')) return false
+
+  if (mutation.type === 'childList') {
+    const allNodes = [...mutation.addedNodes, ...mutation.removedNodes].filter(isElement)
+    return allNodes.some(node => {
+      if (node.classList?.contains('bubbles-tool-group') || node.hasAttribute?.('data-bubbles-tool-group')) return false
+      return Boolean(node.matches?.(RELEVANT_SELECTORS) || node.querySelector?.(RELEVANT_SELECTORS))
+    })
+  }
+
+  if (mutation.type === 'attributes') {
+    const attr = mutation.attributeName
+    if (attr === 'data-clamped' || attr === 'data-streaming' || attr === 'role' || attr === 'data-selected' || attr === 'aria-selected') return true
+    return attr === 'class' && Boolean(closestSessionRow(target))
+  }
+
+  return false
+}
+
+/**
+ * `class` stays watched, but where it carries state instead of everywhere.
+ *
+ * It was in the body-wide attributeFilter for exactly one reason: isRowActive() reads
+ * the active-row class (`bg-(--ui-row-active-background)`), and the host signals
+ * selection that way as often as through aria-selected. Everywhere else a class change
+ * is hover chrome. Measured in test/observer-trigger-scope.test.js against the previous
+ * shape: 200 unrelated class changes arrived as 1 callback costing 800 `closest()`
+ * walks (4 per record) and bought nothing — no re-pass, no stamp.
+ *
+ * Mounting or re-mounting the sidebar is itself a childList mutation the trigger list
+ * admits, so the (re)attach rides the pass the mount already causes; the identity check
+ * keeps it free on every other pass.
+ */
+function attachSidebarClassWatch() {
+  const el = document.querySelector(SIDEBAR_SELECTOR)
+  if (el === sidebarClassEl) return
+  if (sidebarClassObserver) {
+    sidebarClassObserver.disconnect()
+    sidebarClassObserver = null
+  }
+  sidebarClassEl = el
+  if (!el) return
+  sidebarClassObserver = new MutationObserver(records => {
+    stats.sidebarClassCallbacks += 1
+    if (records.some(mutationIsRelevant)) scheduleProcess()
+  })
+  sidebarClassObserver.observe(el, {
+    attributes: true,
+    subtree: true,
+    attributeFilter: ['class'],
+  })
+}
+
 function setupObserver(ctx) {
-  const relevantSelectors = [
-    '[data-slot="aui_user-message-root"]',
-    '[data-slot="aui_edit-composer-root"]',
-    '[data-slot="aui_assistant-message-root"]',
-    '[data-slot="aui_thinking-disclosure"]',
-    '[data-slot="tool-block"]',
-    '[data-slot="composer-status-stack"]',
-    '[data-slot="status-section"]',
-    '[data-slot="status-row"]',
-    '[data-slot="tool-approval-stack"]',
-    '[data-slot="tool-approval-card"]',
-    '[data-slot="clarify-inline"]',
-    // Trigger list only — the sidebar gate lives in sessionRowShell, which the
-    // picker applies. A stray .row-hover elsewhere costs one rAF, not a mis-stamp.
-    SESSION_ROW_PROBE,
-    '.group\\/workspace'
-  ].join(', ')
-
-  observerInstance = new MutationObserver((mutations) => {
+  observerInstance = new MutationObserver(mutations => {
     stats.observerCallbacks += 1
-    let shouldUpdate = false
-
-    for (const mutation of mutations) {
-      const target = mutation.target
-      if (!isElement(target)) continue
-
-      // Ignore typing and input interactions
-      if (target.closest('[data-slot="composer-rich-input"], textarea, input')) {
-        continue
-      }
-
-      // Ignore our own expand button triggers, counter, and tool groups
-      if (target.closest('.bubbles-user-expand-btn, .bubbles-tool-group, .bubbles-tool-group-toggle')) {
-        continue
-      }
-
-      if (mutation.type === 'childList') {
-        const addedNodes = [...mutation.addedNodes].filter(isElement)
-        const removedNodes = [...mutation.removedNodes].filter(isElement)
-        const allNodes = [...addedNodes, ...removedNodes]
-
-        for (const node of allNodes) {
-          if (node.classList?.contains('bubbles-tool-group') || node.hasAttribute?.('data-bubbles-tool-group')) {
-            continue
-          }
-          if (node.matches?.(relevantSelectors) || node.querySelector?.(relevantSelectors)) {
-            shouldUpdate = true
-            break
-          }
-        }
-      } else if (mutation.type === 'attributes') {
-        const attr = mutation.attributeName
-        if (attr === 'data-clamped' || attr === 'data-streaming' || attr === 'role' || attr === 'data-selected' || attr === 'aria-selected') {
-          shouldUpdate = true
-        } else if (attr === 'class' && closestSessionRow(target)) {
-          shouldUpdate = true
-        }
-      }
-
-      if (shouldUpdate) break
-    }
-
-    if (shouldUpdate) {
-      scheduleProcess()
-    }
+    if (mutations.some(mutationIsRelevant)) scheduleProcess()
   })
 
   observerInstance.observe(document.body, {
     childList: true,
     subtree: true,
     attributes: true,
-    attributeFilter: ['data-clamped', 'data-streaming', 'role', 'data-selected', 'aria-selected', 'class']
+    // `class` moved to attachSidebarClassWatch(); see the note there for why.
+    attributeFilter: ['data-clamped', 'data-streaming', 'role', 'data-selected', 'aria-selected']
   })
+
+  attachSidebarClassWatch()
 
   // Initial immediate pass
   scheduleProcess()
@@ -3731,6 +3806,13 @@ function cleanupAll() {
     observerInstance.disconnect()
     observerInstance = null
   }
+  if (sidebarClassObserver) {
+    sidebarClassObserver.disconnect()
+    sidebarClassObserver = null
+  }
+  // Cleared with the observer it names, or a re-register would skip attaching because
+  // it still believes the sidebar it saw last time is on watch.
+  sidebarClassEl = null
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId)
     animationFrameId = null
@@ -3860,4 +3942,4 @@ export default {
   }
 }
 
-globalThis.__bubblesBuild = "19e45288e6"
+globalThis.__bubblesBuild = "5b3c1d2603"

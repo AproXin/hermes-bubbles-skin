@@ -19,7 +19,16 @@
 
 const assert = require('assert')
 const fs = require('fs')
-const { builtCssPath, launchChromium, pluginCss, pluginCssSource, resolveJsEscapes } = require('../scripts/lib/sheets')
+const { DESKTOP, builtCssPath, launchChromium, pluginCss, pluginCssSource, resolveJsEscapes } = require('../scripts/lib/sheets')
+
+/* The last section asks the built sheet whether Tailwind really emits each escaped
+   class, so without that artefact the honest report is SKIPPED — reading a null path
+   crashed this suite into FAIL while the other browser suites stood aside. */
+const builtCss = builtCssPath()
+if (!builtCss) {
+  console.log(`\n=== CSS Escapes Survive Suite: SKIPPED — no built renderer CSS under ${DESKTOP}/dist ===\n`)
+  process.exit(0)
+}
 
 /* Top-level blocks only: a depth walk, so @keyframes frames and @media contents are
    not mistaken for selectors (a naive `[^{}]*{` scan counted 202 "blocks" and blamed
@@ -106,7 +115,7 @@ const declaredSelectors = blocks.filter(b => !b.isAtRule).map(b => b.sel)
     (serialised.match(/\.[A-Za-z0-9_-]*\/[A-Za-z0-9_-]*/g) || []).slice(0, 4).join(' '))
 
   console.log('\n[the classes we escape are ones the app actually emits]')
-  const built = fs.readFileSync(builtCssPath(), 'utf8')
+  const built = fs.readFileSync(builtCss, 'utf8')
   /* Scan the SOURCE, not the runtime text: an erased escape leaves no backslash to
      find, which is the whole problem. Every `.name\/sub` in the file is the skin
      reaching for a Tailwind class; two backslashes is the only form that survives the

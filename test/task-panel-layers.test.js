@@ -29,9 +29,6 @@ const path = require('path')
 const { pathToFileURL } = require('url')
 const { loadSheets, launchChromium } = require('../scripts/lib/sheets')
 
-const HOME = os.homedir()
-const HERMES_HOME = process.env.HERMES_HOME || path.join(HOME, '.hermes')
-
 const skip = reason => {
   console.log(`\n=== Task Panel Layers Suite: SKIPPED — ${reason} ===\n`)
   process.exit(0)

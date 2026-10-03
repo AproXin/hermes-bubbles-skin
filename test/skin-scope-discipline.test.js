@@ -123,6 +123,26 @@ const ambientPaintsTerminal = [...customCss.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
 check('no ambient (viewport-fixed) backdrop paints a terminal layer',
   ambientPaintsTerminal.length === 0, ambientPaintsTerminal.join(' | '))
 
+/* 6. A plugin stamp may not reach INTO a component by descendant + bare tag.
+      `[data-bubbles-session-divider='true'] span:first-child` did exactly that: the
+      plugin stamps every `.group/workspace`, which includes the project header, and
+      LaneLabel (workspace-header.tsx:35-38) renders the project name as two spans (a
+      truncating head + a pinned tail), so `span:first-child` matched the head at depth 2
+      and painted half a word blue/upper-cased. The stamp is the skin's own hook, so the
+      only safe reach is a child combinator or a qualified target (class/attribute).
+      data-bubbles-skin is excluded: it is the root stamp, and everything under it is
+      reached by design. */
+const descendantReaches = []
+for (const [name, raw] of SHEETS) {
+  for (const m of stripComments(raw).matchAll(/([^{}]+)\{/g)) {
+    const sel = m[1].trim().replace(/\s+/g, ' ')
+    const hits = sel.match(/\[data-bubbles-(?!skin\b)[a-z-]+=['"]?[a-z]+['"]?\]\s+(span|div|p|li|button|i)\b(?![.#\w[])/g)
+    if (hits) descendantReaches.push(`${name}: ${hits.join(', ')}  ← ${sel.slice(0, 74)}`)
+  }
+}
+check('no plugin-stamped rule reaches a bare descendant tag',
+  descendantReaches.length === 0, descendantReaches.join(' | '))
+
 const failed = results.filter(r => !r.ok)
 console.log(`\n${failed.length ? 'FAIL' : 'OK'} — ${results.length - failed.length}/${results.length} assertions`)
 process.exit(failed.length ? 1 : 0)

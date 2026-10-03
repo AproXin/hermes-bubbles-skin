@@ -11,268 +11,15 @@
  */
 
 const assert = require('assert')
-const fs = require('fs')
-const path = require('path')
 
-class MockClassList {
-  constructor(el) {
-    this.el = el
-  }
-  contains(cls) {
-    return this.el.className.split(/\s+/).includes(cls)
-  }
-  add(cls) {
-    const classes = new Set(this.el.className.split(/\s+/).filter(Boolean))
-    classes.add(cls)
-    this.el.className = [...classes].join(' ')
-  }
-  remove(cls) {
-    const classes = this.el.className.split(/\s+/).filter(c => c && c !== cls)
-    this.el.className = classes.join(' ')
-  }
-}
+const { MockElement } = require('./lib/mock-dom')
+const { extractFn, isElement, safeGetStorage, safeSetStorage, safeRemoveStorage, resetStore } = require('./lib/plugin-sandbox')
 
-class MockElement {
-  constructor(tagName = 'div', className = '', attributes = {}) {
-    this.tagName = tagName.toUpperCase()
-    this.nodeType = 1
-    this.className = className
-    this.classList = new MockClassList(this)
-    this.attributes = { ...attributes }
-    this.children = []
-    this.parentElement = null
-    this._textContent = ''
-    this.eventListeners = {}
-    this.isFocused = false
-    // A real tool row owns a disclosure button (with aria-expanded) whenever it
-    // has expandable content. Add it automatically so the skin's isExpandable
-    // check sees these mock tool rows as groupable (a summary-only row has none).
-    if (attributes['data-slot'] === 'tool-block') {
-      this._addDisclosureButton()
-    }
-  }
-
-  _addDisclosureButton() {
-    if (this._disclosureAdded) return
-    this._disclosureAdded = true
-    const btn = new MockElement('button')
-    btn.setAttribute('aria-expanded', 'false')
-    this.appendChild(btn)
-  }
-
-  get previousElementSibling() {
-    if (!this.parentElement) return null
-    const siblings = this.parentElement.children
-    const idx = siblings.indexOf(this)
-    return idx > 0 ? siblings[idx - 1] : null
-  }
-
-  get nextElementSibling() {
-    if (!this.parentElement) return null
-    const siblings = this.parentElement.children
-    const idx = siblings.indexOf(this)
-    return idx >= 0 && idx < siblings.length - 1 ? siblings[idx + 1] : null
-  }
-
-  getAttribute(key) {
-    return this.attributes[key] ?? null
-  }
-
-  setAttribute(key, value) {
-    this.attributes[key] = String(value)
-    if (key === 'data-slot' && value === 'tool-block') {
-      this._addDisclosureButton()
-    }
-  }
-
-  hasAttribute(key) {
-    return key in this.attributes
-  }
-
-  removeAttribute(key) {
-    delete this.attributes[key]
-  }
-
-  appendChild(child) {
-    if (child.parentElement) {
-      child.remove()
-    }
-    child.parentElement = this
-    this.children.push(child)
-    return child
-  }
-
-  append(...nodes) {
-    for (const node of nodes) {
-      this.appendChild(node)
-    }
-  }
-
-  insertBefore(newNode, refNode) {
-    if (newNode.parentElement) {
-      newNode.remove()
-    }
-    newNode.parentElement = this
-    const idx = this.children.indexOf(refNode)
-    if (idx === -1) {
-      this.children.push(newNode)
-    } else {
-      this.children.splice(idx, 0, newNode)
-    }
-    return newNode
-  }
-
-  remove() {
-    if (this.parentElement) {
-      const idx = this.parentElement.children.indexOf(this)
-      if (idx !== -1) this.parentElement.children.splice(idx, 1)
-      this.parentElement = null
-    }
-  }
-
-  addEventListener(event, handler) {
-    if (!this.eventListeners[event]) {
-      this.eventListeners[event] = []
-    }
-    this.eventListeners[event].push(handler)
-  }
-
-  dispatchEvent(evt) {
-    const handlers = this.eventListeners[evt.type] || []
-    for (const h of handlers) {
-      h.call(this, evt)
-    }
-  }
-
-  click() {
-    const evt = {
-      type: 'click',
-      preventDefault: () => {},
-      stopPropagation: () => {},
-      target: this
-    }
-    this.dispatchEvent(evt)
-  }
-
-  focus() {
-    if (global.mockActiveDocument) {
-      if (global.mockActiveDocument.activeElement) {
-        global.mockActiveDocument.activeElement.isFocused = false
-      }
-      global.mockActiveDocument.activeElement = this
-    }
-    this.isFocused = true
-  }
-
-  contains(node) {
-    if (node === this) return true
-    for (const child of this.children) {
-      if (child.contains(node)) return true
-    }
-    return false
-  }
-
-  get textContent() {
-    if (this._textContent !== undefined && this._textContent !== '') return this._textContent
-    if (this.children.length > 0) return this.children.map(c => c.textContent).join(' ')
-    return this._textContent || ''
-  }
-
-  set textContent(val) {
-    this._textContent = val
-  }
-
-  querySelector(selector) {
-    for (const child of this.children) {
-      if (child.matches(selector)) return child
-      const sub = child.querySelector(selector)
-      if (sub) return sub
-    }
-    return null
-  }
-
-  querySelectorAll(selector) {
-    const results = []
-    for (const child of this.children) {
-      if (child.matches(selector)) results.push(child)
-      results.push(...child.querySelectorAll(selector))
-    }
-    return results
-  }
-
-  closest(selector) {
-    if (this.matches(selector)) return this
-    return this.parentElement ? this.parentElement.closest(selector) : null
-  }
-
-  matches(selector) {
-    const parts = selector.split(',').map(s => s.trim())
-    for (const part of parts) {
-      if (part.startsWith(':scope > ')) {
-        const sub = part.slice(9).trim()
-        if (this.matches(sub)) return true
-        continue
-      }
-      if (part.startsWith('[') && part.endsWith(']')) {
-        const inner = part.slice(1, -1)
-        if (inner.includes('=')) {
-          const [k, v] = inner.split('=').map(s => s.replace(/['"]/g, ''))
-          if (this.attributes[k] === v) return true
-        } else if (this.hasAttribute(inner)) {
-          return true
-        }
-        continue
-      }
-      const tagNameMatch = part.match(/^[a-zA-Z][\w-]*/)
-      let tagMatch = true
-      let attrMatch = true
-      let classMatch = true
-      if (tagNameMatch) {
-        tagMatch = this.tagName.toLowerCase() === tagNameMatch[0].toLowerCase()
-      }
-      for (const m of part.matchAll(/\[([^\]]+)\]/g)) {
-        const inner = m[1]
-        if (inner.includes('=')) {
-          const [k, v] = inner.split('=').map(s => s.replace(/['"]/g, ''))
-          if (this.attributes[k] !== v) attrMatch = false
-        } else if (!this.hasAttribute(inner)) {
-          attrMatch = false
-        }
-      }
-      const classes = part.match(/\.(?!\s)([\w-]+)/g)?.map(c => c.slice(1)) || []
-      if (classes.length > 0) {
-        const elClasses = this.className.split(/\s+/)
-        classMatch = classes.every(c => elClasses.includes(c))
-      }
-      if (tagMatch && attrMatch && classMatch) return true
-    }
-    return false
-  }
-}
-
-// Read functions and CSS from src/plugin.js
-const srcCode = fs.readFileSync(path.join(__dirname, '..', 'src', 'plugin.js'), 'utf8')
-
-function extractFn(name) {
-  const match = srcCode.match(new RegExp(`function ${name}\\([^)]*\\) \\{([\\s\\S]*?)\\n\\}`))
-  if (!match) throw new Error(`Function ${name} could not be extracted`)
-  return match[1]
-}
-
-function isElement(node) { return Boolean(node && node.nodeType === 1) }
+/* A `new Function` body resolves free names on the global object, so a shipped helper
+   that calls isElement() without receiving it needs it published here. */
 global.isElement = isElement
 
 const ID = 'hermes-bubbles-skin'
-let storageMock = {}
-function safeGetStorage(key, fallback) {
-  return key in storageMock ? storageMock[key] : fallback
-}
-function safeSetStorage(key, val) {
-  storageMock[key] = val
-}
-function safeRemoveStorage(key) {
-  delete storageMock[key]
-}
 
 const detectToolState = new Function('toolBlock', extractFn('detectToolState'))
 const getToolTitle = new Function('toolBlock', extractFn('getToolTitle'))
@@ -293,11 +40,17 @@ const processParentTools = new Function(
   extractFn('processParentTools')
 )
 
+/* Elements made through createElement carry their document, which is how a mock
+   `focus()` reaches `document.activeElement` — the focus-transfer path in
+   processParentTools reads exactly that. */
 const mockDocument = {
-  createElement: (tag) => new MockElement(tag),
-  activeElement: null
+  activeElement: null,
+  createElement: (tag, className = '', attributes = {}) => {
+    const el = new MockElement(tag, className, attributes)
+    el.ownerDocument = mockDocument
+    return el
+  },
 }
-global.mockActiveDocument = mockDocument
 
 console.log('=== Phase 4.1 Tool Collapse Integration Audit Suite ===')
 
@@ -431,7 +184,7 @@ console.log('=== Phase 4.1 Tool Collapse Integration Audit Suite ===')
 // Test 4: Focus Safety
 {
   console.log('[Test 4] Focus Safety: Focus inside collapsing tool is safely transferred to summary toggle button')
-  const parent = new MockElement('div', 'asst-content')
+  const parent = mockDocument.createElement('div', 'asst-content')
   const tool = new MockElement('div', 'tool-block', { 'data-slot': 'tool-block' })
   const innerButton = new MockElement('button', 'copy-btn')
   innerButton.textContent = 'Copy log'
@@ -465,7 +218,7 @@ console.log('=== Phase 4.1 Tool Collapse Integration Audit Suite ===')
 // Test 5: Persistence Across Rerenders
 {
   console.log('[Test 5] Persistence: Expand state survives multiple DOM passes and storage errors')
-  storageMock = {}
+  resetStore()
   const parent = new MockElement('div', 'asst-content')
   const tool1 = new MockElement('div', 'tool', { 'data-slot': 'tool-block', 'data-tool-call-id': 'call_p1' })
   tool1.textContent = 'Tool 1'

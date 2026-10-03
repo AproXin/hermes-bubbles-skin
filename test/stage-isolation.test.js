@@ -64,14 +64,19 @@ function harness({ poison = null } = {}) {
     'document', 'runStage', 'stats', 'performance', 'isScheduled', 'SESSION_ROW_PROBE',
     'enhanceUserMessage', 'enhanceAssistantMessage', 'enhanceThinkingBlock', 'enhanceToolBlock',
     'groupCompletedTools', 'enhanceTaskSection', 'enhanceApproval', 'enhanceClarify',
-    'sessionRowShell', 'enhanceSidebarSessionRow', 'enhanceSidebarDivider',
+    'sessionRowShell', 'enhanceSidebarSessionRow', 'enhanceSidebarDivider', 'attachSidebarClassWatch',
     `return function processDOM() {${processDOMBody}}`,
   )
 
+  /* The sidebar pass also re-attaches the scoped `class` watcher. Left a no-op rather
+     than a recorder: the recorder list is what these assertions count, and the watcher's
+     real behaviour (which records reach it, surviving a sidebar remount) is measured with
+     a live MutationObserver in test/observer-trigger-scope.test.js. What this suite owes
+     is only the declaration — a free name processDOM uses and this list omits throws. */
   const processDOM = buildProcessDOM(
     document, buildRunStage(stats), stats, { now: () => 0 }, true, SESSION_ROW_PROBE,
     rec('user'), rec('assistant'), rec('thinking'), rec('tool'), rec('group'), rec('task'),
-    rec('approval'), rec('clarify'), row => row, rec('sessionRow'), rec('divider'),
+    rec('approval'), rec('clarify'), row => row, rec('sessionRow'), rec('divider'), () => {},
   )
 
   return { ran, stats, processDOM }

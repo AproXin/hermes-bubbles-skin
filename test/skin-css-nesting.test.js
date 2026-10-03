@@ -19,8 +19,6 @@ const fs = require('fs')
 const path = require('path')
 const { skinSourcePath } = require('./skin-source')
 
-const HERMES_HOME = process.env.HERMES_HOME || path.join(require('os').homedir(), '.hermes')
-
 const skip = reason => {
   console.log(`\n=== Skin CSS Nesting Suite: SKIPPED — ${reason} ===\n`)
   process.exit(0)

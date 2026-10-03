@@ -3,10 +3,10 @@
  *
  * Native CodeCard CASCADE verification (headless browser)
  *
- * Why this exists next to code-card-flatten.test.js: that suite proves the CSS
- * text is present, but the code-card bug class is specifically "the rule is in
- * the file and the pixels never change". Three separate cascade mechanisms were
- * involved, and none of them can be checked by reading the source:
+ * This suite absorbed code-card-flatten.test.js. That one proved the CSS *text*
+ * was present, but the code-card bug class is specifically "the rule is in the
+ * file and the pixels never change", and three separate cascade mechanisms were
+ * involved, none of them checkable by reading the source:
  *
  *   1. CodeCardBody ships [&_pre]:bg-transparent!. Tailwind puts utilities in
  *      @layer utilities, and for !important declarations a layered rule beats an
@@ -36,11 +36,6 @@ const os = require('os')
 const path = require('path')
 const { pathToFileURL } = require('url')
 
-const HOME = os.homedir()
-const HERMES_HOME = process.env.HERMES_HOME || path.join(HOME, '.hermes')
-const DESKTOP = path.join(HERMES_HOME, 'hermes-agent', 'apps', 'desktop')
-const REPO = path.join(__dirname, '..')
-
 const skip = reason => {
   console.log(`\n=== CodeCard Cascade Suite: SKIPPED — ${reason} ===\n`)
   process.exit(0)
@@ -50,10 +45,98 @@ const skip = reason => {
 // Resolve the three stylesheets
 // ---------------------------------------------------------------------------
 
-/** Newest built stylesheet: dist/ first, then the packaged app copy. */
 /* Sheet resolution lives in scripts/lib/sheets.js — one copy of these paths, so a
    test cannot drift from what the renderer actually loads. */
-const { builtCssPath: findBuiltCss, blockScalar, pluginCss: pluginCssFrom, launchChromium, skinYamlPath } = require('../scripts/lib/sheets')
+const { REPO, HOME, DESKTOP, builtCssPath: findBuiltCss, blockScalar, pluginCss: pluginCssFrom, launchChromium, skinYamlPath } = require('../scripts/lib/sheets')
+
+// ---------------------------------------------------------------------------
+// The six guarantees that a computed style cannot express
+// ---------------------------------------------------------------------------
+
+/* These run BEFORE the browser is even resolved, so they are checked on every run,
+   including a machine where this suite skips for want of a browser.
+
+   Everything else code-card-flatten.test.js asserted was about paint, and each one
+   now has a measured twin further down — which is where it belongs, because the
+   file merely containing the words was the exact thing that hid this bug:
+     frame sits on the card / card border 1px / card box-shadow none
+       → §1 (framesInsideCard, card.bg, card.border, card.shadow)
+     every nested code wrapper stays transparent and unbordered
+       → §3 (outer .aui-shiki and inner pre.shiki, both measured)
+     the fade band paints no gradient / the glow is silenced while the keyframes run
+       → §4 and §5
+     the bubble keeps its own glass / a bare pre outside the card keeps its slab
+       → §6 and §7
+   What measurement cannot see is scope and order, so that is what is kept here. */
+
+const pluginSource = fs.readFileSync(path.join(REPO, 'src', 'plugin.js'), 'utf8')
+
+const BUBBLE = "[data-slot='aui_assistant-message-content']"
+
+/** Body of the first rule whose selector text contains `needle`. */
+function ruleBody(needle) {
+  const idx = pluginSource.indexOf(needle)
+  if (idx === -1) return null
+  const open = pluginSource.indexOf('{', idx)
+  const close = pluginSource.indexOf('}', open)
+  if (open === -1 || close === -1) return null
+  return pluginSource.slice(open + 1, close)
+}
+
+// 1. Rounding a nested wrapper is invisible to `frame()`: a corner radius paints
+//    nothing on its own, so only the text pins that the inner boxes are square.
+const flatRule = pluginSource.match(
+  /html\[data-bubbles-skin='true'\][^\n{]*code-card[^\n{]*\.aui-shiki\s+:is\(pre, code, \.shiki\)\s*\{[^}]*\}/
+)
+assert(flatRule, 'Skin must flatten the second pre/code nested inside a native code card')
+assert(
+  /border-radius:\s*0\s*!important/.test(flatRule[0]),
+  'Inner code wrappers must declare border-radius: 0 !important'
+)
+
+// 2. Order: the blanket bubble `pre` rule is what the flattening has to come after.
+//    The index is required to exist, so this cannot pass vacuously if the blanket
+//    rule is renamed away.
+const blanketPre = pluginSource.indexOf(`${BUBBLE} pre`)
+assert(
+  blanketPre > -1 && blanketPre < pluginSource.indexOf(flatRule[0]),
+  'Flattening must be emitted after the blanket pre rule so it wins on order too'
+)
+
+// 3+4. The plugin owns the assistant bubble rule itself; §6 measures the bubble and
+//      finds the same value with and without the plugin, so a *removed* bubble rule
+//      would leave both sides equal and measure clean. Pin that the rule is there
+//      and that it still clears the bubble shadow.
+const bubbleRule = ruleBody(BUBBLE)
+assert(bubbleRule !== null, 'Assistant bubble rule must remain')
+assert(
+  /box-shadow:\s*none\s*!important/.test(bubbleRule),
+  'Assistant bubble must keep its own shadow removal'
+)
+
+// 5. The ∨ toggle being clickable is measured in §4 — and it stays clickable
+//    because the button carries `pointer-events-auto`, even if the fade band itself
+//    started swallowing the pointer. Only the text pins the band transparent, which
+//    is what keeps the bottom line of code selectable and scrollable.
+const fadeRule = pluginSource.match(
+  /html\[data-bubbles-skin='true'\][^\n{]*code-card[^\n{]*bg-linear-to-t[^\n{]*\{[^}]*\}/
+)
+assert(
+  fadeRule && /pointer-events:\s*none\s*!important/.test(fadeRule[0]),
+  'Fade band must stay pointer-transparent so the ∨ toggle and scrolling work'
+)
+
+// 6. Card rules must not reach out of the card. A widened selector would repaint
+//    the conversation bubbles, and §6 compares bubble paint before and after the
+//    plugin — a rule that changed both sheets equally would not show up.
+for (const m of pluginSource.matchAll(/html\[data-bubbles-skin='true'\]([^\n{]*)\{([^}]*)\}/g)) {
+  const [full, sel] = m
+  if (!sel.includes('code-card')) continue
+  assert(
+    !/aui_user-message-root|composer-human-message|aui_assistant-message-root/.test(full),
+    `Code card rules must stay scoped to the card, found: ${sel.trim()}`
+  )
+}
 
 const builtCssPath = findBuiltCss()
 if (!builtCssPath) skip(`no built renderer CSS under ${DESKTOP}/dist or the packaged app`)

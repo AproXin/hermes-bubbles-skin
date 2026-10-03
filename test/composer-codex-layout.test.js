@@ -32,11 +32,6 @@ const path = require('path')
 const { pathToFileURL } = require('url')
 const { skinSourcePath } = require('./skin-source')
 
-const HOME = os.homedir()
-const HERMES_HOME = process.env.HERMES_HOME || path.join(HOME, '.hermes')
-const DESKTOP = path.join(HERMES_HOME, 'hermes-agent', 'apps', 'desktop')
-const REPO = path.join(__dirname, '..')
-
 const skip = reason => {
   console.log(`\n=== Composer Codex Layout Suite: SKIPPED — ${reason} ===\n`)
   process.exit(0)
@@ -44,7 +39,7 @@ const skip = reason => {
 
 /* Sheet resolution lives in scripts/lib/sheets.js — one copy of these paths, so a
    test cannot drift from what the renderer actually loads. */
-const { builtCssPath: findBuiltCss, blockScalar, pluginCss: pluginCssFrom, launchChromium } = require('../scripts/lib/sheets')
+const { REPO, HOME, DESKTOP, builtCssPath: findBuiltCss, blockScalar, pluginCss: pluginCssFrom, launchChromium } = require('../scripts/lib/sheets')
 
 const builtCssPath = findBuiltCss()
 if (!builtCssPath) skip(`no built renderer CSS under ${DESKTOP}/dist`)

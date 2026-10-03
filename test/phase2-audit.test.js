@@ -9,99 +9,9 @@
  */
 
 const assert = require('assert')
-const fs = require('fs')
-const path = require('path')
 
-class MockElement {
-  constructor(tagName = 'div', className = '', attributes = {}) {
-    this.tagName = tagName.toUpperCase()
-    this.nodeType = 1
-    this.className = className
-    this.attributes = { ...attributes }
-    this.children = []
-    this.parentElement = null
-    this.textContent = ''
-    // updateTaskHeaderCounter publishes the completion ratio as a custom property,
-    // so every mock node needs a minimal CSSStyleDeclaration.
-    this._cssVars = {}
-    this.style = {
-      getPropertyValue: k => this._cssVars[k] ?? '',
-      setProperty: (k, v) => { this._cssVars[k] = String(v) },
-    }
-  }
-
-  getAttribute(key) {
-    return this.attributes[key] ?? null
-  }
-
-  setAttribute(key, value) {
-    this.attributes[key] = String(value)
-  }
-
-  hasAttribute(key) {
-    return key in this.attributes
-  }
-
-  removeAttribute(key) {
-    delete this.attributes[key]
-  }
-
-  appendChild(child) {
-    child.parentElement = this
-    this.children.push(child)
-    return child
-  }
-
-  querySelector(selector) {
-    for (const child of this.children) {
-      if (child.matches(selector)) return child
-      const sub = child.querySelector(selector)
-      if (sub) return sub
-    }
-    return null
-  }
-
-  querySelectorAll(selector) {
-    const results = []
-    for (const child of this.children) {
-      if (child.matches(selector)) results.push(child)
-      results.push(...child.querySelectorAll(selector))
-    }
-    return results
-  }
-
-  closest(selector) {
-    if (this.matches(selector)) return this
-    return this.parentElement ? this.parentElement.closest(selector) : null
-  }
-
-  matches(selector) {
-    const parts = selector.split(',').map(s => s.trim())
-    for (const part of parts) {
-      if (part.startsWith('.') && this.className.includes(part.slice(1))) return true
-      if (part.startsWith('[') && part.endsWith(']')) {
-        const inner = part.slice(1, -1)
-        if (inner.includes('=')) {
-          const [k, v] = inner.split('=').map(s => s.replace(/['"]/g, ''))
-          if (this.attributes[k] === v) return true
-        } else if (this.hasAttribute(inner)) {
-          return true
-        }
-      }
-      if (this.tagName.toLowerCase() === part.toLowerCase()) return true
-    }
-    return false
-  }
-}
-
-// Read functions from src/plugin.js
-const srcCode = fs.readFileSync(path.join(__dirname, '..', 'src', 'plugin.js'), 'utf8')
-
-function extractFn(name) {
-  const match = srcCode.match(new RegExp(`function ${name}\\([^)]*\\) \\{([\\s\\S]*?)\\n\\}`))
-  if (!match) throw new Error(`Function ${name} could not be extracted`)
-  return match[1]
-}
+const { MockElement } = require('./lib/mock-dom')
+const { extractFn, isElement } = require('./lib/plugin-sandbox')
 
 const detectTaskState = new Function('row', 'isElement', extractFn('detectTaskState'))
 const detectToolState = new Function('toolBlock', 'isElement', extractFn('detectToolState'))
@@ -109,8 +19,6 @@ const updateTaskHeaderCounter = new Function(
   'taskSection', 'completedCount', 'totalCount', 'document',
   extractFn('updateTaskHeaderCounter')
 )
-
-function isElement(node) { return Boolean(node && node.nodeType === 1) }
 
 console.log('=== Phase 2 Regression Tests ===')
 

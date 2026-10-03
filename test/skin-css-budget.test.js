@@ -15,22 +15,18 @@
 
 const assert = require('assert')
 const fs = require('fs')
-const os = require('os')
 const path = require('path')
 
-const HOME = os.homedir()
-const HERMES_HOME = process.env.HERMES_HOME || path.join(HOME, '.hermes')
-const REPO = path.join(__dirname, '..')
+/* The cap, the YAML reader and the home paths all live in scripts/lib/sheets.js, so
+   the deploy gate and this test cannot drift apart. */
+const { REPO, HERMES_HOME, DESKTOP, customCssCap: readCap, blockScalar, skinYamlPath } = require('../scripts/lib/sheets')
+
 const AGENT = path.join(HERMES_HOME, 'hermes-agent')
 
 const skip = reason => {
   console.log(`\n=== Skin CSS Budget Suite: SKIPPED — ${reason} ===\n`)
   process.exit(0)
 }
-
-/** The cap and the YAML reader live in scripts/lib/sheets.js, so the deploy gate
- *  and this test cannot drift apart. */
-const { customCssCap: readCap, blockScalar, skinYamlPath } = require('../scripts/lib/sheets')
 
 const cap = readCap()
 if (!cap) skip('no customCSS slice found in hermes_cli/skin_engine.py')
@@ -88,7 +84,7 @@ assert.strictEqual(
 // ever match dynamically-added nodes, so a block of them is dead weight in a
 // budgeted file. Report (not assert) so a legitimate runtime attribute does not
 // break the build.
-const assets = path.join(HERMES_HOME, 'hermes-agent', 'apps', 'desktop', 'dist', 'assets')
+const assets = path.join(DESKTOP, 'dist', 'assets')
 if (fs.existsSync(assets)) {
   const bundle = fs.readdirSync(assets)
     .filter(f => f.endsWith('.js'))

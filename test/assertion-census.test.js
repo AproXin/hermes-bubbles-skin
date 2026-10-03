@@ -35,8 +35,22 @@ const TEST_DIR = path.join(REPO, 'test')
    a surviving plugin-side twin, and the 25 browser suites measure the merged sheet.
    final-ui-polish (66) is still nearly half of what remains, then tool-flattening (24)
    and phase5b-1-audit (13). Lower this number in the same commit that converts a
-   suite — a ceiling nobody moves is just a comment. */
-const BASELINE = 144
+   suite — a ceiling nobody moves is just a comment.
+
+   2026-10-02, batch 2: code-card-flatten was merged into code-card-cascade. Its six
+   guarantees that no computed style can express (inner border-radius, rule order, the
+   bubble rule still existing, the bubble's own shadow removal, the fade band's
+   pointer-events, card-only scope) were carried over verbatim; the paint checks it also
+   made are already measured there. 144 → 143 is the one `pluginSource.includes` that
+   became a non-vacuous index check on the ordering assertion.
+
+   2026-10-03, batch 3 (C): 143 → 137. Not a conversion — the phase audits each carried their own
+   copy of `extractFn`, so six `srcCode.match` *definitions* were being counted as if they were six
+   assertions. They now share test/lib/plugin-sandbox.js and count once. The source-text ASSERTIONS
+   are untouched (per-file assert counts verified unchanged: 7/6/14/16/27/36/15/41/13/22), which is
+   why the test/lib directory is scanned too — see above — so this cannot be repeated by parking
+   matched text somewhere the census does not look. */
+const BASELINE = 137
 
 const SOURCE_TEXT = /\b(?:pluginSource|srcCode|src|yamlSource|cssText|pluginCode|code|text)\s*\.includes\s*\(/g
 const SOURCE_REGEX = /\b(?:pluginSource|srcCode|yamlSource|pluginCode|cssText)\s*\.match\s*\(|\/[^/]*\/[a-z]*\.test\s*\(\s*(?:pluginSource|srcCode|yamlSource|pluginCode)/g
@@ -47,8 +61,17 @@ function classify(text) {
   return { strings: count(SOURCE_TEXT) + count(SOURCE_REGEX), measured: count(REAL_MEASUREMENT) }
 }
 
-const files = fs.readdirSync(TEST_DIR).filter(f => f.endsWith('.test.js') && f !== 'assertion-census.test.js').sort()
-const rows = files.map(f => ({ file: f, ...classify(fs.readFileSync(path.join(TEST_DIR, f), 'utf8')) }))
+/* `test/lib/*.js` counts too. Without it, moving a `srcCode.match` out of a suite and
+   into a shared harness would read as a conversion and free up ceiling for the next
+   text assertion — the ratchet would measure where the text sits, not how much exists. */
+const LIB_DIR = path.join(TEST_DIR, 'lib')
+const entries = [
+  ...fs.readdirSync(TEST_DIR).filter(f => f.endsWith('.test.js') && f !== 'assertion-census.test.js').map(f => ({ display: f, rel: f })),
+  ...(fs.existsSync(LIB_DIR)
+    ? fs.readdirSync(LIB_DIR).filter(f => f.endsWith('.js')).map(f => ({ display: `lib/${f}`, rel: path.join('lib', f) }))
+    : []),
+].sort((a, b) => a.display.localeCompare(b.display))
+const rows = entries.map(e => ({ file: e.display, ...classify(fs.readFileSync(path.join(TEST_DIR, e.rel), 'utf8')) }))
   .filter(r => r.strings > 0)
   .sort((a, b) => b.strings - a.strings)
 
