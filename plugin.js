@@ -1,7 +1,7 @@
 /**
  * DO NOT EDIT DIRECTLY.
  * Generated from src/plugin.js via `node scripts/sync.js`.
- * Build 5b3c1d2603
+ * Build d93e7a647d
  */
 
 /**
@@ -3192,6 +3192,7 @@ function escapeHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
 
 function cleanPreviewSnippet(s, maxLen = 130) {
@@ -3942,4 +3943,4 @@ export default {
   }
 }
 
-globalThis.__bubblesBuild = "5b3c1d2603"
+globalThis.__bubblesBuild = "d93e7a647d"
