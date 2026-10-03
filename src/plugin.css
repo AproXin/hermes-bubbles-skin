@@ -4,7 +4,7 @@
    - Consecutive Completed Tool Grouping & Interactive Toggle
    - Robust Responsive Defenses: clamp(), overflow-wrap, max-width
    - Full Keyboard Focus & Reduced-Motion Accessibility
-   Scoped under html[data-bubbles-skin='true']
+   Scoped under %SKIN%
    ========================================================================== */
 
 /* The terminal's surface token, declared here as well as in the skin's customCSS —
@@ -17,15 +17,15 @@
    installed by the plugin, before the right sidebar mounts, so the token already holds
    the skin's value at the moment of the bake. test/terminal-surface.test.js pins the
    two copies to the same hex. */
-html[data-bubbles-skin='true'] {
+%SKIN% {
   --ui-terminal-surface-background: #113c6a !important;
 }
 
 /* --------------------------------------------------------------------------
    1. Conversation Spacing & Assistant Bubble Deepening
    -------------------------------------------------------------------------- */
-html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'],
-html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] {
+%SKIN% [data-slot='aui_user-message-root'],
+%SKIN% [data-slot='aui_edit-composer-root'] {
   margin-top: 6px !important;
   margin-bottom: 14px !important;
   display: flex !important;
@@ -38,12 +38,12 @@ html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] {
 }
 
 /* User Message & Edit Composer Flex Container Alignment */
-html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'] > [data-slot='aui_user-bubble-actions'],
-html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'] .human-message-with-todos-wrapper,
-html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'] .composer-human-message-container,
-html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .composer-human-message-container,
-html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .human-execution-message-top,
-html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] [data-slot='aui_user-message-root'] {
+%SKIN% [data-slot='aui_user-message-root'] > [data-slot='aui_user-bubble-actions'],
+%SKIN% [data-slot='aui_user-message-root'] .human-message-with-todos-wrapper,
+%SKIN% [data-slot='aui_user-message-root'] .composer-human-message-container,
+%SKIN% [data-slot='aui_edit-composer-root'] .composer-human-message-container,
+%SKIN% [data-slot='aui_edit-composer-root'] .human-execution-message-top,
+%SKIN% [data-slot='aui_edit-composer-root'] [data-slot='aui_user-message-root'] {
   display: flex !important;
   flex-direction: column !important;
   align-items: flex-end !important;
@@ -53,9 +53,9 @@ html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] [data-slot='
   box-sizing: border-box !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'] .composer-human-message,
-html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .composer-human-message,
-html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .ui-prompt-input__container {
+%SKIN% [data-slot='aui_user-message-root'] .composer-human-message,
+%SKIN% [data-slot='aui_edit-composer-root'] .composer-human-message,
+%SKIN% [data-slot='aui_edit-composer-root'] .ui-prompt-input__container {
   margin-left: auto !important;
   margin-right: 0 !important;
   align-self: flex-end !important;
@@ -66,7 +66,7 @@ html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .ui-prompt-i
 
 /* Checkpoint & Context Action Buttons Container: Snugly attached to the left of user bubble
    终止/恢复检查点选项：严密紧贴气泡左侧，垂直绝对居中 */
-html[data-bubbles-skin='true'] [data-context-menu-skip] {
+%SKIN% [data-context-menu-skip] {
   display: flex !important;
   flex-direction: row !important;
   justify-content: flex-end !important;
@@ -78,7 +78,7 @@ html[data-bubbles-skin='true'] [data-context-menu-skip] {
 }
 
 /* 气泡位于右侧，保持 fit-content 完整宽度与高度 */
-html[data-bubbles-skin='true'] [data-context-menu-skip] .composer-human-message {
+%SKIN% [data-context-menu-skip] .composer-human-message {
   margin: 0 !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
@@ -98,7 +98,7 @@ html[data-bubbles-skin='true'] [data-context-menu-skip] .composer-human-message 
 
 /* Action / Checkpoint Button Container: Snugly positioned directly to the left of the bubble
    操作按钮容器：设为 order: 1 紧贴气泡左侧，常态清晰可见（非全隐） */
-html[data-bubbles-skin='true'] [data-context-menu-skip] > :is(div, button, [class*='absolute']):not(.composer-human-message):not([data-slot='aui_edit']):not(.bubbles-user-expand-btn) {
+%SKIN% [data-context-menu-skip] > :is(div, button, [class*='absolute']):not(.composer-human-message):not([data-slot='aui_edit']):not(.bubbles-user-expand-btn) {
   position: static !important;
   inset: auto !important;
   flex: 0 0 auto !important;
@@ -119,12 +119,12 @@ html[data-bubbles-skin='true'] [data-context-menu-skip] > :is(div, button, [clas
               border-color 0.2s ease, transform 0.2s ease !important;
 }
 
-html[data-bubbles-skin='true'] [data-context-menu-skip]:hover > :is(div, button, [class*='absolute']):not(.composer-human-message):not([data-slot='aui_edit']):not(.bubbles-user-expand-btn),
-html[data-bubbles-skin='true'] .group\\/user-message:hover [data-context-menu-skip] > :is(div, button, [class*='absolute']):not(.composer-human-message):not([data-slot='aui_edit']):not(.bubbles-user-expand-btn) {
+%SKIN% [data-context-menu-skip]:hover > :is(div, button, [class*='absolute']):not(.composer-human-message):not([data-slot='aui_edit']):not(.bubbles-user-expand-btn),
+%SKIN% .group\\/user-message:hover [data-context-menu-skip] > :is(div, button, [class*='absolute']):not(.composer-human-message):not([data-slot='aui_edit']):not(.bubbles-user-expand-btn) {
   opacity: 1 !important;
 }
 
-html[data-bubbles-skin='true'] [data-context-menu-skip] button:not(.composer-human-message):not(.bubbles-user-expand-btn) {
+%SKIN% [data-context-menu-skip] button:not(.composer-human-message):not(.bubbles-user-expand-btn) {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -143,20 +143,20 @@ html[data-bubbles-skin='true'] [data-context-menu-skip] button:not(.composer-hum
               transform 0.2s ease !important;
 }
 
-html[data-bubbles-skin='true'] [data-context-menu-skip] button:not(.composer-human-message):not(.bubbles-user-expand-btn):hover {
+%SKIN% [data-context-menu-skip] button:not(.composer-human-message):not(.bubbles-user-expand-btn):hover {
   background: rgba(30, 64, 175, 0.80) !important;
   color: #ffffff !important;
   border-color: rgba(147, 197, 253, 0.75) !important;
   transform: scale(1.08);
 }
 
-html[data-bubbles-skin='true'] [data-context-menu-skip] button:not(.composer-human-message):not(.bubbles-user-expand-btn) svg {
+%SKIN% [data-context-menu-skip] button:not(.composer-human-message):not(.bubbles-user-expand-btn) svg {
   width: 12px !important;
   height: 12px !important;
   fill: currentColor !important;
 }
 
-html[data-bubbles-skin='true'] .checkpoint-container {
+%SKIN% .checkpoint-container {
   display: flex !important;
   justify-content: flex-end !important;
   align-items: center !important;
@@ -165,21 +165,21 @@ html[data-bubbles-skin='true'] .checkpoint-container {
 }
 
 /* Inner input stays left-aligned for natural writing direction */
-html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] [data-slot='composer-rich-input'],
-html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .ui-prompt-input-editor__input {
+%SKIN% [data-slot='aui_edit-composer-root'] [data-slot='composer-rich-input'],
+%SKIN% [data-slot='aui_edit-composer-root'] .ui-prompt-input-editor__input {
   text-align: left !important;
   direction: ltr !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] {
+%SKIN% [data-slot='aui_edit-composer-root'] {
   padding-right: 0 !important;
 }
-html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root']::before,
-html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root']::after {
+%SKIN% [data-slot='aui_edit-composer-root']::before,
+%SKIN% [data-slot='aui_edit-composer-root']::after {
   display: none !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-root'] {
+%SKIN% [data-slot='aui_assistant-message-root'] {
   margin-top: 4px !important;
   margin-bottom: 14px !important;
 }
@@ -189,7 +189,7 @@ html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-root'] {
    it is a byte of rule budget lost. This sheet has no cap. Nothing else in either
    sheet targets this pseudo-element, so the move cannot change which declaration
    wins — only where the payload sits. */
-html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-root']::before {
+%SKIN% [data-slot='aui_assistant-message-root']::before {
   content: '';
   position: absolute;
   left: 4px; top: 0;
@@ -201,7 +201,7 @@ html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-root']::before 
 }
 
 /* Assistant Message Frosted Glass Refinement */
-html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] {
+%SKIN% [data-slot='aui_assistant-message-content'] {
   padding: 12px 18px !important;
   border-radius: 12px !important;
   border: none !important;
@@ -214,7 +214,7 @@ html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] {
 }
 
 /* Markdown Typography within Assistant Bubble */
-html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] :is(h1, h2, h3, h4) {
+%SKIN% [data-slot='aui_assistant-message-content'] :is(h1, h2, h3, h4) {
   color: #e0f2fe !important;
   font-weight: 600 !important;
   margin-top: 0.9em !important;
@@ -222,25 +222,25 @@ html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] :is(h
   line-height: 1.35 !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] p {
+%SKIN% [data-slot='aui_assistant-message-content'] p {
   margin-bottom: 0.65em !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] p:last-child {
+%SKIN% [data-slot='aui_assistant-message-content'] p:last-child {
   margin-bottom: 0 !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] :is(ul, ol) {
+%SKIN% [data-slot='aui_assistant-message-content'] :is(ul, ol) {
   padding-left: 20px !important;
   margin-bottom: 0.65em !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] li::marker {
+%SKIN% [data-slot='aui_assistant-message-content'] li::marker {
   color: #93c5fd !important;
 }
 
 /* Frosted Glass Tables */
-html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] table {
+%SKIN% [data-slot='aui_assistant-message-content'] table {
   border-collapse: separate !important;
   border-spacing: 0 !important;
   border: 1px solid rgba(147, 197, 253, 0.25) !important;
@@ -252,7 +252,7 @@ html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] table
   width: 100% !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] th {
+%SKIN% [data-slot='aui_assistant-message-content'] th {
   background: rgba(14, 46, 84, 0.70) !important;
   color: #bfdbfe !important;
   padding: 6px 12px !important;
@@ -261,22 +261,22 @@ html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] th {
   text-align: left !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] td {
+%SKIN% [data-slot='aui_assistant-message-content'] td {
   padding: 6px 12px !important;
   border-bottom: 1px solid rgba(147, 197, 253, 0.12) !important;
   color: #f1f5f9 !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] tr:last-child td {
+%SKIN% [data-slot='aui_assistant-message-content'] tr:last-child td {
   border-bottom: none !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] tr:hover td {
+%SKIN% [data-slot='aui_assistant-message-content'] tr:hover td {
   background: rgba(255, 255, 255, 0.04) !important;
 }
 
 /* Inline Code & Code Blocks */
-html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] code:not(pre code) {
+%SKIN% [data-slot='aui_assistant-message-content'] code:not(pre code) {
   background: rgba(14, 46, 84, 0.55) !important;
   color: #93c5fd !important;
   padding: 2px 6px !important;
@@ -286,7 +286,7 @@ html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] code:
   word-break: break-all !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] pre {
+%SKIN% [data-slot='aui_assistant-message-content'] pre {
   background: rgba(6, 20, 42, 0.70) !important;
   border: 1px solid rgba(147, 197, 253, 0.22) !important;
   border-radius: 8px !important;
@@ -315,14 +315,14 @@ html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] pre {
    verified against the built sheet. Padding stays on the outer Pre, which keeps
    the 52px copy-button corridor without the inner pre doubling it.
    Scoped to the card: the bubble surfaces keep their own paint. */
-html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] [data-slot='code-card'] {
+%SKIN% [data-slot='aui_assistant-message-content'] [data-slot='code-card'] {
   --expandable-fade-from: transparent !important;
   background: rgba(6, 20, 42, 0.62) !important;
   border: 1px solid rgba(147, 197, 253, 0.22) !important;
   box-shadow: none !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] [data-slot='code-card'] [class*='bg-linear-to-t'] {
+%SKIN% [data-slot='aui_assistant-message-content'] [data-slot='code-card'] [class*='bg-linear-to-t'] {
   background: transparent !important;
   background-image: none !important;
   pointer-events: none !important;
@@ -331,7 +331,7 @@ html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] [data
 /* !important is load-bearing: it is the only way to beat the
    code-card-stream-glow @keyframes, and it outranks the card's own accent ring
    shadow while the answer is still streaming. */
-html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] [data-slot='code-card'] .aui-shiki {
+%SKIN% [data-slot='aui_assistant-message-content'] [data-slot='code-card'] .aui-shiki {
   background: transparent !important;
   border: none !important;
   border-radius: 0 !important;
@@ -339,7 +339,7 @@ html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] [data
   margin: 0 !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] [data-slot='code-card'] .aui-shiki :is(pre, code, .shiki) {
+%SKIN% [data-slot='aui_assistant-message-content'] [data-slot='code-card'] .aui-shiki :is(pre, code, .shiki) {
   background: transparent !important;
   border: none !important;
   border-radius: 0 !important;
@@ -352,16 +352,16 @@ html[data-bubbles-skin='true'] [data-slot='aui_assistant-message-content'] [data
 /* --------------------------------------------------------------------------
    2. User Long Message Collapse
    -------------------------------------------------------------------------- */
-html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'] .composer-human-message,
-html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .composer-human-message {
+%SKIN% [data-slot='aui_user-message-root'] .composer-human-message,
+%SKIN% [data-slot='aui_edit-composer-root'] .composer-human-message {
   overflow-wrap: break-word !important;
   word-break: break-word !important;
   box-sizing: border-box !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'] .sticky-human-clamp,
-html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .sticky-human-clamp,
-html[data-bubbles-skin='true'] .sticky-human-clamp {
+%SKIN% [data-slot='aui_user-message-root'] .sticky-human-clamp,
+%SKIN% [data-slot='aui_edit-composer-root'] .sticky-human-clamp,
+%SKIN% .sticky-human-clamp {
   display: block !important;
   width: 100% !important;
   height: auto !important;
@@ -376,9 +376,9 @@ html[data-bubbles-skin='true'] .sticky-human-clamp {
   -webkit-mask: none !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'] [data-slot='aui_user-message-text'],
-html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'] [data-slot='aui_user-inline-text'],
-html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'] .sticky-human-clamp > div {
+%SKIN% [data-slot='aui_user-message-root'] [data-slot='aui_user-message-text'],
+%SKIN% [data-slot='aui_user-message-root'] [data-slot='aui_user-inline-text'],
+%SKIN% [data-slot='aui_user-message-root'] .sticky-human-clamp > div {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
@@ -390,19 +390,19 @@ html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'] .sticky-human
   white-space: pre-wrap !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'][data-bubbles-long-user='true'] .composer-human-message {
+%SKIN% [data-slot='aui_user-message-root'][data-bubbles-long-user='true'] .composer-human-message {
   padding-bottom: 32px !important;
   position: relative !important;
 }
 
 /* Edit mode forces normal compact bottom padding */
-html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'][data-bubbles-editing='true'] .composer-human-message,
-html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .composer-human-message {
+%SKIN% [data-slot='aui_user-message-root'][data-bubbles-editing='true'] .composer-human-message,
+%SKIN% [data-slot='aui_edit-composer-root'] .composer-human-message {
   padding-bottom: 6px !important;
 }
 
 /* Collapsed state with clean overflow clipping (ZERO shadow, ZERO gradient overlay) */
-html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'][data-bubbles-long-user='true']:not([data-bubbles-user-expanded='true']):not([data-bubbles-editing='true']) .sticky-human-clamp {
+%SKIN% [data-slot='aui_user-message-root'][data-bubbles-long-user='true']:not([data-bubbles-user-expanded='true']):not([data-bubbles-editing='true']) .sticky-human-clamp {
   position: relative;
   max-height: ${CLAMP_LINE_THRESHOLD_PX}px !important;
   overflow: hidden !important;
@@ -413,9 +413,9 @@ html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'][data-bubbles-
 }
 
 /* Expanded state & Edit mode: completely remove bottom gradient fade, shadow truncation, and masks */
-html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'][data-bubbles-user-expanded='true'] .sticky-human-clamp,
-html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'][data-bubbles-editing='true'] .sticky-human-clamp,
-html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .sticky-human-clamp {
+%SKIN% [data-slot='aui_user-message-root'][data-bubbles-user-expanded='true'] .sticky-human-clamp,
+%SKIN% [data-slot='aui_user-message-root'][data-bubbles-editing='true'] .sticky-human-clamp,
+%SKIN% [data-slot='aui_edit-composer-root'] .sticky-human-clamp {
   max-height: none !important;
   overflow: visible !important;
   -webkit-mask-image: none !important;
@@ -425,11 +425,11 @@ html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .sticky-huma
 }
 
 /* Complete elimination of ::after shadow, gradient, and mask in ALL states */
-html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'][data-bubbles-user-expanded='true'] .sticky-human-clamp::after,
-html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'][data-bubbles-long-user='true'] .sticky-human-clamp::after,
-html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'][data-bubbles-editing='true'] .sticky-human-clamp::after,
-html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .sticky-human-clamp::after,
-html[data-bubbles-skin='true'] .sticky-human-clamp::after {
+%SKIN% [data-slot='aui_user-message-root'][data-bubbles-user-expanded='true'] .sticky-human-clamp::after,
+%SKIN% [data-slot='aui_user-message-root'][data-bubbles-long-user='true'] .sticky-human-clamp::after,
+%SKIN% [data-slot='aui_user-message-root'][data-bubbles-editing='true'] .sticky-human-clamp::after,
+%SKIN% [data-slot='aui_edit-composer-root'] .sticky-human-clamp::after,
+%SKIN% .sticky-human-clamp::after {
   display: none !important;
   content: none !important;
   background: none !important;
@@ -501,7 +501,7 @@ html[data-bubbles-skin='true'] .sticky-human-clamp::after {
 /* Bare text on the bubble. A thinking row is a one-line disclosure, not a card —
    the frame made it compete with the paragraph above it. The chevron and the
    shimmer stay, so the affordance survives without the box. */
-html[data-bubbles-skin='true'] [data-slot='aui_thinking-disclosure'] {
+%SKIN% [data-slot='aui_thinking-disclosure'] {
   background: transparent !important;
   border: none !important;
   border-radius: 0 !important;
@@ -517,13 +517,13 @@ html[data-bubbles-skin='true'] [data-slot='aui_thinking-disclosure'] {
 
 /* The :hover rules clear the frame, so they must exclude the expanded state —
    they tie with the frame rule on specificity and would win on order alone. */
-html[data-bubbles-skin='true'] [data-slot='aui_thinking-disclosure']:hover:not(:has(> [data-slot='aui_thinking-body'])) {
+%SKIN% [data-slot='aui_thinking-disclosure']:hover:not(:has(> [data-slot='aui_thinking-body'])) {
   background: transparent !important;
   border-color: transparent !important;
   color: #ffffff !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='aui_thinking-body'] {
+%SKIN% [data-slot='aui_thinking-body'] {
   padding-top: 2px !important;
   margin-top: 2px !important;
   color: rgba(226, 232, 240, 0.72) !important;
@@ -610,7 +610,7 @@ html[data-bubbles-skin='true'] [data-slot='aui_thinking-body'] {
    (the nine-row frame in the user's screenshot), because both layers carry
    data-slot='tool-block'. State now reads from the glyph slot and the text
    colour, so nothing here may paint. */
-html[data-bubbles-skin='true'] [data-slot='tool-block'] {
+%SKIN% [data-slot='tool-block'] {
   background: transparent !important;
   border: none !important;
   border-radius: 0 !important;
@@ -630,12 +630,12 @@ html[data-bubbles-skin='true'] [data-slot='tool-block'] {
 /* An open ToolEntry paints its own frame (fallback.tsx:114
    rounded-[0.3125rem] border border-(--ui-stroke-tertiary)) and underlines its
    header — both are the box coming back through the app's side of the door. */
-html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-open] > div:first-child {
+%SKIN% [data-slot='tool-block'][data-tool-open] > div:first-child {
   border-bottom: 0 !important;
   background: transparent !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='tool-block']:hover:not([data-tool-open]) {
+%SKIN% [data-slot='tool-block']:hover:not([data-tool-open]) {
   background: transparent !important;
   border-color: transparent !important;
 }
@@ -657,9 +657,9 @@ html[data-bubbles-skin='true'] [data-slot='tool-block']:hover:not([data-tool-ope
    (0,5,1) on a ToolEntry nested in a ToolRun), which is why every grouped row —
    Unnamed call, Process Manage poll, 已运行代码 — showed no frame at all while a
    top-level file edit (config.yaml, which never joins a run) did. */
-html[data-bubbles-skin='true'] [data-slot='aui_thinking-body'],
-html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-open][data-tool-row] > :not(:first-child),
-html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-group]:has([data-tool-summary] button[aria-expanded='true']) > [data-tool-summary] + div {
+%SKIN% [data-slot='aui_thinking-body'],
+%SKIN% [data-slot='tool-block'][data-tool-open][data-tool-row] > :not(:first-child),
+%SKIN% [data-slot='tool-block'][data-tool-group]:has([data-tool-summary] button[aria-expanded='true']) > [data-tool-summary] + div {
   background: rgba(147, 197, 253, 0.05) !important;
   border: 1px solid rgba(147, 197, 253, 0.22) !important;
   border-radius: 8px !important;
@@ -680,7 +680,7 @@ html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-group]:has([da
    frame like any standalone row. Without the guard, 已运行 sed showed a rail while the
    bubbles.yaml edit beside it showed a frame — two identical-looking rows, treated
    differently by an invisible wrapper. */
-html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-group]:has([data-tool-summary] button[aria-expanded='true']) [data-slot='tool-block'][data-tool-open][data-tool-row] > :not(:first-child) {
+%SKIN% [data-slot='tool-block'][data-tool-group]:has([data-tool-summary] button[aria-expanded='true']) [data-slot='tool-block'][data-tool-open][data-tool-row] > :not(:first-child) {
   background: transparent !important;
   border: none !important;
   border-left: 2px solid rgba(96, 165, 250, 0.45) !important;
@@ -698,8 +698,8 @@ html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-group]:has([da
    the title button stays outside it, exactly like a transcript row.
    The children wrapper (index.tsx:411) is deliberately left alone: a nested node
    frames its own stream, so boxing the subtree would frame frames. */
-html[data-bubbles-skin='true'] [data-slot='tool-block'][data-delegate-card] > div,
-html[data-bubbles-skin='true'] [data-slot='tool-block']:has(> button[aria-expanded='true']) > [data-selectable-text='true'] {
+%SKIN% [data-slot='tool-block'][data-delegate-card] > div,
+%SKIN% [data-slot='tool-block']:has(> button[aria-expanded='true']) > [data-selectable-text='true'] {
   background: rgba(147, 197, 253, 0.05) !important;
   border: 1px solid rgba(147, 197, 253, 0.22) !important;
   border-radius: 8px !important;
@@ -713,7 +713,7 @@ html[data-bubbles-skin='true'] [data-slot='tool-block']:has(> button[aria-expand
 /* The agents stream carries its column indent as pl-6 inside the wrapper. Under a
    frame that reads as 24px of empty gutter on the left of the box, so the indent
    moves outside it and the frame lines up with the title text instead. */
-html[data-bubbles-skin='true'] [data-slot='tool-block']:has(> button[aria-expanded='true']) > [data-selectable-text='true'] {
+%SKIN% [data-slot='tool-block']:has(> button[aria-expanded='true']) > [data-selectable-text='true'] {
   margin-left: 24px !important;
 }
 
@@ -722,8 +722,8 @@ html[data-bubbles-skin='true'] [data-slot='tool-block']:has(> button[aria-expand
    radius, so an opened tool call rendered as two nested boxes — the exact
    "外框看起来很复杂、花眼" the flattening was asked to remove. The 52px right pad
    is the copy-button gutter, which a tool block has no copy button for. */
-html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-open] pre,
-html[data-bubbles-skin='true'] [data-slot='aui_thinking-body'] pre {
+%SKIN% [data-slot='tool-block'][data-tool-open] pre,
+%SKIN% [data-slot='aui_thinking-body'] pre {
   background: transparent !important;
   border: none !important;
   border-radius: 0 !important;
@@ -733,7 +733,7 @@ html[data-bubbles-skin='true'] [data-slot='aui_thinking-body'] pre {
 }
 
 /* Collapsed Grouped Tools (Strict Complete Hiding: Never Deleted, Completely Hidden) */
-html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-group-collapsed='true'] {
+%SKIN% [data-slot='tool-block'][data-bubbles-group-collapsed='true'] {
   display: none !important;
   visibility: hidden !important;
   height: 0 !important;
@@ -746,7 +746,7 @@ html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-group-colla
   pointer-events: none !important;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-group-collapsed='true'] {
+%SKIN% [data-bubbles-group-collapsed='true'] {
   display: none !important;
 }
 
@@ -756,8 +756,8 @@ html[data-bubbles-skin='true'] [data-bubbles-group-collapsed='true'] {
    open rows the transcript framed a FAILED row (which stands alone, because only
    consecutive completed tools get grouped) while a grouped SUCCESS row kept the
    2px rail and no frame — the exact inconsistency reported from the live window. */
-html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-in-group='true'][data-bubbles-group-collapsed='false']:not([data-tool-open]),
-html[data-bubbles-skin='true'] [data-bubbles-tool-flat='true'][data-bubbles-in-group='true'][data-bubbles-group-collapsed='false']:not([data-tool-open]) {
+%SKIN% [data-slot='tool-block'][data-bubbles-in-group='true'][data-bubbles-group-collapsed='false']:not([data-tool-open]),
+%SKIN% [data-bubbles-tool-flat='true'][data-bubbles-in-group='true'][data-bubbles-group-collapsed='false']:not([data-tool-open]) {
   display: block !important;
   background: transparent !important;
   border: none !important;
@@ -773,7 +773,7 @@ html[data-bubbles-skin='true'] [data-bubbles-tool-flat='true'][data-bubbles-in-g
 }
 
 /* Flatten child disclosure / header inside grouped tools to eliminate duplicate nested cards */
-html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-in-group='true'] :is(
+%SKIN% [data-slot='tool-block'][data-bubbles-in-group='true'] :is(
   header,
   .group\\/disclosure-row,
   button.group\\/disclosure-row
@@ -785,12 +785,12 @@ html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-in-group='t
 
 /* Single completed tool group: Bubbles group toggle pill is already the primary visible title and toggle trigger.
    Hide the duplicate native disclosure header inside the single tool block to prevent repetitive titles. */
-html[data-bubbles-skin='true'] .bubbles-tool-group[data-tool-count='1'] + [data-slot='tool-block'] > :is(
+%SKIN% .bubbles-tool-group[data-tool-count='1'] + [data-slot='tool-block'] > :is(
   header,
   .group\\/disclosure-row,
   button.group\\/disclosure-row
 ),
-html[data-bubbles-skin='true'] [data-bubbles-duplicate-header='true'] {
+%SKIN% [data-bubbles-duplicate-header='true'] {
   display: none !important;
 }
 
@@ -800,7 +800,7 @@ html[data-bubbles-skin='true'] [data-bubbles-duplicate-header='true'] {
    app already tints the title itself (fallback.tsx:321 text-destructive for
    error, :319 scaffold-meta + shimmer while pending), so the row keeps its own
    hierarchy and we only add the symbol. */
-html[data-bubbles-skin='true'] [data-bubbles-tool-state='running'] {
+%SKIN% [data-bubbles-tool-state='running'] {
   background: transparent !important;
   border: none !important;
   border-radius: 0 !important;
@@ -812,12 +812,12 @@ html[data-bubbles-skin='true'] [data-bubbles-tool-state='running'] {
 
 /* The row already animates itself — GlyphSpinner with spinner='breathe'
    (fallback.tsx:198-225). It only inherits the sapphire the card used to carry. */
-html[data-bubbles-skin='true'] [data-bubbles-tool-state='running'] .glyph-spinner {
+%SKIN% [data-bubbles-tool-state='running'] .glyph-spinner {
   color: #60a5fa !important;
 }
 
 /* 运行态工具：子层保持透明，运行由外层文字变蓝 + App 自带转圈表示 */
-html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-tool-state='running'] :is(
+%SKIN% [data-slot='tool-block'][data-bubbles-tool-state='running'] :is(
   header,
   .group\\/disclosure-row,
   button.group\\/disclosure-row
@@ -830,7 +830,7 @@ html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-tool-state=
 /* Completed: quiet text, and a check in the glyph slot. The app suppresses its own
    success glyph (leadingStatus maps success/notice to undefined, fallback.tsx:263),
    so a finished row otherwise looks identical to a pending one. */
-html[data-bubbles-skin='true'] [data-bubbles-tool-state='completed']:not([data-bubbles-group-collapsed='true']) {
+%SKIN% [data-bubbles-tool-state='completed']:not([data-bubbles-group-collapsed='true']) {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -838,7 +838,7 @@ html[data-bubbles-skin='true'] [data-bubbles-tool-state='completed']:not([data-b
 }
 
 /* Failed: red text + ✗ over the app's AlertCircle, instead of a red container. */
-html[data-bubbles-skin='true'] [data-bubbles-tool-state='failed'] {
+%SKIN% [data-bubbles-tool-state='failed'] {
   background: transparent !important;
   border: none !important;
   border-radius: 0 !important;
@@ -852,15 +852,15 @@ html[data-bubbles-skin='true'] [data-bubbles-tool-state='failed'] {
    the type glyph goes display:none rather than being removed — flatten, never
    delete — so the terminal/file/eye icon comes back with one rule if the checks
    turn out to be too much of a wall. */
-html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-row] span[class*='size-3.5'] {
+%SKIN% [data-slot='tool-block'][data-tool-row] span[class*='size-3.5'] {
   position: relative;
 }
 
-html[data-bubbles-skin='true'] :is([data-bubbles-tool-state='completed'], [data-bubbles-tool-state='failed']) span[class*='size-3.5'] > :first-child {
+%SKIN% :is([data-bubbles-tool-state='completed'], [data-bubbles-tool-state='failed']) span[class*='size-3.5'] > :first-child {
   display: none !important;
 }
 
-html[data-bubbles-skin='true'] :is([data-bubbles-tool-state='completed'], [data-bubbles-tool-state='failed']) span[class*='size-3.5']::after {
+%SKIN% :is([data-bubbles-tool-state='completed'], [data-bubbles-tool-state='failed']) span[class*='size-3.5']::after {
   content: '✓';
   display: block;
   font-size: 11px;
@@ -868,11 +868,11 @@ html[data-bubbles-skin='true'] :is([data-bubbles-tool-state='completed'], [data-
   line-height: 1;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-tool-state='completed'] span[class*='size-3.5']::after {
+%SKIN% [data-bubbles-tool-state='completed'] span[class*='size-3.5']::after {
   color: rgba(74, 222, 128, 0.85);
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-tool-state='failed'] span[class*='size-3.5']::after {
+%SKIN% [data-bubbles-tool-state='failed'] span[class*='size-3.5']::after {
   content: '✗';
   color: #f87171;
 }
@@ -882,7 +882,7 @@ html[data-bubbles-skin='true'] [data-bubbles-tool-state='failed'] span[class*='s
    This list is the superset — the skin used to carry a five-branch copy that had drifted
    (no bg-red, no section variants) with an identical declaration body; test/sheet-
    duplication.test.js is what keeps a second copy from coming back. */
-html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-tool-state='failed'] :is(
+%SKIN% [data-slot='tool-block'][data-bubbles-tool-state='failed'] :is(
   header,
   .group\\/disclosure-row,
   button.group\\/disclosure-row,
@@ -903,7 +903,7 @@ html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-tool-state=
    ToolEntry (data-tool-row) is a structural wrapper. Strip its duplicate
    shell in every state (completed / running / failed). High specificity AND
    placed after all state rules so it always wins. "Flatten, never delete." */
-html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-group] [data-slot='tool-block'][data-tool-row] {
+%SKIN% [data-slot='tool-block'][data-tool-group] [data-slot='tool-block'][data-tool-row] {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -917,18 +917,18 @@ html[data-bubbles-skin='true'] [data-slot='tool-block'][data-tool-group] [data-s
 /* --------------------------------------------------------------------------
    5. Task Section UI & Independent Scrolling Container
    -------------------------------------------------------------------------- */
-html[data-bubbles-skin='true'] [data-slot='composer-status-stack'][data-bubbles-has-task-section='true'] {
+%SKIN% [data-slot='composer-status-stack'][data-bubbles-has-task-section='true'] {
   overflow: hidden !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='composer-status-stack'][data-bubbles-has-task-section='true'] [data-slot='status-stack-scroll'] {
+%SKIN% [data-slot='composer-status-stack'][data-bubbles-has-task-section='true'] [data-slot='status-stack-scroll'] {
   overflow: hidden !important;
 }
 
 /* The outer stack is only a flex scroller (status-stack/index.tsx:321). It must
    not draw a frame — doing so put a box around the box, 20px wider than the card
    because the card carries mx-2. */
-html[data-bubbles-skin='true'] [data-slot='composer-status-stack'] {
+%SKIN% [data-slot='composer-status-stack'] {
   border: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -944,8 +944,8 @@ html[data-bubbles-skin='true'] [data-slot='composer-status-stack'] {
    it unconditionally made the panel's visibility depend on the JS stamp: if
    enhanceTaskSection ever fails, the rows were left as bare text on the chat
    background with no card at all. :has() keeps the app's own card as the fallback. */
-html[data-bubbles-skin='true'] [data-slot='composer-status-stack']:has([data-bubbles-task-section='true']) > div[class*='rounded-t-2xl'],
-html[data-bubbles-skin='true'] :is([data-slot='composer-root'], [data-slot='composer-dock']):has([data-bubbles-task-section='true']) div.absolute.inset-x-0.bottom-full > div:first-child {
+%SKIN% [data-slot='composer-status-stack']:has([data-bubbles-task-section='true']) > div[class*='rounded-t-2xl'],
+%SKIN% :is([data-slot='composer-root'], [data-slot='composer-dock']):has([data-bubbles-task-section='true']) div.absolute.inset-x-0.bottom-full > div:first-child {
   margin: 0 !important;
   padding: 0 !important;
   border: 0 !important;
@@ -961,7 +961,7 @@ html[data-bubbles-skin='true'] :is([data-slot='composer-root'], [data-slot='comp
    translucent #0d2a4d fill, and the page's own light spots pinned with
    background-attachment: fixed so it reads as glass on the same field as the
    composer rather than a dark slab floating over it. */
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] {
+%SKIN% [data-bubbles-task-section='true'] {
   display: flex !important;
   flex-direction: column !important;
   min-height: 0 !important;
@@ -983,19 +983,19 @@ html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] {
 }
 
 /* Task Section Header — no slab of its own; its rule doubles as the bar's track. */
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-header {
+%SKIN% [data-bubbles-task-section='true'] .status-section-header {
   background: transparent !important;
   border-bottom: 1px solid rgba(147, 197, 253, 0.12) !important;
   padding: 5px 8px !important;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-trigger {
+%SKIN% [data-bubbles-task-section='true'] .status-section-trigger {
   color: #bfdbfe !important;
   font-size: 12px !important;
   font-weight: 500 !important;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-trigger:hover {
+%SKIN% [data-bubbles-task-section='true'] .status-section-trigger:hover {
   color: #ffffff !important;
 }
 
@@ -1009,16 +1009,16 @@ html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-sectio
  * "never add or remove DOM content" rule intact: a pseudo-element is not a node,
  * and status-row-content keeps exactly the children the renderer gave it. The
  * native row grid is action/icon/content/actions, so every cell shifts one column. */
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-body {
+%SKIN% [data-bubbles-task-section='true'] .status-section-body {
   counter-reset: bubbles-task;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-row {
+%SKIN% [data-bubbles-task-section='true'] .status-row {
   counter-increment: bubbles-task;
   grid-template-columns: var(--status-index-width, 1.5rem) var(--status-action-width) var(--status-icon-width) minmax(0, 1fr) auto !important;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-row::before {
+%SKIN% [data-bubbles-task-section='true'] .status-row::before {
   content: counter(bubbles-task, decimal-leading-zero);
   grid-area: 1 / 1;
   align-self: start;
@@ -1030,19 +1030,19 @@ html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-row::b
   text-align: right;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-row-dismiss { grid-column: 2; }
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-row-icon { grid-column: 3; }
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-row-content { grid-column: 4; }
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-row-actions { grid-column: 5; }
+%SKIN% [data-bubbles-task-section='true'] .status-row-dismiss { grid-column: 2; }
+%SKIN% [data-bubbles-task-section='true'] .status-row-icon { grid-column: 3; }
+%SKIN% [data-bubbles-task-section='true'] .status-row-content { grid-column: 4; }
+%SKIN% [data-bubbles-task-section='true'] .status-row-actions { grid-column: 5; }
 
 /* The bar's only input is --bubbles-task-progress, written by
  * updateTaskHeaderCounter from the completed/total it already counts. scaleX, not
  * width, so a tick repaints instead of reflowing the header row. */
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-trigger {
+%SKIN% [data-bubbles-task-section='true'] .status-section-trigger {
   position: relative;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-trigger::after {
+%SKIN% [data-bubbles-task-section='true'] .status-section-trigger::after {
   content: '';
   position: absolute;
   /* bottom: 0 — the bar replaces the header's separator instead of lying on top
@@ -1063,11 +1063,11 @@ html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-sectio
  * !important war. A pseudo-element is not matched by that rule, so the bar lives
  * on ::after — absolutely positioned, which also means it cannot eat inner width
  * the way the sidebar's old border-left did. */
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-row {
+%SKIN% [data-bubbles-task-section='true'] .status-row {
   position: relative;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='running']::after {
+%SKIN% [data-bubbles-task-row][data-task-state='running']::after {
   content: '';
   position: absolute;
   top: 3px;
@@ -1085,7 +1085,7 @@ html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='running'
 }
 
 /* Task Section Body - Isolated Scroll Area */
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-body {
+%SKIN% [data-bubbles-task-section='true'] .status-section-body {
   min-height: 40px !important;
   max-height: clamp(90px, 28vh, 320px) !important;
   overflow-y: auto !important;
@@ -1097,24 +1097,24 @@ html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-sectio
   scrollbar-color: transparent transparent !important;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-body:hover {
+%SKIN% [data-bubbles-task-section='true'] .status-section-body:hover {
   scrollbar-color: rgba(147, 197, 253, 0.25) transparent !important;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-body::-webkit-scrollbar {
+%SKIN% [data-bubbles-task-section='true'] .status-section-body::-webkit-scrollbar {
   width: 5px !important;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-body::-webkit-scrollbar-thumb {
+%SKIN% [data-bubbles-task-section='true'] .status-section-body::-webkit-scrollbar-thumb {
   background: transparent !important;
   border-radius: 9999px !important;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-body:hover::-webkit-scrollbar-thumb {
+%SKIN% [data-bubbles-task-section='true'] .status-section-body:hover::-webkit-scrollbar-thumb {
   background: rgba(147, 197, 253, 0.30) !important;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-section-body::-webkit-scrollbar-thumb:hover {
+%SKIN% [data-bubbles-task-section='true'] .status-section-body::-webkit-scrollbar-thumb:hover {
   background: rgba(147, 197, 253, 0.55) !important;
 }
 
@@ -1122,7 +1122,7 @@ html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] .status-sectio
    24px rows, 1px vertical padding, 8px radius, no per-row margin, no border. The
    previous 4px/8px + 1px transparent border cost 30px per row, and that border was
    only ever visible as the pulse's animated ring — the ::after accent replaced it. */
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] [data-slot='status-row'] {
+%SKIN% [data-bubbles-task-section='true'] [data-slot='status-row'] {
   min-height: 24px !important;
   border: 0 !important;
   border-radius: 8px !important;
@@ -1132,13 +1132,13 @@ html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] [data-slot='st
   transition: background 0.20s ease-out !important;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-section='true'] [data-slot='status-row']:hover {
+%SKIN% [data-bubbles-task-section='true'] [data-slot='status-row']:hover {
   background: rgba(255, 255, 255, 0.08) !important;
 }
 
 /* Task State Glyphs & Visual Hierarchy */
 /* Pending: ○ */
-html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='pending'] .status-row-icon {
+%SKIN% [data-bubbles-task-row][data-task-state='pending'] .status-row-icon {
   color: #93c5fd !important;
   opacity: 0.70;
 }
@@ -1160,60 +1160,60 @@ html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='pending'
   }
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='running'] {
+%SKIN% [data-bubbles-task-row][data-task-state='running'] {
   background: rgba(30, 64, 175, 0.22) !important;
   animation: bubblesPulseGlow 3s ease-in-out infinite !important;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='running'] .status-row-icon {
+%SKIN% [data-bubbles-task-row][data-task-state='running'] .status-row-icon {
   color: #60a5fa !important;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='running'] .status-row-content span {
+%SKIN% [data-bubbles-task-row][data-task-state='running'] .status-row-content span {
   color: #ffffff !important;
   font-weight: 500;
 }
 
 /* Completed: ✓ */
-html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='completed'] {
+%SKIN% [data-bubbles-task-row][data-task-state='completed'] {
   opacity: 0.88 !important;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='completed'] .status-row-icon {
+%SKIN% [data-bubbles-task-row][data-task-state='completed'] .status-row-icon {
   color: #4ade80 !important;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='completed'] .status-row-content span {
+%SKIN% [data-bubbles-task-row][data-task-state='completed'] .status-row-content span {
   color: #94a3b8 !important;
 }
 
 /* Cancelled: ⊘ */
-html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='cancelled'] .status-row-icon {
+%SKIN% [data-bubbles-task-row][data-task-state='cancelled'] .status-row-icon {
   color: #64748b !important;
   opacity: 0.60;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='cancelled'] .status-row-content span {
+%SKIN% [data-bubbles-task-row][data-task-state='cancelled'] .status-row-content span {
   color: #64748b !important;
   text-decoration: line-through;
 }
 
 /* Failed: ✕ (ui_error) */
-html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='failed'] {
+%SKIN% [data-bubbles-task-row][data-task-state='failed'] {
   background: rgba(239, 68, 68, 0.12) !important;
   border-color: rgba(248, 113, 113, 0.35) !important;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='failed'] .status-row-icon {
+%SKIN% [data-bubbles-task-row][data-task-state='failed'] .status-row-icon {
   color: #f87171 !important;
 }
 
 /* Warning / Waiting: ⚠ */
-html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='waiting'] {
+%SKIN% [data-bubbles-task-row][data-task-state='waiting'] {
   background: rgba(245, 158, 11, 0.12) !important;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='waiting'] .status-row-icon {
+%SKIN% [data-bubbles-task-row][data-task-state='waiting'] .status-row-icon {
   color: #fbbf24 !important;
 }
 
@@ -1222,7 +1222,7 @@ html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='waiting'
    -------------------------------------------------------------------------- */
 
 /* Global Stacking & Clipping Defenses */
-html[data-bubbles-skin='true'] [data-slot='tool-approval-stack'] {
+%SKIN% [data-slot='tool-approval-stack'] {
   z-index: 50 !important;
   overflow: visible !important;
   margin-top: 8px !important;
@@ -1231,7 +1231,7 @@ html[data-bubbles-skin='true'] [data-slot='tool-approval-stack'] {
 }
 
 /* Approval Card Surface */
-html[data-bubbles-skin='true'] [data-slot='tool-approval-card'] {
+%SKIN% [data-slot='tool-approval-card'] {
   display: block !important;
   visibility: visible !important;
   overflow: hidden !important;
@@ -1253,7 +1253,7 @@ html[data-bubbles-skin='true'] [data-slot='tool-approval-card'] {
 }
 
 /* Approval Header with Terminal Glyph */
-html[data-bubbles-skin='true'] [data-slot='tool-approval-card'] > div:first-child {
+%SKIN% [data-slot='tool-approval-card'] > div:first-child {
   background: rgba(14, 46, 84, 0.70) !important;
   border-bottom: 1px solid rgba(147, 197, 253, 0.20) !important;
   padding: 8px 12px !important;
@@ -1262,12 +1262,12 @@ html[data-bubbles-skin='true'] [data-slot='tool-approval-card'] > div:first-chil
   font-size: 12px !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='tool-approval-card'] > div:first-child .codicon-terminal {
+%SKIN% [data-slot='tool-approval-card'] > div:first-child .codicon-terminal {
   color: #60a5fa !important;
 }
 
 /* Approval Command Display Area */
-html[data-bubbles-skin='true'] [data-slot='tool-approval-card'] pre {
+%SKIN% [data-slot='tool-approval-card'] pre {
   background: rgba(5, 18, 38, 0.85) !important;
   border: 1px solid rgba(147, 197, 253, 0.20) !important;
   border-radius: 8px !important;
@@ -1285,18 +1285,18 @@ html[data-bubbles-skin='true'] [data-slot='tool-approval-card'] pre {
   box-sizing: border-box !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='tool-approval-card'] pre::-webkit-scrollbar {
+%SKIN% [data-slot='tool-approval-card'] pre::-webkit-scrollbar {
   width: 5px !important;
   height: 5px !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='tool-approval-card'] pre::-webkit-scrollbar-thumb {
+%SKIN% [data-slot='tool-approval-card'] pre::-webkit-scrollbar-thumb {
   background: rgba(147, 197, 253, 0.30) !important;
   border-radius: 9999px !important;
 }
 
 /* Approval Actions Bar & Native Buttons Enhancement */
-html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] {
+%SKIN% [data-slot='tool-approval-actions'] {
   display: flex !important;
   align-items: center !important;
   justify-content: flex-end !important;
@@ -1306,7 +1306,7 @@ html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] {
 }
 
 /* Allow / Run Button (Primary Action) */
-html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button[data-approval-run] {
+%SKIN% [data-slot='tool-approval-actions'] button[data-approval-run] {
   background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
   color: #ffffff !important;
   border: 1px solid rgba(147, 197, 253, 0.50) !important;
@@ -1323,14 +1323,14 @@ html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button[data-a
               transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button[data-approval-run]:hover {
+%SKIN% [data-slot='tool-approval-actions'] button[data-approval-run]:hover {
   background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
   box-shadow: 0 0 14px rgba(59, 130, 246, 0.60) !important;
   transform: translateY(-0.5px);
 }
 
 /* Deny / Reject Button (Destructive/Secondary Action) */
-html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button[data-approval-deny] {
+%SKIN% [data-slot='tool-approval-actions'] button[data-approval-deny] {
   background: rgba(14, 46, 84, 0.65) !important;
   color: #cbd5e1 !important;
   border: 1px solid rgba(147, 197, 253, 0.25) !important;
@@ -1342,14 +1342,14 @@ html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button[data-a
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button[data-approval-deny]:hover {
+%SKIN% [data-slot='tool-approval-actions'] button[data-approval-deny]:hover {
   background: rgba(239, 68, 68, 0.22) !important;
   border-color: rgba(248, 113, 113, 0.50) !important;
   color: #f87171 !important;
 }
 
 /* More Options Button */
-html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button:not([data-approval-run]):not([data-approval-deny]) {
+%SKIN% [data-slot='tool-approval-actions'] button:not([data-approval-run]):not([data-approval-deny]) {
   background: rgba(14, 46, 84, 0.65) !important;
   border: 1px solid rgba(147, 197, 253, 0.25) !important;
   border-radius: 8px !important;
@@ -1358,13 +1358,13 @@ html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button:not([d
   transition: background-color 0.2s ease, color 0.2s ease !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button:not([data-approval-run]):not([data-approval-deny]):hover {
+%SKIN% [data-slot='tool-approval-actions'] button:not([data-approval-run]):not([data-approval-deny]):hover {
   background: rgba(30, 64, 175, 0.50) !important;
   color: #ffffff !important;
 }
 
 /* Clarify Surface */
-html[data-bubbles-skin='true'] [data-slot='clarify-inline'] {
+%SKIN% [data-slot='clarify-inline'] {
   display: block !important;
   visibility: visible !important;
   overflow: visible !important;
@@ -1389,7 +1389,7 @@ html[data-bubbles-skin='true'] [data-slot='clarify-inline'] {
 }
 
 /* Clarify Question Headline */
-html[data-bubbles-skin='true'] [data-slot='clarify-inline'] span.font-medium {
+%SKIN% [data-slot='clarify-inline'] span.font-medium {
   color: #ffffff !important;
   font-weight: 500 !important;
   font-size: 13.5px !important;
@@ -1397,7 +1397,7 @@ html[data-bubbles-skin='true'] [data-slot='clarify-inline'] span.font-medium {
 }
 
 /* Clarify Choice Buttons */
-html[data-bubbles-skin='true'] [data-slot='clarify-inline'] button[data-choice] {
+%SKIN% [data-slot='clarify-inline'] button[data-choice] {
   border-radius: 8px !important;
   border: 1px solid rgba(147, 197, 253, 0.18) !important;
   background: rgba(13, 38, 72, 0.55) !important;
@@ -1412,14 +1412,14 @@ html[data-bubbles-skin='true'] [data-slot='clarify-inline'] button[data-choice] 
   word-break: break-word !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='clarify-inline'] button[data-choice]:hover {
+%SKIN% [data-slot='clarify-inline'] button[data-choice]:hover {
   background: rgba(30, 64, 175, 0.40) !important;
   border-color: rgba(96, 165, 250, 0.45) !important;
   color: #ffffff !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='clarify-inline'] button[data-choice][data-highlighted],
-html[data-bubbles-skin='true'] [data-slot='clarify-inline'] button[data-choice][aria-pressed='true'] {
+%SKIN% [data-slot='clarify-inline'] button[data-choice][data-highlighted],
+%SKIN% [data-slot='clarify-inline'] button[data-choice][aria-pressed='true'] {
   background: rgba(37, 99, 235, 0.45) !important;
   border-color: #60a5fa !important;
   box-shadow: 0 0 10px rgba(59, 130, 246, 0.30) !important;
@@ -1427,7 +1427,7 @@ html[data-bubbles-skin='true'] [data-slot='clarify-inline'] button[data-choice][
 }
 
 /* Keypad Badges */
-html[data-bubbles-skin='true'] [data-slot='clarify-inline'] kbd {
+%SKIN% [data-slot='clarify-inline'] kbd {
   background: rgba(10, 32, 64, 0.85) !important;
   border: 1px solid rgba(147, 197, 253, 0.35) !important;
   color: #93c5fd !important;
@@ -1436,7 +1436,7 @@ html[data-bubbles-skin='true'] [data-slot='clarify-inline'] kbd {
 }
 
 /* Clarify Textarea (Other Option) */
-html[data-bubbles-skin='true'] [data-slot='clarify-inline'] textarea {
+%SKIN% [data-slot='clarify-inline'] textarea {
   background: rgba(6, 20, 42, 0.70) !important;
   border: 1px solid rgba(147, 197, 253, 0.30) !important;
   border-radius: 8px !important;
@@ -1445,14 +1445,14 @@ html[data-bubbles-skin='true'] [data-slot='clarify-inline'] textarea {
   font-size: 12px !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='clarify-inline'] textarea:focus {
+%SKIN% [data-slot='clarify-inline'] textarea:focus {
   border-color: #60a5fa !important;
   box-shadow: 0 0 12px rgba(59, 130, 246, 0.35) !important;
   outline: none !important;
 }
 
 /* Clarify Action Buttons (Skip & Continue) */
-html[data-bubbles-skin='true'] form[data-clarify-choices] button[type='submit'] {
+%SKIN% form[data-clarify-choices] button[type='submit'] {
   background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
   color: #ffffff !important;
   border: 1px solid rgba(147, 197, 253, 0.50) !important;
@@ -1465,19 +1465,19 @@ html[data-bubbles-skin='true'] form[data-clarify-choices] button[type='submit'] 
   transition: box-shadow 0.2s ease, transform 0.2s ease !important;
 }
 
-html[data-bubbles-skin='true'] form[data-clarify-choices] button[type='submit']:hover {
+%SKIN% form[data-clarify-choices] button[type='submit']:hover {
   background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
   box-shadow: 0 0 14px rgba(59, 130, 246, 0.60) !important;
   transform: translateY(-0.5px);
 }
 
-html[data-bubbles-skin='true'] form[data-clarify-choices] button[variant='text'] {
+%SKIN% form[data-clarify-choices] button[variant='text'] {
   color: #94a3b8 !important;
   border-radius: 8px !important;
   font-size: 12px !important;
 }
 
-html[data-bubbles-skin='true'] form[data-clarify-choices] button[variant='text']:hover {
+%SKIN% form[data-clarify-choices] button[variant='text']:hover {
   color: #f1f5f9 !important;
   background: rgba(255, 255, 255, 0.08) !important;
 }
@@ -1489,9 +1489,9 @@ html[data-bubbles-skin='true'] form[data-clarify-choices] button[variant='text']
 /* Sidebar container: transparent. The 🌌 ambient light constellation lives in the
    fixed main background layer; a navy + blur panel here hid it and cut a hard
    rectangular seam through the Sessions column. Keep only the sapphire seam. */
-html[data-bubbles-skin='true'] [data-slot='sidebar'],
-html[data-bubbles-skin='true'] aside[data-slot='sidebar'],
-html[data-bubbles-skin='true'] [data-slot='sidebar-container'] {
+%SKIN% [data-slot='sidebar'],
+%SKIN% aside[data-slot='sidebar'],
+%SKIN% [data-slot='sidebar-container'] {
   background: transparent !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -1499,13 +1499,13 @@ html[data-bubbles-skin='true'] [data-slot='sidebar-container'] {
   /* No state rule changes anything on this container, so it needs no transition. */
 }
 
-html[data-bubbles-skin='true'] [data-slot='sidebar-inner'] {
+%SKIN% [data-slot='sidebar-inner'] {
   background: transparent !important;
 }
 
 /* Date Dividers & Group Headers */
-html[data-bubbles-skin='true'] .group\\/workspace,
-html[data-bubbles-skin='true'] [data-bubbles-session-divider='true'] {
+%SKIN% .group\\/workspace,
+%SKIN% [data-bubbles-session-divider='true'] {
   padding-top: 10px !important;
   padding-bottom: 4px !important;
 }
@@ -1522,7 +1522,7 @@ html[data-bubbles-skin='true'] [data-bubbles-session-divider='true'] {
    "ects" — so the head alone got recoloured, upper-cased and letter-spaced while its
    own tail stayed grey. Measured in the live app: head rgb(147,197,253)/uppercase/1.26px
    vs tail rgba(240,246,255,.54)/none/normal, inside one word. */
-html[data-bubbles-skin='true'] .group\\/workspace span.text-\\[0\\.64rem\\] {
+%SKIN% .group\\/workspace span.text-\\[0\\.64rem\\] {
   color: #93c5fd !important;
   font-size: 10.5px !important;
   font-weight: 600 !important;
@@ -1531,16 +1531,16 @@ html[data-bubbles-skin='true'] .group\\/workspace span.text-\\[0\\.64rem\\] {
   opacity: 0.90 !important;
 }
 
-html[data-bubbles-skin='true'] .group\\/workspace span.h-px,
-html[data-bubbles-skin='true'] [data-bubbles-session-divider='true'] span[aria-hidden='true'] {
+%SKIN% .group\\/workspace span.h-px,
+%SKIN% [data-bubbles-session-divider='true'] span[aria-hidden='true'] {
   background: linear-gradient(90deg, rgba(96, 165, 250, 0.30), rgba(147, 197, 253, 0.05)) !important;
   height: 1px !important;
 }
 
 /* Sidebar Session Row Shell */
-html[data-bubbles-skin='true'] [data-bubbles-session-row='true'],
-html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover,
-html[data-bubbles-skin='true'] [data-slot='sidebar'] [data-sidebar='menu-button'] {
+%SKIN% [data-bubbles-session-row='true'],
+%SKIN% [data-slot='sidebar'] .row-hover,
+%SKIN% [data-slot='sidebar'] [data-sidebar='menu-button'] {
   border-radius: 8px !important;
   margin: 1px 4px !important;
   border: 1px solid transparent !important;
@@ -1556,26 +1556,26 @@ html[data-bubbles-skin='true'] [data-slot='sidebar'] [data-sidebar='menu-button'
    through), so a 50%-alpha navy wash over it barely registered. Lifted to a
    clearly readable sapphire band with a hairline that matches the composer and
    Tasks card stroke, plus a top inner highlight so it reads as glass, not fill. */
-html[data-bubbles-skin='true'] [data-bubbles-session-row='true']:hover,
-html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover:hover,
-html[data-bubbles-skin='true'] [data-slot='sidebar'] [data-sidebar='menu-button']:hover {
+%SKIN% [data-bubbles-session-row='true']:hover,
+%SKIN% [data-slot='sidebar'] .row-hover:hover,
+%SKIN% [data-slot='sidebar'] [data-sidebar='menu-button']:hover {
   background: rgba(30, 71, 128, 0.62) !important;
   border-color: rgba(147, 197, 253, 0.38) !important;
   box-shadow: inset 0 1px 0 rgba(191, 219, 254, 0.14) !important;
   color: #f1f5f9 !important;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-session-row='true']:hover .hover-marquee,
-html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover:hover .hover-marquee {
+%SKIN% [data-bubbles-session-row='true']:hover .hover-marquee,
+%SKIN% [data-slot='sidebar'] .row-hover:hover .hover-marquee {
   color: #ffffff !important;
 }
 
 /* Active / Selected Session */
-html[data-bubbles-skin='true'] [data-bubbles-session-active='true'],
-html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover.bg-\\(--ui-row-active-background\\),
-html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover[data-selected='true'],
-html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover[aria-selected='true'],
-html[data-bubbles-skin='true'] [data-slot='sidebar'] [data-sidebar='menu-button'][data-active='true'] {
+%SKIN% [data-bubbles-session-active='true'],
+%SKIN% [data-slot='sidebar'] .row-hover.bg-\\(--ui-row-active-background\\),
+%SKIN% [data-slot='sidebar'] .row-hover[data-selected='true'],
+%SKIN% [data-slot='sidebar'] .row-hover[aria-selected='true'],
+%SKIN% [data-slot='sidebar'] [data-sidebar='menu-button'][data-active='true'] {
   background: rgba(14, 38, 72, 0.70) !important;
   border-color: rgba(147, 197, 253, 0.40) !important;
   /* The accent bar is an inset shadow, not a border-left. A border that only the
@@ -1588,21 +1588,21 @@ html[data-bubbles-skin='true'] [data-slot='sidebar'] [data-sidebar='menu-button'
   font-weight: 500 !important;
 }
 
-html[data-bubbles-skin='true'] [data-bubbles-session-row='true'][data-bubbles-session-active='true'] .hover-marquee,
-html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover.bg-\\(--ui-row-active-background\\) .hover-marquee {
+%SKIN% [data-bubbles-session-row='true'][data-bubbles-session-active='true'] .hover-marquee,
+%SKIN% [data-slot='sidebar'] .row-hover.bg-\\(--ui-row-active-background\\) .hover-marquee {
   color: #ffffff !important;
   font-weight: 500 !important;
 }
 
 /* Working / Live Turn Session Pulse */
-html[data-bubbles-skin='true'] [data-bubbles-session-row='true'][data-working='true'] {
+%SKIN% [data-bubbles-session-row='true'][data-working='true'] {
   animation: bubblesPulseGlow 3s ease-in-out infinite !important;
 }
 
 /* Focus Visible */
-html[data-bubbles-skin='true'] [data-bubbles-session-row='true']:focus-visible,
-html[data-bubbles-skin='true'] [data-slot='sidebar'] .row-hover:focus-visible,
-html[data-bubbles-skin='true'] [data-slot='sidebar'] [data-sidebar='menu-button']:focus-visible {
+%SKIN% [data-bubbles-session-row='true']:focus-visible,
+%SKIN% [data-slot='sidebar'] .row-hover:focus-visible,
+%SKIN% [data-slot='sidebar'] [data-sidebar='menu-button']:focus-visible {
   outline: 2px solid rgba(96, 165, 250, 0.75) !important;
   outline-offset: -1px !important;
 }
@@ -1611,17 +1611,17 @@ html[data-bubbles-skin='true'] [data-slot='sidebar'] [data-sidebar='menu-button'
    that is mostly empty space, so row chrome on it reads as a floating frame.
    Ring the 12x12 marker instead — box-shadow, not border/padding, so the caret
    cannot shift when it fades in on hover. */
-html[data-bubbles-skin='true'] [data-slot='sidebar'] button:hover :is(i, svg)[class*='codicon-chevron'] {
+%SKIN% [data-slot='sidebar'] button:hover :is(i, svg)[class*='codicon-chevron'] {
   border-radius: 4px !important;
   box-shadow: 0 0 0 1px rgba(147, 197, 253, 0.25), 0 0 0 3px rgba(16, 42, 78, 0.50) !important;
 }
 
 /* Session Actions Cluster */
-html[data-bubbles-skin='true'] [data-row-actions] {
+%SKIN% [data-row-actions] {
   padding-right: 6px !important;
 }
 
-html[data-bubbles-skin='true'] [data-row-actions] time {
+%SKIN% [data-row-actions] time {
   color: #94a3b8 !important;
   font-size: 11px !important;
 }
@@ -1746,7 +1746,7 @@ html[data-bubbles-skin='true'] [data-row-actions] time {
 /* Hermes already owns this two-row template (index.tsx:1530) but only engages it
    once useComposerMetrics measures the dock as narrow. Forcing it keeps the input
    on row 1 and hands row 2 to the controls, without touching the DOM. */
-html[data-bubbles-skin='true'] [data-slot='composer-surface'] div:has(> [class*='grid-area:input']) {
+%SKIN% [data-slot='composer-surface'] div:has(> [class*='grid-area:input']) {
   grid-template-columns: auto minmax(0, 1fr) !important;
   grid-template-areas: "input input" "menu controls" !important;
   align-items: stretch !important;
@@ -1755,7 +1755,7 @@ html[data-bubbles-skin='true'] [data-slot='composer-surface'] div:has(> [class*=
 
 /* The native input wrapper keeps flex-1 plus a content min-width from the
    single-row line; in a full-width grid area that can push past the surface. */
-html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area:input'] > div {
+%SKIN% [data-slot='composer-surface'] [class*='grid-area:input'] > div {
   width: 100% !important;
   min-width: 0 !important;
 }
@@ -1772,15 +1772,15 @@ html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area
        margins split the free space and park the voice cluster mid-row).
    Every hook here is structural (data-slot / data-testid / data-tour) — never
    aria-label text, which the reference skin keys on and i18n silently breaks. */
-html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area:controls'] {
+%SKIN% [data-slot='composer-surface'] [class*='grid-area:controls'] {
   justify-content: flex-start !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area:controls'] > div {
+%SKIN% [data-slot='composer-surface'] [class*='grid-area:controls'] > div {
   flex: 1 1 auto !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area:controls'] > div > :is([data-tour='model-pill'], [data-testid='reasoning-pill']) {
+%SKIN% [data-slot='composer-surface'] [class*='grid-area:controls'] > div > :is([data-tour='model-pill'], [data-testid='reasoning-pill']) {
   order: -1 !important;
 }
 
@@ -1790,19 +1790,19 @@ html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area
    free space. The mic is a FanMenu hub (voice-fan.tsx:105 → fan-menu.tsx:248), so its
    anchor is the first element of the right group; scoped to the controls row it can no
    longer reach the ＋ fan in the menu area. */
-html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area:controls'] > div > [data-slot='fan-menu-anchor'] {
+%SKIN% [data-slot='composer-surface'] [class*='grid-area:controls'] > div > [data-slot='fan-menu-anchor'] {
   margin-left: auto !important;
 }
 
 /* The prompt text and the toolbar row are two different jobs; one hairline says so.
    Inset 12px on both sides so it reads as a rule under the text, not as the box's own
    edge, and low contrast enough to disappear at a glance. */
-html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area:input'] {
+%SKIN% [data-slot='composer-surface'] [class*='grid-area:input'] {
   position: relative !important;
   padding-bottom: 7px !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area:input']::after {
+%SKIN% [data-slot='composer-surface'] [class*='grid-area:input']::after {
   content: '' !important;
   position: absolute;
   left: 12px;
@@ -1816,13 +1816,13 @@ html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area
 /* The ＋ sits in the menu area, which the host drops to the row's top with a 3px
    nudge for the single-row layout. On a two-row grid that nudge puts it one hairline
    off the toolbar it belongs to. */
-html[data-bubbles-skin='true'] [data-slot='composer-surface'] [class*='grid-area:menu'] {
+%SKIN% [data-slot='composer-surface'] [class*='grid-area:menu'] {
   align-items: center !important;
   align-self: center !important;
   translate: none !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='composer-surface'] :is([data-tour='model-pill'], [data-testid='reasoning-pill']) {
+%SKIN% [data-slot='composer-surface'] :is([data-tour='model-pill'], [data-testid='reasoning-pill']) {
   height: 28px !important;
   min-height: 28px !important;
   padding: 0 8px !important;
@@ -1833,7 +1833,7 @@ html[data-bubbles-skin='true'] [data-slot='composer-surface'] :is([data-tour='mo
   color: rgba(226, 232, 240, 0.72) !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='composer-surface'] :is([data-tour='model-pill'], [data-testid='reasoning-pill'])[data-state='open'] {
+%SKIN% [data-slot='composer-surface'] :is([data-tour='model-pill'], [data-testid='reasoning-pill'])[data-state='open'] {
   background: rgba(59, 130, 246, 0.22) !important;
   color: #ffffff !important;
 }
@@ -1842,7 +1842,7 @@ html[data-bubbles-skin='true'] [data-slot='composer-surface'] :is([data-tour='mo
    exact w-64 / w-52 width class, so a word match reaches them without restyling
    every other menu in the app. Frosted identity is kept on purpose: translucent
    fill + blur, not the reference's solid card. */
-html[data-bubbles-skin='true'] [data-slot='dropdown-menu-content']:is([class~='w-64'], [class~='w-52']) {
+%SKIN% [data-slot='dropdown-menu-content']:is([class~='w-64'], [class~='w-52']) {
   width: 240px !important;
   padding: 4px !important;
   border: 1px solid rgba(147, 197, 253, 0.18) !important;
@@ -1853,7 +1853,7 @@ html[data-bubbles-skin='true'] [data-slot='dropdown-menu-content']:is([class~='w
   box-shadow: 0 12px 32px rgba(2, 18, 44, 0.45) !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='dropdown-menu-content']:is([class~='w-64'], [class~='w-52']) [data-slot='dropdown-menu-item'] {
+%SKIN% [data-slot='dropdown-menu-content']:is([class~='w-64'], [class~='w-52']) [data-slot='dropdown-menu-item'] {
   height: 28px !important;
   min-height: 28px !important;
   padding: 0 8px !important;
@@ -1866,7 +1866,7 @@ html[data-bubbles-skin='true'] [data-slot='dropdown-menu-content']:is([class~='w
    the composer shows a continuation of the field behind it instead of its own
    highlight. The white-5% fill plus a white stroke it replaced is exactly why the
    surface read grey-black. */
-html[data-bubbles-skin='true'] [data-slot='composer-surface'] {
+%SKIN% [data-slot='composer-surface'] {
   background:
     radial-gradient(400px 140px at 50% 0%, rgba(147, 197, 253, 0.14), transparent 70%),
     radial-gradient(950px 500px at 88% -5%, rgba(96, 165, 250, 0.36), transparent 60%),
@@ -1883,7 +1883,7 @@ html[data-bubbles-skin='true'] [data-slot='composer-surface'] {
               box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='composer-surface']:focus-within {
+%SKIN% [data-slot='composer-surface']:focus-within {
   background:
     radial-gradient(450px 160px at 50% 0%, rgba(96, 165, 250, 0.28), transparent 70%),
     radial-gradient(950px 500px at 88% -5%, rgba(96, 165, 250, 0.36), transparent 60%),
@@ -1895,7 +1895,7 @@ html[data-bubbles-skin='true'] [data-slot='composer-surface']:focus-within {
 }
 
 /* Native backing layer sits inside the surface; left painted it buries the glass. */
-html[data-bubbles-skin='true'] [data-slot='composer-surface'] > [aria-hidden] {
+%SKIN% [data-slot='composer-surface'] > [aria-hidden] {
   background: transparent !important;
   background-image: none !important;
 }
@@ -1909,7 +1909,7 @@ html[data-bubbles-skin='true'] [data-slot='composer-surface'] > [aria-hidden] {
    field that reads as no selection at all. Anchored on data-tour ("tab-<id>",
    tab-dropdown.tsx:121) because it is structural and locale-free; the label text is
    i18n and would be dead in every other language. */
-html[data-bubbles-skin='true'] button[data-tour^='tab-'][data-active='true'] {
+%SKIN% button[data-tour^='tab-'][data-active='true'] {
   background: rgba(59, 130, 246, 0.22) !important;
   border: 1px solid rgba(147, 197, 253, 0.42) !important;
   border-radius: 9px !important;
@@ -1920,7 +1920,7 @@ html[data-bubbles-skin='true'] button[data-tour^='tab-'][data-active='true'] {
 
 /* The host's own underline is the weaker version of the same signal; keeping both
    would double the cue and the count badge would inherit the white. */
-html[data-bubbles-skin='true'] button[data-tour^='tab-'][data-active='true'] > span:first-child {
+%SKIN% button[data-tour^='tab-'][data-active='true'] > span:first-child {
   text-decoration: none !important;
   color: #ffffff !important;
 }
@@ -1932,7 +1932,7 @@ html[data-bubbles-skin='true'] button[data-tour^='tab-'][data-active='true'] > s
    underline variant sizes its input to content ([field-sizing:content]), so a
    ring there hugs the text and floats off the field (measured 58px ring on an
    82px field). Real controls glow on their own through .desktop-input-chrome. */
-html[data-bubbles-skin='true'] :is(button, textarea, select, [role="button"]):focus-visible {
+%SKIN% :is(button, textarea, select, [role="button"]):focus-visible {
   /* Negative offset: an outset ring floats off the element and reads as a stray
      highlight box (reported on the catalog facet rows, where it also appeared
      only after keyboard-ish focus, which is :focus-visible behaving correctly).
@@ -1945,32 +1945,32 @@ html[data-bubbles-skin='true'] :is(button, textarea, select, [role="button"]):fo
    the row colour — in the overlay sidebar that resolves near-black over the
    frosted panel, so "which sources are on" was unreadable. Give the mark its own
    light sapphire and a box to sit in. */
-html[data-bubbles-skin='true'] [data-slot='checkbox-mark'] {
+%SKIN% [data-slot='checkbox-mark'] {
   color: #bfdbfe !important;
   border: 1px solid rgba(147, 197, 253, 0.38) !important;
   border-radius: 4px !important;
   background: rgba(9, 28, 54, 0.55) !important;
 }
 
-html[data-bubbles-skin='true'] [data-slot='checkbox-mark'][data-state='checked'] {
+%SKIN% [data-slot='checkbox-mark'][data-state='checked'] {
   color: #eaf3ff !important;
   border-color: rgba(147, 197, 253, 0.62) !important;
   background: rgba(59, 130, 246, 0.34) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='running'],
-  html[data-bubbles-skin='true'] [data-slot='tool-block'][data-bubbles-tool-state='running'],
-  html[data-bubbles-skin='true'] .bubbles-user-expand-btn,
-  html[data-bubbles-skin='true'] [data-slot='tool-approval-stack'],
-  html[data-bubbles-skin='true'] [data-slot='tool-approval-card'],
-  html[data-bubbles-skin='true'] [data-slot='tool-approval-actions'] button,
-  html[data-bubbles-skin='true'] [data-slot='clarify-inline'],
-  html[data-bubbles-skin='true'] form[data-clarify-choices] button,
-  html[data-bubbles-skin='true'] .bubbles-tool-group-toggle,
-  html[data-bubbles-skin='true'] .bubbles-group-chevron,
-  html[data-bubbles-skin='true'] [data-bubbles-session-row='true'],
-  html[data-bubbles-skin='true'] [data-bubbles-session-row='true'][data-working='true'],
+  %SKIN% [data-bubbles-task-row][data-task-state='running'],
+  %SKIN% [data-slot='tool-block'][data-bubbles-tool-state='running'],
+  %SKIN% .bubbles-user-expand-btn,
+  %SKIN% [data-slot='tool-approval-stack'],
+  %SKIN% [data-slot='tool-approval-card'],
+  %SKIN% [data-slot='tool-approval-actions'] button,
+  %SKIN% [data-slot='clarify-inline'],
+  %SKIN% form[data-clarify-choices] button,
+  %SKIN% .bubbles-tool-group-toggle,
+  %SKIN% .bubbles-group-chevron,
+  %SKIN% [data-bubbles-session-row='true'],
+  %SKIN% [data-bubbles-session-row='true'][data-working='true'],
   .bubbles-session-preview {
     animation: none !important;
     transition: none !important;
@@ -1978,7 +1978,7 @@ html[data-bubbles-skin='true'] [data-slot='checkbox-mark'][data-state='checked']
 
   /* A pseudo-element is not inherited from the row, so it needs its own stop. The
      bar stays fully visible; only the breathing goes away. */
-  html[data-bubbles-skin='true'] [data-bubbles-task-row][data-task-state='running']::after {
+  %SKIN% [data-bubbles-task-row][data-task-state='running']::after {
     animation: none !important;
     opacity: 1;
   }

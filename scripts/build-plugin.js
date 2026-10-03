@@ -23,6 +23,16 @@
  *   - no backtick anywhere, including comments (it would end the literal early)
  *   - `${…}` is legal and live: `${CLAMP_LINE_THRESHOLD_PX}` is interpolated at
  *     runtime by the plugin itself
+ *
+ * One macro, expanded here rather than in the stylesheet: every rule is scoped to
+ * `%SKIN%` (233 times), which stands for `html[data-bubbles-skin='true']`. The
+ * alternative — a CSS nesting wrapper — would have moved 233 literal selectors
+ * into a block whose cascade position decides who wins, and a single missing brace
+ * in a 1,900-line sheet redefines the scope of everything after it without any
+ * parse error. Expanding a token cannot do that: the bytes PLUGIN_CSS ships are
+ * the same bytes as before, and `node scripts/build-plugin.js` refuses to emit a
+ * sheet where the token survived. Renaming the scope attribute is now one edit
+ * here plus one rebuild, instead of 233 edits that each silently un-scope a rule.
  */
 
 const fs = require('fs')
@@ -34,29 +44,60 @@ const TEMPLATE_FILE = path.join(REPO, 'src', 'plugin.source.js')
 const CSS_FILE = path.join(REPO, 'src', 'plugin.css')
 const OUT_FILE = path.join(REPO, 'src', 'plugin.js')
 
+/* The one place the scope attribute is written down. */
+const SCOPE_TOKEN = '%SKIN%'
+const SCOPE_SELECTOR = "html[data-bubbles-skin='true']"
+
+function expandScope(css, file) {
+  const hits = css.split(SCOPE_TOKEN).length - 1
+  if (hits === 0) {
+    throw new Error(`${path.basename(file)} has no ${SCOPE_TOKEN} — every rule would ship unscoped`)
+  }
+  const out = css.split(SCOPE_TOKEN).join(SCOPE_SELECTOR)
+  if (out.includes(SCOPE_TOKEN)) {
+    throw new Error(`${path.basename(file)} still contains ${SCOPE_TOKEN} after expansion`)
+  }
+  return { css: out, hits }
+}
+
 function assemble() {
   const template = fs.readFileSync(TEMPLATE_FILE, 'utf8')
   const hits = template.split(MARKER).length - 1
   if (hits === 0) throw new Error(`${path.basename(TEMPLATE_FILE)} has no marker line — the stylesheet would be dropped silently`)
   if (hits > 1) throw new Error(`${path.basename(TEMPLATE_FILE)} has ${hits} marker lines — the stylesheet would be pasted ${hits} times`)
 
-  const css = fs.readFileSync(CSS_FILE, 'utf8').replace(/\n$/, '')
-  if (css.includes('`')) {
-    const line = css.slice(0, css.indexOf('`')).split('\n').length
+  const raw = fs.readFileSync(CSS_FILE, 'utf8').replace(/\n$/, '')
+  if (raw.includes('`')) {
+    const line = raw.slice(0, raw.indexOf('`')).split('\n').length
     throw new Error(`src/plugin.css line ${line} has a backtick — it would truncate PLUGIN_CSS in the assembled plugin`)
   }
+  const { css, hits: scoped } = expandScope(raw, CSS_FILE)
   // The marker occupies its own line between the literal's opening and closing
   // backticks, so the body is substituted for the marker text alone.
-  return template.split(MARKER).join(css)
+  return { text: template.split(MARKER).join(css), scoped }
+}
+
+/* sync.js calls this to refresh src/plugin.js before deploying, and it compares the
+   result against the file on disk with `!==` — so the assembled text has to stay a
+   plain string. (An earlier version returned `{ text, scoped }` and sync wrote the
+   object straight to disk: ERR_INVALID_ARG_TYPE, three suites red. Count the
+   selectors separately instead of changing this contract.) */
+function assembleText() {
+  return assemble().text
+}
+
+function scopedSelectors() {
+  const raw = fs.readFileSync(CSS_FILE, 'utf8')
+  return raw.split(SCOPE_TOKEN).length - 1
 }
 
 function main() {
   const check = process.argv.includes('--check')
-  const built = assemble()
+  const { text: built, scoped } = assemble()
   const current = fs.existsSync(OUT_FILE) ? fs.readFileSync(OUT_FILE, 'utf8') : null
 
   if (current === built) {
-    console.log(`[build] src/plugin.js is current (${built.length} chars)`)
+    console.log(`[build] src/plugin.js is current (${built.length} chars, ${scoped} scoped selectors)`)
     return 0
   }
   if (check) {
@@ -78,4 +119,4 @@ function artifactForDelta(built, current) {
 }
 
 if (require.main === module) process.exit(main())
-module.exports = { assemble, MARKER }
+module.exports = { assemble: assembleText, scopedSelectors, MARKER }

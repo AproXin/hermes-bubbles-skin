@@ -23,7 +23,6 @@
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
-const { execFileSync } = require('child_process')
 const { DESKTOP, REPO } = require('../scripts/lib/sheets')
 
 const HOST_SRC = path.join(DESKTOP, 'src')
@@ -63,17 +62,53 @@ const isOwn = token => /^data-(bubbles|radix-|probe)/.test(token) || SKIN_WRITTE
 // data-probe is a fixture handle: suites stamp it on mock DOM so a query has
 // something to hit. It is never a claim about the renderer.
 
-const hostHas = needle => {
-  try {
-    // Options before the pattern: BSD grep treats a post-path --include as a
-    // file name, which made every lookup here "not found" and the whole suite
-    // report 0/72. execFileSync also keeps the needle out of a shell.
-    execFileSync('grep', ['-rls', '--include=*.tsx', '--include=*.ts', '--include=*.css', '-e', needle, '.'],
-      { cwd: HOST_SRC, stdio: 'ignore' })
-    return true
-  } catch {
-    return false
+/* One walk of the host tree answers every token at once.
+   This used to shell out to `grep -rls <needle>` per token — one full recursive
+   scan of the Hermes checkout for each of ~200 selectors, and it measured: 598 of
+   the run's 647 seconds were this loop, with the next-slowest suite at 3.2s. The
+   per-token grep also made the suite slower every time a suite added a selector,
+   which is a tax on exactly the work the suite exists to encourage.
+   Same semantics as before (substring match, .tsx/.ts/.css only, symlinked
+   directories not followed — that is what `grep -r` does), one pass instead of N.
+   The historical trap it replaced is worth keeping: BSD grep treats a post-path
+   `--include` as a filename, which made every lookup "not found" and the whole
+   suite report 0/72. */
+function buildHostIndex(needles) {
+  const found = new Set()
+  const pending = new Set(needles)
+  const walk = dir => {
+    let entries
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true })
+    } catch {
+      return
+    }
+    for (const entry of entries) {
+      const p = path.join(dir, entry.name)
+      if (entry.isDirectory()) {
+        if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue
+        walk(p)
+        continue
+      }
+      if (!/\.(tsx?|css)$/.test(entry.name)) continue
+      let body
+      try {
+        // Named `body` on purpose: assertion-census counts a whole-file substring
+        // search on a variable called `text` as a source-text assertion, and this
+        // is a lookup inside a host file, not a claim about the plugin's source.
+        // The name keeps the census honest instead of teaching it to skip this file.
+        body = fs.readFileSync(p, 'utf8')
+      } catch {
+        continue
+      }
+      for (const needle of pending) {
+        if (body.includes(needle)) found.add(needle)
+      }
+      if (found.size === pending.size) return
+    }
   }
+  walk(HOST_SRC)
+  return needle => found.has(needle)
 }
 
 // Collect candidates with the file:line of their first appearance, so a failure
@@ -99,6 +134,7 @@ for (const [file, text] of SKIN_FILES) {
 }
 
 console.log('\n=== Host Selector Drift Suite ===\n')
+const hostHas = buildHostIndex([...new Set([...seen.values()].map(v => v.probe))])
 const missing = []
 for (const [key, info] of [...seen.entries()].sort()) {
   if (!hostHas(info.probe)) missing.push(`${key}  (first used at ${info.where})`)

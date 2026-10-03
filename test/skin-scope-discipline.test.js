@@ -143,6 +143,23 @@ for (const [name, raw] of SHEETS) {
 check('no plugin-stamped rule reaches a bare descendant tag',
   descendantReaches.length === 0, descendantReaches.join(' | '))
 
+/* The scope attribute is written down once, in scripts/build-plugin.js, and the
+   stylesheet refers to it as %SKIN% (233 times). A literal
+   `html[data-bubbles-skin='true']` typed back into src/plugin.css would compile
+   and ship and scope correctly — silently creating a second place to rename, which
+   is the exact failure the macro exists to prevent. So the source is checked for
+   the token, and the built sheet is checked for the expansion. */
+const cssSource = fs.readFileSync(path.join(REPO, 'src', 'plugin.css'), 'utf8')
+const literals = stripComments(cssSource).split("html[data-bubbles-skin='true']").length - 1
+const tokens = cssSource.split('%SKIN%').length - 1
+check('src/plugin.css scopes through %SKIN%, never a literal attribute selector',
+  literals === 0 && tokens > 200, `${tokens} tokens, ${literals} literals`)
+
+const built = fs.readFileSync(path.join(REPO, 'src', 'plugin.js'), 'utf8')
+const expanded = built.split("html[data-bubbles-skin='true']").length - 1
+check('the built plugin carries the expanded scope on every rule that asked for it',
+  expanded >= tokens && !built.includes('%SKIN%'), `${expanded} expanded in src/plugin.js`)
+
 const failed = results.filter(r => !r.ok)
 console.log(`\n${failed.length ? 'FAIL' : 'OK'} — ${results.length - failed.length}/${results.length} assertions`)
 process.exit(failed.length ? 1 : 0)

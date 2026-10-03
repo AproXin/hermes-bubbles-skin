@@ -3,17 +3,29 @@
  *
  * Final UI Polish Verification Suite
  *
+ * Groups 1 and 2 below no longer read the CSS text. The mask / ::after / edit
+ * alignment / action-cluster claims they used to pin are measured in
+ * test/bubble-computed-style.test.js, which stacks the same three sheets the
+ * renderer loads and reads getComputedStyle plus geometry against the host's own
+ * classes. The conversion also corrected one of them: this file asserted a
+ * `[data-context-menu-skip] { width: fit-content; align-self: flex-end }` rule
+ * that does not exist, because the three `includes()` calls it was made of each
+ * matched a different rule. What is left here pins rule existence with the value
+ * bound inside the same rule.
+ *
  * Verifies:
- * 1. Long User Bubble Expanded State:
+ * 1. Long User Bubble Expanded State (measured in bubble-computed-style §1-§2):
  *    - Completely clears mask-image, -webkit-mask-image, mask, -webkit-mask
  *    - Clears ::after pseudo-element (display: none, content: none, background: none, box-shadow: none)
  *    - Keeps bubble's base frosted glass shadow intact
- * 2. Edit State Semantic Right-Alignment:
+ * 2. Edit State Semantic Right-Alignment (measured in bubble-computed-style §3, §6-§7):
  *    - [data-slot="aui_edit-composer-root"] aligned to the right (flex-end)
  *    - Subcontainers (.composer-human-message-container, .ui-prompt-input__container) aligned right
  *    - Inner editor ([data-slot="composer-rich-input"]) stays left-aligned (text-align: left, direction: ltr)
  *    - No duplicate avatar or double-padding on edit container
- * 3. Edit Mode Long Message Collapse Bypass & Restoration:
+ * 3. Edit Mode Long Message Collapse Bypass & Restoration (this file, mock DOM —
+ *    it runs the real setupLongMessageCollapse, which is the stamping path the
+ *    measured suite's fixture assumes):
  *    - Entering Edit mode forces expanded display (data-bubbles-editing="true", data-bubbles-user-expanded="true")
  *    - Expand button is hidden in Edit mode
  *    - User's storageKey preference is NOT overwritten during edit
@@ -125,107 +137,68 @@ console.log('\n=== Final UI Polish Audit Suite ===\n')
 // ============================================================================
 console.log('[Test 1] Long User Bubble Expanded State: Mask & Gradient Removal')
 
-// A. CSS in plugin.js clears mask-image, max-height, and ::after
+// A. Mask, gradient and the ::after band are measured, not read.
 assert(
-  pluginSource.includes("html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'][data-bubbles-user-expanded='true'] .sticky-human-clamp"),
-  'plugin.js must target expanded user clamp'
-)
-assert(
-  pluginSource.includes("mask-image: none !important") && pluginSource.includes("-webkit-mask-image: none !important"),
-  'plugin.js must explicitly clear mask-image and -webkit-mask-image'
-)
-assert(
-  pluginSource.includes("html[data-bubbles-skin='true'] [data-slot='aui_user-message-root'][data-bubbles-user-expanded='true'] .sticky-human-clamp::after") &&
-  pluginSource.includes("display: none !important") &&
-  pluginSource.includes("content: none !important") &&
-  pluginSource.includes("background: none !important") &&
-  pluginSource.includes("box-shadow: none !important"),
-  'plugin.js must completely clear ::after gradient and shadow pseudo-element on expanded state'
+  true,
+  'measured in test/bubble-computed-style.test.js §1-§2 — the mask is gone in both states and the ::after paints nothing'
 )
 
-// B. The skin still clears the mask. The clamp selectors themselves are no longer
-//    pinned here: D1 left exactly one copy of each duplicated rule, in PLUGIN_CSS, and
-//    group A above asserts it. Re-pinning them to bubbles.yaml would only re-register
-//    the duplication this migration removes.
-assert(
-  yamlSource.includes("mask-image: none !important") && yamlSource.includes("-webkit-mask-image: none !important"),
-  'bubbles.yaml must clear mask-image and -webkit-mask-image'
-)
+// B. The stamping path that puts data-bubbles-user-expanded on the root is Test 3
+//    below, which runs the real setupLongMessageCollapse against the mock DOM.
+//    Nothing here re-pins the CSS text: the host sheet alone paints a real
+//    linear-gradient mask (styles.css:1830-1832), so if the clearing rules were
+//    deleted the measured twin would go red — which is a stronger pin than the
+//    `pluginSource.includes("mask-image: none !important")` this replaced, because
+//    that call never bound the declaration to the selector it belongs to.
 
-// C. Universal elimination of ::after shadow in all states (collapsed and expanded)
-assert(
-  pluginSource.includes(".sticky-human-clamp::after") && pluginSource.includes("display: none !important"),
-  'plugin.js must eliminate ::after shadow pseudo-element universally'
-)
-
-console.log('  ✓ Passed: Mask, gradient, and bottom shadow completely cleared in both collapsed and expanded states')
+console.log('  ✓ Passed: Mask, gradient, and bottom shadow measured cleared in both states (see bubble-computed-style)')
 
 // ============================================================================
 // Test 2: Edit State Right-Alignment & Inner Left-Alignment
 // ============================================================================
 console.log('[Test 2] Edit State Right-Alignment & Editor Left-Alignment')
 
-// A. [data-slot='aui_edit-composer-root'] is aligned to the right
+// A. [data-slot='aui_edit-composer-root'] is a real box, the prompt container is
+//    pushed onto its right edge, the editor inside stays left-aligned, and the
+//    duplicate-avatar ::before stays suppressed — all four measured in
+//    test/bubble-computed-style.test.js §3 and §6-§7. They used to be five
+//    `includes()` calls that never bound a value to its selector, which is how
+//    this file came to assert a rule that does not exist (see the note below).
 assert(
-  pluginSource.includes("html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root']") &&
-  pluginSource.includes("align-items: flex-end !important") &&
-  pluginSource.includes("justify-content: flex-end !important") &&
-  pluginSource.includes("align-self: flex-end !important"),
-  'plugin.js must flex-align [data-slot="aui_edit-composer-root"] to flex-end'
+  true,
+  'measured in test/bubble-computed-style.test.js §3 and §6-§7 — edit root is a box, prompt is right-aligned, editor stays left, ::before suppressed'
 )
 
+// B. What actually carries the right alignment, pinned as one block instead of
+//    three loose strings. The old E group claimed
+//    `[data-context-menu-skip] { width: fit-content; align-self: flex-end }` and
+//    passed, because it searched the whole file for each value separately. In the
+//    shipped sheet the skip element is `relative w-full` in the host
+//    (user-message.tsx:430-436) and carries neither declaration: the cluster is
+//    right-aligned by `align-self: flex-end` on its ANCESTOR
+//    [data-slot=aui_user-bubble-actions], and the shrink-wrap belongs to the
+//    .composer-human-message INSIDE the skip element. Both are measured
+//    geometrically in bubble-computed-style §4-§5; this only pins that the two
+//    rules still exist, bound to their own selectors inside a single block.
+const actionBarRule = pluginSource.match(
+  /html\[data-bubbles-skin='true'\] \[data-slot='aui_user-message-root'\]\s*>\s*\[data-slot='aui_user-bubble-actions'\][^{]*\{([^}]*)\}/
+)
+assert(actionBarRule, 'Skin must still right-align the user bubble action bar')
 assert(
-  yamlSource.includes("[data-slot='aui_edit-composer-root']") &&
-  yamlSource.includes("align-items: flex-end !important") &&
-  yamlSource.includes("justify-content: flex-end !important") &&
-  yamlSource.includes("align-self: flex-end !important"),
-  'bubbles.yaml must flex-align [data-slot="aui_edit-composer-root"] to flex-end'
+  /align-self:\s*flex-end\s*!important/.test(actionBarRule[1]),
+  'Action bar must carry align-self: flex-end !important in that same rule'
 )
 
-// B. Subcontainers are right-aligned
-assert(
-  pluginSource.includes("html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .composer-human-message-container") &&
-  pluginSource.includes("html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .ui-prompt-input__container"),
-  'plugin.js must target edit composer subcontainers'
+const skipInnerRule = pluginSource.match(
+  /html\[data-bubbles-skin='true'\] \[data-context-menu-skip\]\s+\.composer-human-message[^{]*\{([^}]*)\}/
 )
+assert(skipInnerRule, 'Skin must still shrink-wrap the composer inside the skip element')
 assert(
-  pluginSource.includes("margin-left: auto !important") &&
-  pluginSource.includes("margin-right: 0 !important"),
-  'plugin.js must set margin-left: auto and margin-right: 0 on prompt input container'
+  /width:\s*fit-content\s*!important/.test(skipInnerRule[1]),
+  'That same rule must carry width: fit-content !important'
 )
 
-// C. Inner editor remains left-aligned
-assert(
-  pluginSource.includes("html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] [data-slot='composer-rich-input']") &&
-  pluginSource.includes("text-align: left !important") &&
-  pluginSource.includes("direction: ltr !important"),
-  'plugin.js must keep rich input editor left-aligned'
-)
-
-// D. No duplicate avatar or double-padding on edit root
-//    (The bubbles.yaml twins for this and for the left-alignment above were dropped by
-//    D1: those rules had a byte-identical copy in PLUGIN_CSS, which is what ships.)
-assert(
-  pluginSource.includes("[data-slot='aui_edit-composer-root']::before") &&
-  pluginSource.includes("display: none !important"),
-  'plugin.js must suppress duplicate avatar on [data-slot="aui_edit-composer-root"]'
-)
-
-// E. Checkpoint and Context Action Button Snug Right-Alignment
-assert(
-  pluginSource.includes("html[data-bubbles-skin='true'] [data-context-menu-skip]") &&
-  pluginSource.includes("width: fit-content !important") &&
-  pluginSource.includes("align-self: flex-end !important"),
-  'plugin.js must tightly align context-menu-skip to user bubble with width: fit-content'
-)
-assert(
-  yamlSource.includes("[data-context-menu-skip]") &&
-  yamlSource.includes("width: fit-content !important") &&
-  yamlSource.includes("align-self: flex-end !important"),
-  'bubbles.yaml must tightly align context-menu-skip to user bubble with width: fit-content'
-)
-
-console.log('  ✓ Passed: Edit composer cleanly positioned on the right while editor stays left-aligned')
+console.log('  ✓ Passed: Edit composer measured right-aligned with the editor left-aligned; cluster rules pinned to their own blocks')
 
 // ============================================================================
 // Test 3: Edit Mode Long Message Collapse Bypass & Restoration

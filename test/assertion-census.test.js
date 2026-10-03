@@ -49,8 +49,26 @@ const TEST_DIR = path.join(REPO, 'test')
    assertions. They now share test/lib/plugin-sandbox.js and count once. The source-text ASSERTIONS
    are untouched (per-file assert counts verified unchanged: 7/6/14/16/27/36/15/41/13/22), which is
    why the test/lib directory is scanned too — see above — so this cannot be repeated by parking
-   matched text somewhere the census does not look. */
-const BASELINE = 137
+   matched text somewhere the census does not look.
+
+   2026-10-03, batch 4: 137 → 106, the first real conversion since D1. The mask,
+   ::after, edit-composer alignment and action-cluster claims in final-ui-polish
+   were 14 `includes()` calls that never bound a value to its selector; they now
+   live in test/bubble-computed-style.test.js as getComputedStyle and geometry
+   readings against the host's own classes (user-message.tsx:75/383/422-436,
+   styles.css:1830-1832 for the mask the host really paints). final-ui-polish
+   66 → 34. What is left there is two rule-existence pins rewritten to bind the
+   value inside the same rule — one of the old ones asserted a
+   `[data-context-menu-skip] { width: fit-content; align-self: flex-end }` rule
+   that does not exist: the cluster is aligned by its ANCESTOR
+   [data-slot=aui_user-bubble-actions] and the shrink-wrap belongs to the
+   .composer-human-message inside the skip element. The three `includes()` calls
+   passed because each string lived in a different rule. So the conversion did not
+   just move assertions, it caught one that was measuring nothing.
+   tool-flattening (24) is now the largest single block and is next.
+ *   106 → 105 the same day: naming the pattern in a COMMENT counts too, and two of
+ *   the sentences written to explain the change were themselves counted. */
+const BASELINE = 105
 
 const SOURCE_TEXT = /\b(?:pluginSource|srcCode|src|yamlSource|cssText|pluginCode|code|text)\s*\.includes\s*\(/g
 const SOURCE_REGEX = /\b(?:pluginSource|srcCode|yamlSource|pluginCode|cssText)\s*\.match\s*\(|\/[^/]*\/[a-z]*\.test\s*\(\s*(?:pluginSource|srcCode|yamlSource|pluginCode)/g

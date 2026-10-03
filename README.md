@@ -162,7 +162,7 @@ node scripts/run-tests.js sidebar task # 只跑文件名包含这些字样的
 
 根目录的 `package.json` 只是把上面四条命令登记成 `npm run build` / `npm test` / `npm run sync` / `npm run preview`，**不需要 `npm install`**：套件用的 `playwright-core` 从你本机的 Hermes 检出解析（`scripts/lib/sheets.js` 里那条回落路径），装一份到本仓库反而可能引入版本不匹配。它刻意**不写 `"type"` 字段**——`src/plugin.js` 是 ES 模块，一旦声明 `commonjs`，Node 就不再自动识别语法，`sync` 的解析门会拒绝部署（这条已由 `test/plugin-source-parses.test.js` 实测守住）。
 
-**53 个套件**，三类互补：**28 个**会在无头浏览器里装配「构建 CSS + live customCSS + PLUGIN_CSS」三层真实样式表，断言**实测计算样式与像素**（而不是比对 CSS 文本），其中 `observer-trigger-scope` 用页面里真实的 MutationObserver 数回调/祖先走查/重排次数来钉住监听口径，`layout-read-batching` 数「读完尺寸立刻又写」的强制重排次数；**15 个**用 mock DOM 或沙箱执行跑插件 JS 的行为（打标、折叠、状态判定、生命周期与 cleanup、`runStage` 阶段隔离、存储回收）；**10 个**不碰 DOM，守仓库与构建本身——源码可解析、装配产物与两份源文件一致、宿主选择器漂移、`customCSS` 体积预算、两张表之间的规则重复、CSS 作用域纪律、断言普查、sync 的部署、参数校验与「当前激活的不是本皮肤」提示。这三类数字与套件总数由断言普查套件钉住，手抄错会直接报红。
+**54 个套件**，三类互补：**29 个**会在无头浏览器里装配「构建 CSS + live customCSS + PLUGIN_CSS」三层真实样式表，断言**实测计算样式与像素**（而不是比对 CSS 文本），其中 `observer-trigger-scope` 用页面里真实的 MutationObserver 数回调/祖先走查/重排次数来钉住监听口径，`layout-read-batching` 数「读完尺寸立刻又写」的强制重排次数，`bubble-computed-style` 把长消息遮罩、编辑态右对齐与操作区贴边从「源码里有没有这行字」改成真读计算样式与几何（并带一张只叠宿主样式的对照页，防止夹具画不出来时假绿）；**15 个**用 mock DOM 或沙箱执行跑插件 JS 的行为（打标、折叠、状态判定、生命周期与 cleanup、`runStage` 阶段隔离、存储回收）；**10 个**不碰 DOM，守仓库与构建本身——源码可解析、装配产物与两份源文件一致、宿主选择器漂移、`customCSS` 体积预算、两张表之间的规则重复、CSS 作用域纪律、断言普查、sync 的部署、参数校验与「当前激活的不是本皮肤」提示。这三类数字与套件总数由断言普查套件钉住，手抄错会直接报红。
 
 缺少 Hermes 检出或浏览器时，浏览器套件会 SKIP 而不是假绿；关键套件把 SKIP 判为失败。
 
