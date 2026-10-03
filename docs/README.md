@@ -23,6 +23,12 @@ git show <该提交>^:docs/reports/phase-5b-report.md    # 取回其中任意一
 > 并含改签名应用的操作步骤，公开发布前整体撤下（`docs/patches/` 一并撤下）。结论与变通方法保留在根
 > README 的「已知限制」一节。
 
+## 待办交底
+
+| 文档 | 内容 |
+| --- | --- |
+| [process-parent-tools-split-brief.md](process-parent-tools-split-brief.md) | `processParentTools`（244 行 / CC 58）拆分的交底卡：实测的 7 段结构、动刀前必须先钉的两条无断言契约（`data-bubbles-group-id`、`data-bubbles-tool-group`）、不许变的对外签名，以及逐段比对的快照验收配方 |
+
 ## 预览图
 
 [`previews/`](previews) 由 `node scripts/render-preview.js` 生成——整窗、无边框，用真实三层样式表
