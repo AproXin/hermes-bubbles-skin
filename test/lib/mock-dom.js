@@ -124,7 +124,21 @@ class MockElement {
   }
 
   get innerHTML() {
-    return this._innerHTML
+    /* A string assigned by the setter is returned verbatim, as before. A tree built
+       one node at a time has no such string, and a real element serialises its
+       children there — without that, `innerHTML` reads back empty for a subtree the
+       browser would have rendered. */
+    if (this._innerHTML) return this._innerHTML
+    return this.children.map(child => child._serialize()).join('')
+  }
+
+  _serialize() {
+    const tag = this.tagName.toLowerCase()
+    const cls = this.className ? ` class="${this.className}"` : ''
+    const inner = this.children.length > 0
+      ? this.children.map(child => child._serialize()).join('')
+      : String(this._textContent).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    return `<${tag}${cls}>${inner}</${tag}>`
   }
 
   set innerHTML(html) {
@@ -223,6 +237,18 @@ class MockElement {
         this.appendChild(node)
       }
     }
+  }
+
+  /**
+   * Replaces the whole child list, the way the DOM method of the same name does:
+   * detached children lose their parent, and a previously assigned `innerHTML`
+   * string no longer describes the node.
+   */
+  replaceChildren(...nodes) {
+    for (const child of this.children) child.parentElement = null
+    this.children = []
+    this._innerHTML = ''
+    this.append(...nodes)
   }
 
   insertBefore(newNode, refNode) {

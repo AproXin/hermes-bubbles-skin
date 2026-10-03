@@ -1202,6 +1202,7 @@ function escapeHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
 
 function cleanPreviewSnippet(s, maxLen = 130) {
@@ -1345,42 +1346,49 @@ function showPreview(rowEl) {
   currentPreviewRow = rowEl
   const container = ensurePreviewContainer()
 
-  let html = `<div class="bubbles-preview-card">`
-  html += `<div class="bubbles-preview-header">`
-  html += `<span class="bubbles-preview-icon">✦</span>`
-  html += `<span class="bubbles-preview-title">${escapeHtml(data.title)}</span>`
-  html += `</div>`
+  const node = (tag, className, text) => {
+    const el = document.createElement(tag)
+    el.className = className
+    if (text !== undefined) el.textContent = text
+    return el
+  }
+
+  const card = node('div', 'bubbles-preview-card')
+
+  const header = node('div', 'bubbles-preview-header')
+  header.appendChild(node('span', 'bubbles-preview-icon', '✦'))
+  header.appendChild(node('span', 'bubbles-preview-title', data.title))
+  card.appendChild(header)
 
   if (data.userSnippet || data.asstSnippet) {
-    html += `<div class="bubbles-preview-body">`
+    const body = node('div', 'bubbles-preview-body')
     if (data.userSnippet) {
-      html += `<div class="bubbles-preview-section bubbles-preview-user">`
-      html += `<span class="bubbles-preview-role">You</span>`
-      html += `<p class="bubbles-preview-text">${escapeHtml(data.userSnippet)}</p>`
-      html += `</div>`
+      const section = node('div', 'bubbles-preview-section bubbles-preview-user')
+      section.appendChild(node('span', 'bubbles-preview-role', 'You'))
+      section.appendChild(node('p', 'bubbles-preview-text', data.userSnippet))
+      body.appendChild(section)
     }
     if (data.asstSnippet) {
-      html += `<div class="bubbles-preview-section bubbles-preview-assistant">`
-      html += `<span class="bubbles-preview-role">Hermes</span>`
-      html += `<p class="bubbles-preview-text">${escapeHtml(data.asstSnippet)}</p>`
-      html += `</div>`
+      const section = node('div', 'bubbles-preview-section bubbles-preview-assistant')
+      section.appendChild(node('span', 'bubbles-preview-role', 'Hermes'))
+      section.appendChild(node('p', 'bubbles-preview-text', data.asstSnippet))
+      body.appendChild(section)
     }
-    html += `</div>`
+    card.appendChild(body)
   }
 
   if (data.metaInfo || data.time) {
-    html += `<div class="bubbles-preview-footer">`
+    const footer = node('div', 'bubbles-preview-footer')
     if (data.metaInfo) {
-      html += `<span class="bubbles-preview-meta">${escapeHtml(data.metaInfo)}</span>`
+      footer.appendChild(node('span', 'bubbles-preview-meta', data.metaInfo))
     }
     if (data.time) {
-      html += `<span class="bubbles-preview-time">${escapeHtml(data.time)}</span>`
+      footer.appendChild(node('span', 'bubbles-preview-time', data.time))
     }
-    html += `</div>`
+    card.appendChild(footer)
   }
-  html += `</div>`
 
-  container.innerHTML = html
+  container.replaceChildren(card)
   container.setAttribute('data-visible', 'true')
   container.setAttribute('aria-hidden', 'false')
 
