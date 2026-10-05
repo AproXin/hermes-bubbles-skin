@@ -1,0 +1,26 @@
+# Normalize line endings: everything is text unless marked binary below, stored
+# as LF in the repository. Nothing in this repo currently uses CRLF, so this
+# should be a no-op on existing files — it only stops a Windows checkout or a
+# hand-edited file from quietly introducing one.
+* text=auto
+
+# Never normalize these.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+
+# Shell scripts must keep LF or the shebang breaks on the platform that runs them.
+*.sh text eol=lf
+pre-push text eol=lf
+
+# The plugin is deployed by byte-comparing it; keep its bytes predictable.
+*.js text
+*.css text
+*.json text
+*.md text
+*.yaml text
+*.yml text

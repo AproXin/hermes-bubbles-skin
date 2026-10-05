@@ -1,0 +1,31 @@
+#!/bin/sh
+# pre-push — run the skin's suites before anything leaves this machine.
+#
+# Why a hook and not only CI: most of these suites read the local Hermes checkout
+# (the built renderer sheet, skin_engine.py's 32 KiB slice, the host's own source for
+# the drift guard) and a real browser. Off this machine the host-dependent suites skip,
+# so CI alone would not have stopped the class of breakage this project actually hits.
+#
+# Enable (a hook under .git/ is not versioned, so each clone opts in once):
+#   git config core.hooksPath scripts/git-hooks
+#
+# run-tests.js exits 2 when something SKIPPED, not when something failed. Skips are
+# refused too: a green-looking run that skipped the pixel suites is how a broken skin
+# ships. Override deliberately, and say why in the push message:
+#   BUBBLES_ALLOW_SKIP=1 git push
+
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+status=0
+node scripts/run-tests.js || status=$?
+
+if [ "$status" -eq 0 ]; then
+  exit 0
+fi
+if [ "$status" -eq 2 ] && [ "${BUBBLES_ALLOW_SKIP:-0}" = "1" ]; then
+  echo "pre-push: allowing the push with skips (BUBBLES_ALLOW_SKIP=1)." >&2
+  exit 0
+fi
+
+echo "pre-push: refused (run-tests exit $status). Fix it, or push with --no-verify." >&2
+exit 1

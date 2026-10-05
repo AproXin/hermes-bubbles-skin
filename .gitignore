@@ -1,0 +1,19 @@
+# Safety copies of the skin, and the one-deep backup sync.js writes before
+# --force-skin replaces a live file.
+*.bak
+*.bak.*
+*.bak_*
+*.bak-*
+*.perfect_bak
+
+# macOS
+.DS_Store
+
+# Local scratch / ad-hoc probes.
+node_modules/
+.tmp/
+
+# NOTE: plugin.js and bubbles.yaml are deliberately NOT ignored — the install
+# commands in README curl both of them straight from this branch, so they are
+# distribution artifacts. plugin.js is generated from src/plugin.js by sync;
+# regenerate and commit together, never hand-edit.

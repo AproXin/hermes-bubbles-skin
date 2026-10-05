@@ -1,0 +1,498 @@
+# 蓝色拟态玻璃风格皮肤：统一高质感界面
+name: bubbles
+description: Full window blue glass theme with opaque blue glass settings overlay and non-overlapping bubbles
+
+colors:
+  banner_border: "#3b82f6"
+  banner_title: "#93c5fd"
+  banner_accent: "#60a5fa"
+  banner_dim: "#93c5fd"
+  banner_text: "#f0f6ff"
+  ui_accent: "#60a5fa"
+  ui_label: "#bfdbfe"
+  ui_ok: "#4ade80"
+  ui_error: "#f87171"
+  ui_warn: "#fbbf24"
+  prompt: "#ffffff"
+  input_rule: "#2563eb"
+  response_border: "#3b82f6"
+  session_label: "#93c5fd"
+  session_border: "#1d4ed8"
+  status_bar_bg: "#0a2540"
+  voice_status_bg: "#0a2540"
+  selection_bg: "#2563eb"
+  completion_menu_bg: "#0d2f54"
+  completion_menu_current_bg: "#1a457a"
+  completion_menu_meta_bg: "#0d2f54"
+  completion_menu_meta_current_bg: "#1a457a"
+
+customCSS: |
+  /* 1. CSS变量层：清除原生暗黑遮罩
+     data-hermes-glass / data-hermes-glass-on 由宿主在开启玻璃模式时写在 html 上，
+     只在玻璃模式开启时存在，不是幻影选择器，不要删。
+     这一组里已经有裸 :root，所以开关两种状态都命中；限定符是给人读的标记。 */
+  :root, :root.dark, :root[data-hermes-glass], :root[data-hermes-glass-on], html, body {
+    --sidebar: transparent !important;
+    --ui-bg-sidebar: transparent !important;
+    --ui-sidebar-surface-background: transparent !important;
+    --ui-bg-chrome: transparent !important;
+    --color-sidebar: transparent !important;
+    /* 看板根节点用的就是它（--ui-bg-editor）；全应用仅 3 处引用。
+       test/kanban-surface.test.js。 */
+    --ui-surface-background: transparent !important;
+    /* The skin's only OPAQUE surface: xterm needs a concrete color.
+       Pinned by test/skin-scope-discipline.test.js and test/terminal-surface.test.js. */
+    --ui-terminal-surface-background: #113c6a !important;
+    --ui-widget-surface-background: rgba(255, 255, 255, 0.14) !important;
+  }
+
+  /* 2. 全窗口背景：统一蓝色拟态玻璃与光斑效果 */
+  html, body, #root, [data-contrib-shell], [data-slot='aui_thread-viewport'],
+  [data-slot='sidebar-container'], [data-slot='sidebar-inner'], [data-sidebar='sidebar'],
+  [data-slot='sidebar'], [data-slot='sidebar-wrapper'],
+  /* Anchored by surface class, never by accessible name (i18n). Guarded by
+     test/skin-scope-discipline.test.js. */
+  [class*='bg-(--ui-sidebar-surface-background)'],
+  /* The terminal's layers are NOT here — see 2b and test/terminal-surface.test.js. */
+  [class*='group/rail'] {
+    background:
+      radial-gradient(650px 350px at 10% 5%, rgba(99, 102, 241, 0.22), transparent 70%),
+      radial-gradient(850px 420px at 50% -8%, rgba(56, 189, 248, 0.26), transparent 65%),
+      radial-gradient(950px 500px at 88% -5%, rgba(96, 165, 250, 0.36), transparent 60%),
+      radial-gradient(700px 450px at 62% 48%, rgba(37, 99, 235, 0.22), transparent 65%),
+      radial-gradient(750px 400px at 94% 96%, rgba(59, 130, 246, 0.28), transparent 60%),
+      radial-gradient(800px 480px at -5% 105%, rgba(29, 78, 216, 0.40), transparent 60%),
+      linear-gradient(165deg, #092038 0%, #0e2e54 48%, #16467d 100%) !important;
+    background-attachment: fixed !important;
+    background-color: #0d2a4d !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #e2e8f0;
+  }
+
+  /* 2b. 终端面板平涂自己的 token：光斑渐变无法合成进 xterm 的 WebGL 画布。 */
+  .xterm, .xterm-viewport, .xterm-screen, .xterm-scrollable-element,
+  [class*='bg-(--ui-terminal-surface-background)']:not([class*='group/rail']) {
+    background: var(--ui-terminal-surface-background) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* 3. 透明过渡层：文字与容器区域 */
+  [data-slot='aui_thread-content'], main, section,
+  [data-slot='sidebar-content'],
+  :is(header, [role='banner'], [data-slot*='titlebar'], [data-slot*='tablist']),
+  [data-slot='sidebar'] :is([data-sidebar='menu-button'], [data-sidebar='menu-item'], .group, [class*='card'], [data-slot*='card'], .row-hover, [data-row-actions], div, button),
+  aside :is(.group\/row, [data-tree-group], div, span, button, h2, h3),
+  :is([data-slot='code-card'], .status-row, [data-slot*='disclosure']),
+  [data-overlay-surface] :is(main, section, nav, aside),
+  :is([data-slot='composer-root'], [data-slot='composer-dock'], [data-slot='aui_edit-composer-root'], .composer-dock, .composer-human-message-container, .human-execution-message-top) {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  /* 4. 侧栏样式：透明背景与行状态 */
+  [data-slot='sidebar'], aside[data-slot='sidebar'] {
+    --ui-row-hover-background: rgba(20, 60, 100, 0.32) !important;
+    --ui-row-active-background: rgba(59, 130, 246, 0.26) !important;
+    --ui-row-open-background: rgba(59, 130, 246, 0.13) !important;
+  }
+
+  /* 侧栏容器：完全透明，让 bubbles.yaml 第 2 层的 fixed 光斑主背景直接透出，
+     与主界面共用同一背景体系（此前 rgba(8,24,48,0.55)+blur 暗层会盖住光斑，
+     造成 Sessions 区域的实体矩形断层）。 */
+  [data-slot='sidebar'], aside[data-slot='sidebar'], .group\/sidebar, [data-slot='sidebar-container'] {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-right: 1px solid rgba(147, 197, 253, 0.15) !important;
+  }
+  :is([data-slot='code-card'], .status-row, [data-slot*='disclosure'], aside .group\/row) {
+    color: #cbd5e1 !important;
+  }
+  /* 侧栏行的行壳（圆角/margin/hover/选中底色）归 PLUGIN_CSS 单管：两套 !important
+     并存时，实机谁赢取决于两张 <style> 的插入顺序。这里只留非 sidebar 的
+     aside .group/row（master-detail、机器人、文件树）。 */
+  aside .group\/row:hover {
+    border-radius: 8px !important;
+    background: rgba(16, 42, 78, 0.50) !important;
+    color: #e2e8f0 !important;
+  }
+  aside .group\/row[aria-selected='true'] {
+    border-radius: 8px !important;
+    background: rgba(14, 38, 72, 0.70) !important;
+    box-shadow: inset 3px 0 0 0 #60a5fa, inset 0 0 16px rgba(59, 130, 246, 0.18) !important;
+    color: #ffffff !important;
+    font-weight: 500 !important;
+  }
+
+  /* 代码块与命令行：右侧预留 52px 安全走廊，彻底杜绝复制代码按钮与文本重叠 */
+  :is([data-slot='code-card'], [data-slot='code-card-body']) pre,
+  [data-slot='code-card'] pre,
+  .aui-shiki,
+  .shiki {
+    padding-right: 52px !important;
+  }
+
+  /* 5. 设置页面：实体不透明蓝色拟态玻璃风 */
+  [data-overlay-surface] [data-glass-raised],
+  [data-overlay-surface] {
+    background:
+      radial-gradient(1100px 550px at 85% -10%, rgba(96, 165, 250, 0.35), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(37, 99, 235, 0.40), transparent 62%),
+      linear-gradient(165deg, #0a2540 0%, #10345f 52%, #1a4a8a 100%) !important;
+    border: 1px solid rgba(147, 197, 253, 0.25) !important;
+    box-shadow: 0 16px 48px rgba(2, 18, 44, 0.65) !important;
+  }
+
+  /* 设置页面表单控件：选项、输入、开关清晰化 */
+  [data-overlay-surface] :is([data-slot='select-trigger'], [data-slot='input'], input:not([type='checkbox']):not([type='radio'])) {
+    background: rgba(14, 38, 70, 0.75) !important;
+    border: 1px solid rgba(147, 197, 253, 0.35) !important;
+    border-radius: 6px !important;
+    color: #ffffff !important;
+    padding-inline: 8px !important;
+  }
+  [data-overlay-surface] :is([data-slot='select-trigger'], [data-slot='input']):hover {
+    border-color: rgba(147, 197, 253, 0.65) !important;
+  }
+  /* 重复一次属性选择器把特异度抬到 (0,2,0)，压过上面 aside :is(… span, button …) 的
+     (0,1,1)——工具集列表本身就渲染在 <aside> 里。 */
+  [data-slot='switch'][data-slot='switch'] {
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    background: rgba(16, 40, 72, 0.85) !important;
+  }
+  [data-slot='switch'][data-slot='switch'][data-state='checked'] {
+    background: #3b82f6 !important;
+    border-color: transparent !important;
+  }
+  [data-slot='switch-thumb'][data-slot='switch-thumb'] {
+    background: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  /* Tooltip 浮动文字标签：醒目高对比度提示 */
+  .tooltip-bubble, [data-slot='tooltip-content'] {
+    background: #0d223f !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(147, 197, 253, 0.45) !important;
+    border-radius: 6px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55) !important;
+    font-size: 11px !important;
+    padding: 4px 8px !important;
+    opacity: 1 !important;
+    z-index: 99999 !important;
+  }
+
+  /* 6. 底部输入框：玻璃质感归 PLUGIN_CSS 单管（见 plugin.js 第 1 节）。
+     这里原先有两条 !important 的 composer-surface 规则，和插件那套谁赢取决于
+     两张 <style> 的插入顺序 —— 已删，顺带回收到 32 KiB 预算。 */
+  :is(textarea, input:not([type='checkbox']):not([type='radio'])) {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    color: #ffffff !important;
+    caret-color: #60a5fa !important;
+  }
+  ::placeholder {
+    color: rgba(219, 234, 254, 0.60) !important;
+  }
+
+  /* Tasks 状态卡（composer 上方那颗胶囊）的边框/圆角/底色/磨砂归 PLUGIN_CSS 单管：
+     这里原先也有一份 !important，谁赢取决于两张 <style> 的插入顺序 —— 已删，
+     顺带回收到 32 KiB 预算。见 plugin.js「The single status-stack card」。 */
+  [data-slot='status-stack-scroll'] {
+    max-height: 40vh !important;
+  }
+
+  /* 输入框主操作按钮（语音对话/转文字、发送、停止）：确保白色底圆内图标清晰可见 */
+  button:is([class*='bg-foreground'], [class*='text-background']) {
+    --background: #0d2a4d !important;
+    --color-background: #0d2a4d !important;
+    color: #0d2a4d !important;
+  }
+  button:is([class*='bg-foreground'], [class*='text-background']) :is(svg, i, .codicon) {
+    color: #0d2a4d !important;
+    stroke: currentColor !important;
+  }
+  button:is([class*='bg-foreground'], [class*='text-background']) .fill-current {
+    fill: #0d2a4d !important;
+  }
+
+  /* 7. 聊天气泡与头像 */
+  /* 左侧（AI / 助手）：半透明白玻璃气泡 */
+  [data-slot='aui_assistant-message-root'] {
+    position: relative;
+    overflow: visible !important;
+    padding-left: 52px;
+    margin-bottom: 12px;
+    border: none !important;
+    background: transparent !important;
+  }
+  [data-slot='aui_assistant-message-root']::after {
+    content: '';
+    position: absolute;
+    left: 47px; top: 13px;
+    width: 0; height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-right: 5px solid rgba(255, 255, 255, 0.16);
+  }
+  [data-slot='aui_assistant-message-content'] {
+    background:
+      radial-gradient(320px 120px at 15% 0%, rgba(255, 255, 255, 0.22), transparent 70%),
+      rgba(255, 255, 255, 0.13) !important;
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    color: #f8fafc !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    border-radius: 10px !important;
+    padding: 10px 14px !important;
+    width: fit-content;
+    min-height: 38px;
+    max-width: min(82%, calc(100% - 90px));
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    line-height: 1.65;
+    box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.30), 0 4px 20px rgba(0, 16, 40, 0.25) !important;
+  }
+  [data-slot='aui_assistant-message-content'] * { color: inherit; }
+  [data-slot='aui_assistant-message-content'] a { color: #93c5fd; }
+  [data-slot='aui_assistant-message-content'] :is(code, pre) {
+    background: rgba(5, 20, 45, 0.50) !important;
+    color: #dbeafe !important;
+    border: none !important;
+  }
+
+  /* 右侧（用户）：半透明玻璃蓝气泡，靠右 */
+  [data-slot='aui_user-message-root'],
+  [data-slot='aui_edit-composer-root'] {
+    position: relative;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    justify-content: flex-end !important;
+    align-self: flex-end !important;
+    width: 100% !important;
+    padding-right: 68px;
+    margin-bottom: 12px;
+    border: none !important;
+    background: transparent !important;
+    box-sizing: border-box !important;
+  }
+
+  [data-slot='aui_user-message-root']::before {
+    content: '我';
+    position: absolute;
+    right: 20px; top: 0;
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background:
+      radial-gradient(24px 14px at 50% 0%, rgba(255, 255, 255, 0.30), transparent 70%),
+      linear-gradient(170deg, rgba(241, 89, 75, 0.55) 0%, rgba(236, 143, 50, 0.55) 20%, rgba(212, 178, 54, 0.55) 40%, rgba(143, 182, 111, 0.55) 60%, rgba(78, 168, 176, 0.55) 80%, rgba(57, 141, 246, 0.55) 100%),
+      rgba(147, 197, 253, 0.62);
+    color: #0a2440;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 36px;
+    text-align: center;
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    z-index: 41;
+  }
+  [data-slot='aui_user-message-root']::after {
+    content: '';
+    position: absolute;
+    right: 63px; top: 10px;
+    width: 0; height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 5px solid rgba(255, 255, 255, 0.48);
+    z-index: 41;
+  }
+  .composer-human-message,
+  [data-slot='aui_edit-composer-root'] .ui-prompt-input__container {
+    position: relative;
+    margin: 0 !important;
+    margin-left: auto !important;
+    margin-right: 0 !important;
+    align-self: flex-end !important;
+    background:
+      radial-gradient(240px 90px at 85% 0%, rgba(255, 255, 255, 0.22), transparent 70%),
+      linear-gradient(170deg, rgba(241, 89, 75, 0.55) 0%, rgba(236, 143, 50, 0.55) 20%, rgba(212, 178, 54, 0.55) 40%, rgba(143, 182, 111, 0.55) 60%, rgba(78, 168, 176, 0.55) 80%, rgba(57, 141, 246, 0.55) 100%),
+      rgba(147, 197, 253, 0.62) !important;
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    color: #0a2440 !important;
+    border: 1px solid rgba(255, 255, 255, 0.55) !important;
+    border-radius: 10px !important;
+    padding: 6px 14px !important;
+    width: fit-content !important;
+    min-height: 30px !important;
+    max-width: min(82%, calc(100% - 90px)) !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    white-space: pre-wrap !important;
+    line-height: 1.45 !important;
+    overflow: visible !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.60), 0 6px 22px rgba(2, 10, 28, 0.45) !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Composer 下拉层救援：只需要堆叠序。原先还写了 display:block / visibility:visible
+     / opacity:1 —— Radix 关闭菜单靠 data-[state=closed]:fade-out-0，而 !important
+     压过动画，于是已关闭的面板永远淡不掉，在 ˅ 下方留一个空框（实测
+     closed: opacity=1 visibility=visible）。现按 data-state 收窄。 */
+  html[data-bubbles-skin='true'] [data-slot='select-content'][data-state='open'],
+  html[data-bubbles-skin='true'] [data-overlay-surface] {
+    z-index: 99999 !important;
+    pointer-events: auto !important;
+  }
+
+  /* Composer input field */
+  html[data-bubbles-skin='true'] [data-slot='composer-rich-input'],
+  html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] [data-slot='composer-rich-input'],
+  html[data-bubbles-skin='true'] [data-slot='aui_edit-composer-root'] .ui-prompt-input-editor__input {
+    z-index: 99999 !important;
+    pointer-events: auto !important;
+  }
+  .composer-human-message::-webkit-scrollbar,
+  .composer-human-message *::-webkit-scrollbar {
+    display: none !important;
+  }
+  .composer-human-message:is(:focus, :focus-visible, :active, :focus-within) {
+    outline: none !important;
+  }
+
+  .composer-human-message * { color: inherit !important; }
+  /* Links sit on the pastel spectrum now, so the old light sapphire (#bfdbfe)
+     read as ~1.5:1. Same navy family as the body ink, kept distinct by weight
+     and underline. */
+  .composer-human-message a {
+    color: #0d3a66 !important;
+    text-decoration: underline !important;
+    text-underline-offset: 2px !important;
+  }
+
+  /* Long User Bubble: completely clear mask, gradient and bottom shadow in ALL states */
+  .sticky-human-clamp {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    color: inherit !important;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+    mask: none !important;
+    -webkit-mask: none !important;
+  }
+  [data-slot='aui_user-message-root'][data-bubbles-long-user='true']:not([data-bubbles-user-expanded='true']):not([data-bubbles-editing='true']) .sticky-human-clamp {
+    position: relative !important;
+    max-height: 105px !important;
+    overflow: hidden !important;
+  }
+
+  [data-context-menu-skip] button:not(.composer-human-message):not(.bubbles-user-expand-btn) svg {
+    width: 10px !important;
+    height: 10px !important;
+    fill: currentColor !important;
+  }
+  [data-context-menu-skip] button:not(.composer-human-message):not(.bubbles-user-expand-btn) :is(i, .codicon) {
+    font-size: 12px !important;
+    color: currentColor !important;
+  }
+
+  .checkpoint-container {
+    margin-top: 4px !important;
+    justify-content: flex-end !important;
+  }
+
+  /* 8. Tool UI 扁平化（工具行是气泡上的裸文本；卡片一律不画，状态靠字形与文字着色）
+     注意：.bubbles-tool-group-toggle 的外观唯一由 PLUGIN_CSS 负责，这里不再重复声明。 */
+  .bubbles-tool-group {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  [data-slot='tool-block'][data-bubbles-in-group='true'][data-bubbles-group-collapsed='false'],
+  [data-bubbles-tool-flat='true'][data-bubbles-in-group='true'][data-bubbles-group-collapsed='false'] {
+    display: block !important;
+    background: transparent !important;
+    border: none !important;
+    border-left: 2px solid rgba(147, 197, 253, 0.30) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    margin: 4px 0 6px 10px !important;
+    padding: 2px 0 2px 12px !important;
+  }
+  [data-slot='tool-block'][data-bubbles-in-group='true'] :is(header, .group\/disclosure-row, button.group\/disclosure-row) {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* 错误状态的红框/红底消除已归 PLUGIN_CSS 单一所有者：这里曾有一份五分支的副本，
+     与那份的声明体逐字相同、选择器却少了 bg-red 与 section 变体。 */
+
+  /* 9. 终端界面特定增强 */
+  /* xterm 画布：0.88 透明度透出背后的固定拟态蓝光渐变，彻底消除黑块 */
+  .xterm canvas,
+  .xterm-screen canvas {
+    opacity: 0.88 !important;
+  }
+  /* 终端右侧标签栏 (Rail) 与快捷操作按钮：高质感冰蓝微边框 */
+  [class*='group/rail'] {
+    border-left: 1px solid rgba(147, 197, 253, 0.20) !important;
+  }
+  [class*='group/rail'] button {
+    color: #93c5fd !important;
+    border-radius: 6px !important;
+  }
+  [class*='group/rail'] button:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+  }
+  [class*='group/rail'] :is([aria-pressed='true'], .text-foreground) {
+    background: rgba(59, 130, 246, 0.35) !important;
+    color: #ffffff !important;
+  }
+
+  /* 10. 文件交付界面：统一为 Hermes 对话气泡风格 */
+  :is([data-slot='aui_changed-files'], [data-slot='aui_listing-card'], [data-slot*='artifact']) {
+    background:
+      radial-gradient(350px 120px at 15% 0%, rgba(255, 255, 255, 0.22), transparent 70%),
+      rgba(255, 255, 255, 0.13) !important;
+    backdrop-filter: blur(16px) saturate(1.4) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(1.4) !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    border-radius: 10px !important;
+    box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.30), 0 4px 20px rgba(0, 16, 40, 0.25) !important;
+    padding: 10px 14px !important;
+  }
+  [data-slot='aui_changed-files'] :is(span, button:hover) { color: #ffffff !important; }
+  [data-slot='aui_changed-files'] button { color: #93c5fd !important; }
+  [data-slot='aui_changed-files'] .row-hover { border-radius: 6px !important; }
+  [data-slot='aui_changed-files'] .row-hover:hover { background: rgba(255, 255, 255, 0.12) !important; }
+
+  /* 11. 全局玻璃拟态胶囊滚动条 */
+  ::-webkit-scrollbar { width: 6px !important; height: 6px !important; }
+  ::-webkit-scrollbar-track { background: transparent !important; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(147, 197, 253, 0.22) !important;
+    border-radius: 9999px !important;
+    transition: background-color 0.2s ease;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(147, 197, 253, 0.45) !important; }

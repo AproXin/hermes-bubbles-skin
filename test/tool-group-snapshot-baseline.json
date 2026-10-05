@@ -1,0 +1,88 @@
+{
+  "headers": [
+    {
+      "attrs": {
+        "data-bubbles-tool-group": "true",
+        "data-bubbles-tool-flat": "true",
+        "data-group-id": "grp_msg-snapshot_anchor_0_npm_run_build",
+        "data-storage-key": "hermes-bubbles-skin:tool-group:grp_msg-snapshot_anchor_0_npm_run_build",
+        "data-group-state": "collapsed",
+        "data-tool-count": "3"
+      },
+      "children": [
+        "button.bubbles-tool-group-toggle[aria-expanded=false data-bubbles-tool-group-toggle=true]"
+      ],
+      "deep": [
+        {
+          "self": "button.bubbles-tool-group-toggle[aria-expanded=false data-bubbles-tool-group-toggle=true]",
+          "children": [
+            "span.bubbles-group-chevron[aria-hidden=true]",
+            "span.bubbles-group-icon",
+            "span.bubbles-group-label"
+          ]
+        }
+      ]
+    }
+  ],
+  "toolRows": [
+    {
+      "callId": "a",
+      "attrs": {
+        "data-slot": "tool-block",
+        "data-tool-call-id": "a",
+        "data-bubbles-tool-anchor-id": "anchor_0_npm_run_build",
+        "data-bubbles-in-group": "true",
+        "data-bubbles-tool-flat": "true",
+        "data-bubbles-group-id": "grp_msg-snapshot_anchor_0_npm_run_build",
+        "data-bubbles-group-collapsed": "true"
+      },
+      "duplicateHeaders": []
+    },
+    {
+      "callId": "b",
+      "attrs": {
+        "data-slot": "tool-block",
+        "data-tool-call-id": "b",
+        "data-bubbles-in-group": "true",
+        "data-bubbles-tool-flat": "true",
+        "data-bubbles-group-id": "grp_msg-snapshot_anchor_0_npm_run_build",
+        "data-bubbles-group-collapsed": "true"
+      },
+      "duplicateHeaders": []
+    },
+    {
+      "callId": "c",
+      "attrs": {
+        "data-slot": "tool-block",
+        "data-tool-call-id": "c",
+        "data-bubbles-in-group": "true",
+        "data-bubbles-tool-flat": "true",
+        "data-bubbles-group-id": "grp_msg-snapshot_anchor_0_npm_run_build",
+        "data-bubbles-group-collapsed": "true"
+      },
+      "duplicateHeaders": []
+    },
+    {
+      "callId": "running-one",
+      "attrs": {
+        "data-slot": "tool-block",
+        "data-tool-call-id": "running-one"
+      },
+      "duplicateHeaders": []
+    },
+    {
+      "callId": "summary-only",
+      "attrs": {
+        "data-slot": "tool-row",
+        "data-tool-call-id": "summary-only"
+      },
+      "duplicateHeaders": []
+    }
+  ],
+  "stats": {
+    "toolGroupRefreshes": 1,
+    "toolRefreshes": 0
+  },
+  "groupHeaderCountAfterTwoPasses": 1,
+  "orphanGroupHeaders": 0
+}
