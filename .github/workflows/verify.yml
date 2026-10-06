@@ -13,9 +13,8 @@ name: verify
 # Their skips are acknowledged, never silent, and only because both the label and the
 # printed reason are declared in scripts/run-tests.js; a third suite that skips — or
 # either of these two skipping for any other reason — still fails the gate. The local
-# pre-push hook (scripts/git-hooks/pre-push) is the primary gate ensuring all 57/57
-# suites pass against the live host checkout. CI permits neither silent skips nor weak
-# passes.
+# pre-push hook (scripts/git-hooks/pre-push) is the primary gate ensuring all 57/57 suites pass
+# against the live host checkout. CI permits neither silent skips nor weak passes.
 
 on:
   push:
