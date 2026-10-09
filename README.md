@@ -97,7 +97,25 @@ Composer 按 Codex 的排法：输入主体在上，一条 1px 低对比分隔�
 
 ## 安装
 
-### 1. 皮肤 (Skin)
+前置要求：已安装 Hermes Agent Desktop（macOS）。
+
+### 一键安装（推荐）
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/AproXin/hermes-bubbles-skin/main/install.sh | bash
+```
+
+安装指定版本（默认装 `main` 最新版）：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/AproXin/hermes-bubbles-skin/main/install.sh | VERSION=v0.5.1 bash
+```
+
+脚本会自动创建目录、下载皮肤与插件共 3 个文件并校验完整性，可重复执行。
+
+### 手动安装（备选）
+
+#### 1. 皮肤 (Skin)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/AproXin/hermes-bubbles-skin/main/bubbles.yaml -o ~/.hermes/skins/bubbles.yaml
@@ -116,13 +134,15 @@ display:
   skin: bubbles
 ```
 
-### 2. 桌面插件 (Desktop Plugin)
+#### 2. 桌面插件 (Desktop Plugin)
 
 ```bash
 mkdir -p ~/.hermes/desktop-plugins/hermes-bubbles-skin
 curl -fsSL https://raw.githubusercontent.com/AproXin/hermes-bubbles-skin/main/plugin.js -o ~/.hermes/desktop-plugins/hermes-bubbles-skin/plugin.js
 curl -fsSL https://raw.githubusercontent.com/AproXin/hermes-bubbles-skin/main/plugin.yaml -o ~/.hermes/desktop-plugins/hermes-bubbles-skin/plugin.yaml
 ```
+
+### 生效与验证
 
 装完必须 `Cmd + Q` 完全退出再重开。插件 JS 和 `customCSS` 都是每个 renderer 文档启动时读一次，按 `Cmd + R` 拿不到新版本。
 
@@ -133,6 +153,14 @@ document.documentElement.dataset.bubblesBuild   // 部署构建号；teardown �
 ```
 
 控制台也会打一行 `[bubbles] styles installed at NNNNms (build …)`。
+
+### 卸载
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/AproXin/hermes-bubbles-skin/main/install.sh | bash -s -- --uninstall
+```
+
+删掉 3 个文件后，同样 `Cmd + Q` 重启 Hermes 即恢复默认外观。
 
 ---
 
