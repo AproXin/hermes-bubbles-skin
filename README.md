@@ -99,48 +99,11 @@ Composer 按 Codex 的排法：输入主体在上，一条 1px 低对比分隔�
 
 前置要求：已安装 Hermes Agent Desktop（macOS）。
 
-### 一键安装（推荐）
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/AproXin/hermes-bubbles-skin/main/install.sh | bash
 ```
 
-安装指定版本（默认装 `main` 最新版）：
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/AproXin/hermes-bubbles-skin/main/install.sh | VERSION=v0.5.1 bash
-```
-
 脚本会自动创建目录、下载皮肤与插件共 3 个文件并校验完整性，可重复执行。
-
-### 手动安装（备选）
-
-#### 1. 皮肤 (Skin)
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/AproXin/hermes-bubbles-skin/main/bubbles.yaml -o ~/.hermes/skins/bubbles.yaml
-```
-
-在 Hermes 里切换：
-
-```
-/skin bubbles
-```
-
-或写进 `~/.hermes/config.yaml`：
-
-```yaml
-display:
-  skin: bubbles
-```
-
-#### 2. 桌面插件 (Desktop Plugin)
-
-```bash
-mkdir -p ~/.hermes/desktop-plugins/hermes-bubbles-skin
-curl -fsSL https://raw.githubusercontent.com/AproXin/hermes-bubbles-skin/main/plugin.js -o ~/.hermes/desktop-plugins/hermes-bubbles-skin/plugin.js
-curl -fsSL https://raw.githubusercontent.com/AproXin/hermes-bubbles-skin/main/plugin.yaml -o ~/.hermes/desktop-plugins/hermes-bubbles-skin/plugin.yaml
-```
 
 ### 生效与验证
 
